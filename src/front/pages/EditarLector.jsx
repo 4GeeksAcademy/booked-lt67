@@ -48,6 +48,9 @@ const EditarLector = () => {
 
         fetch(import.meta.env.VITE_BACKEND_URL + "api/lector/" + theId, requestOptions)
             .then(response => {
+                if (response.status === 409) {
+                throw new Error("Ese username o email ya está en uso por otro lector");
+            }
                 if (response.ok) {
                     alert("¡Lector actualizado con éxito!");
                     navigate("/lector"); 

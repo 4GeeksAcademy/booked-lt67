@@ -40,7 +40,7 @@ const Lector = () => {
             <h1>LECTOR</h1>
             {lectores.map((lector) =>
                 <p key={lector.id}>
-                    {lector.nombre}
+                    {lector.username}
                     <Link to={"/ver_lector/" + lector.id}>
                         <button className="btn btn-primary">Ver Lector</button>
                     </Link>
