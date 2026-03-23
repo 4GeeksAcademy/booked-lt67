@@ -119,6 +119,13 @@ def get_editoriales():
     results = list( map(lambda editorial: editorial.serialize(),all_editoriales) )
     return jsonify(results), 200
 
+@api.route('/editorial/<int:editorial_id>', methods=['GET'])
+def get_editorial(editorial_id):
+
+    editorial = Editorial.query.filter_by(id=editorial_id).first()
+    print(editorial.serialize)
+    return jsonify(editorial.serialize()), 200
+
 @api.route('/editorial', methods=['POST'])
 def create_editorial():
     body = request.get_json()
