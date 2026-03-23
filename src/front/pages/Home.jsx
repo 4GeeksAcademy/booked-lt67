@@ -41,6 +41,8 @@ export const Home = () => {
 			</p>
 			<Link className="btn btn-primary" to="/lector">Ver Lectores</Link>
 
+			<Link className="btn btn-primary" to="/editorial">Ver Editoriales</Link>
+
 			<div className="alert alert-info">
 				{store.message ? (
 					<span>{store.message}</span>
