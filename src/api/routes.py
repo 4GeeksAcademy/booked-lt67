@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Lector, Editorial
+from api.models import db, User, Lector, Editorial, Autor
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -111,6 +111,74 @@ def update_lector(lector_id):
     return jsonify(response_body), 200
 
  
+@api.route('/autor', methods=['GET'])
+def get_autores():
+
+    all_autores = Autor.query.all()
+    print(all_autores)
+    results = list( map(lambda autor: autor.serialize(),all_autores) )
+    return jsonify(results), 200
+
+@api.route('/autor/<int:autor_id>', methods=['GET'])
+def get_autor(autor_id):
+
+    autor = Autor.query.filter_by(id=autor_id).first()
+    print(autor.serialize)
+    return jsonify(autor.serialize()), 200
+
+@api.route('/autor', methods=['POST'])
+def create_autor():
+    body = request.get_json()
+
+    if not body or "nombre" not in body or "apellido" not in body or "pais" not in body or "email" not in body or "password" not in body:
+        return jsonify({"msg": "Todos los campos son obligatorios"}), 400
+
+    new_autor = Autor(
+        nombre=body.get("nombre"),
+        apellido=body.get("apellido"),
+        pais=body.get("pais"),
+        email=body.get("email"),
+        password=body.get("password")
+    )
+    
+    db.session.add(new_autor)
+    db.session.commit()
+    return jsonify({"msg": "Autor creadao", "autor": new_autor.serialize()}), 201
+
+@api.route('/autor/<int:autor_id>', methods=['DELETE'])
+def delete_autor(autor_id):
+
+    autor = Autor.query.get(autor_id)
+
+    if autor is None:
+        return jsonify({"msg": f"La autor con ID {autor_id} no existe"}), 404
+
+    db.session.delete(autor)
+    db.session.commit()
+    return jsonify({"msg": "Autor eliminada con éxito"}), 200
+
+@api.route('/autor/<int:autor_id>', methods=['PUT'])
+def update_autor(autor_id):
+    
+    autor = Autor.query.filter_by(id=autor_id).first()
+
+    body = request.get_json()
+
+    autor.email = body.get("email", autor.email)
+    autor.password = body.get("password", autor.password)
+    autor.nombre = body.get("nombre", autor.nombre)
+    autor.apellido = body.get("apellido", autor.apellido)
+    autor.pais= body.get("pais donde reside", autor.pais)
+    
+    db.session.commit()
+    
+    response_body = {
+        "message": "se actualizo la informacion del autor",
+        "autor": autor.serialize()
+    }
+
+    return jsonify(response_body), 200
+
 @api.route('/editorial', methods=['GET'])
 def get_editoriales():
 

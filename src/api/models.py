@@ -54,3 +54,20 @@ class Editorial(db.Model):
             "pais": self.pais,
             "email": self.email
         }
+
+class Autor(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nombre: Mapped[str] = mapped_column(String(120), nullable=False)
+    apellido: Mapped[str] = mapped_column(String(120), nullable=False)
+    pais: Mapped[str] = mapped_column(String(120), nullable=False)
+    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    password: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "nombre": self.nombre,
+            "apellido": self.apellido,            
+            "pais": self.pais,
+            "email": self.email
+        }
