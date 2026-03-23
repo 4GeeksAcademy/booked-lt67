@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Lector
+from api.models import db, User, Lector, Editorial
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -107,5 +107,65 @@ def update_lector(lector_id):
         "lector": lector.serialize()
     }
     
+
+    return jsonify(response_body), 200
+
+ 
+@api.route('/editorial', methods=['GET'])
+def get_editoriales():
+
+    all_editoriales = Editorial.query.all()
+    print(all_editoriales)
+    results = list( map(lambda editorial: editorial.serialize(),all_editoriales) )
+    return jsonify(results), 200
+
+@api.route('/editorial', methods=['POST'])
+def create_editorial():
+    body = request.get_json()
+
+    if not body or "nombre" not in body or "pais" not in body or "email" not in body or "password" not in body:
+        return jsonify({"msg": "Todos los campos son obligatorios"}), 400
+
+    new_editorial = Editorial(
+        nombre=body.get("nombre"),
+        pais=body.get("pais"),
+        email=body.get("email"),
+        password=body.get("password")
+    )
+    
+    db.session.add(new_editorial)
+    db.session.commit()
+    return jsonify({"msg": "Editorial creada", "editorial": new_editorial.serialize()}), 201
+
+@api.route('/editorial/<int:editorial_id>', methods=['DELETE'])
+def delete_editorial(editorial_id):
+
+    editorial = Editorial.query.get(editorial_id)
+
+    if editorial is None:
+        return jsonify({"msg": f"La editorial con ID {editorial_id} no existe"}), 404
+
+    db.session.delete(editorial)
+    db.session.commit()
+    return jsonify({"msg": "Editorial eliminada con éxito"}), 200
+
+@api.route('/editorial/<int:editorial_id>', methods=['PUT'])
+def update_editorial(editorial_id):
+    
+    editorial = Editorial.query.filter_by(id=editorial_id).first()
+
+    body = request.get_json()
+
+    editorial.email = body.get("email", editorial.email)
+    editorial.password = body.get("password", editorial.password)
+    editorial.nombre = body.get("nombre", editorial.nombre)
+    editorial.pais= body.get("pais donde reside", editorial.pais)
+    
+    db.session.commit()
+    
+    response_body = {
+        "message": "se actualizo la informacion del editorial",
+        "editorial": editorial.serialize()
+    }
 
     return jsonify(response_body), 200

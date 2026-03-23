@@ -13,6 +13,10 @@ import Lector from "./pages/Lector";
 import NuevoLector from "./pages/NuevoLector";
 import VerLector from "./pages/VerLector";
 import EditarLector from "./pages/EditarLector";
+import Editorial from "./pages/2_Editorial";
+import NuevaEditorial from "./pages/2_NuevaEditorial";
+import VerEditorial from "./pages/2_VerEditorial";
+import EditarEditorial from "./pages/2_EditarEditorial";
 
 export const router = createBrowserRouter(
     createRoutesFromElements(
@@ -33,6 +37,13 @@ export const router = createBrowserRouter(
         <Route path="/nuevo_lector" element={<NuevoLector />} />
         <Route path="/ver_lector/:theId" element={<VerLector />} />
         <Route path="/editar_lector/:theId" element={<EditarLector />} />
+
+        <Route path="/editorial" element={<Editorial />} />
+        <Route path="/nueva_editorial" element={<NuevaEditorial />} />
+        <Route path="/ver_editorial/:theId" element={<VerEditorial />} />
+        <Route path="/editar_editorial/:theId" element={<EditarEditorial />} />
+
+
       </Route>
     )
 );
