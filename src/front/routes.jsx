@@ -21,6 +21,10 @@ import Autor from "./pages/3_Autor";
 import VerAutor from "./pages/3_VerAutor";
 import NuevoAutor from "./pages/3_NuevoAutor";
 import EditarAutor from "./pages/3_EditarAutor";
+import Libro from "./pages/4_Libro";
+import EditarLibro from "./pages/4_EditarLibro";
+import VerLibro from "./pages/4_VerLibro";
+import NuevoLibro from "./pages/4_NuevoLibro";
 
 export const router = createBrowserRouter(
     createRoutesFromElements(
@@ -51,6 +55,11 @@ export const router = createBrowserRouter(
         <Route path="/nuevo_autor" element={<NuevoAutor />} />
         <Route path="/ver_autor/:theId" element={<VerAutor />} />
         <Route path="/editar_autor/:theId" element={<EditarAutor />} />
+
+        <Route path="/libro" element={<Libro />} />
+        <Route path="/nuevo_libro" element={<NuevoLibro />} />
+        <Route path="/ver_libro/:theId" element={<VerLibro />} />
+        <Route path="/editar_libro/:theId" element={<EditarLibro />} />
 
 
       </Route>
