@@ -21,6 +21,7 @@ import Autor from "./pages/3_Autor";
 import VerAutor from "./pages/3_VerAutor";
 import NuevoAutor from "./pages/3_NuevoAutor";
 import EditarAutor from "./pages/3_EditarAutor";
+import LectorAutoresFavoritos from "./pages/5_LectorAutoresFavoritos";
 
 export const router = createBrowserRouter(
     createRoutesFromElements(
@@ -51,6 +52,8 @@ export const router = createBrowserRouter(
         <Route path="/nuevo_autor" element={<NuevoAutor />} />
         <Route path="/ver_autor/:theId" element={<VerAutor />} />
         <Route path="/editar_autor/:theId" element={<EditarAutor />} />
+
+        <Route path="/lector_autores_favoritos" element={<LectorAutoresFavoritos />} />
 
 
       </Route>

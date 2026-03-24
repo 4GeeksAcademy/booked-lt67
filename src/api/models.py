@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, Boolean, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import List, Optional
 
 db = SQLAlchemy()
 
@@ -28,6 +29,10 @@ class Lector(db.Model):
     pais_donde_reside: Mapped[str] = mapped_column(String(120), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
 
+    favorites_autor: Mapped[List["Lector_Autores_Favoritos"]] = relationship(back_populates="lector")
+
+    def __repr__(self):
+        return f"{self.nombre} {self.apellido}"
 
     def serialize(self):
         return {
@@ -63,6 +68,11 @@ class Autor(db.Model):
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
 
+    favorited: Mapped[List["Lector_Autores_Favoritos"]] = relationship(back_populates="autor")
+
+    def __repr__(self):
+        return f"{self.nombre} {self.apellido}"
+
     def serialize(self):
         return {
             "id": self.id,
@@ -70,4 +80,24 @@ class Autor(db.Model):
             "apellido": self.apellido,            
             "pais": self.pais,
             "email": self.email
+        }
+
+class Lector_Autores_Favoritos(db.Model):
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    lector_id: Mapped[int] = mapped_column(ForeignKey("lector.id"), nullable=False)
+    autor_id: Mapped[int] = mapped_column(ForeignKey("autor.id"), nullable=False)
+
+    lector: Mapped["Lector"] = relationship(back_populates="favorites_autor")
+    autor: Mapped["Autor"] = relationship(back_populates="favorited")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "lector_id": self.lector_id,
+            "autor_id": self.autor_id,
+
+            "nombre_lector": f"{self.lector.nombre} {self.lector.apellido}",
+            "nombre_autor": f"{self.autor.nombre} {self.autor.apellido}"
         }

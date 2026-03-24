@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Lector, Editorial, Autor
+from api.models import db, User, Lector, Editorial, Autor, Lector_Autores_Favoritos
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -244,3 +244,11 @@ def update_editorial(editorial_id):
     }
 
     return jsonify(response_body), 200
+
+@api.route('/lector_autores_favoritos', methods=['GET'])
+def get_lector_autores_favoritos():
+
+    all_lector_autores_favoritos = Lector_Autores_Favoritos.query.all()
+    print(all_lector_autores_favoritos)
+    results = list( map(lambda lector_autores_favoritos: lector_autores_favoritos.serialize(),all_lector_autores_favoritos) )
+    return jsonify(results), 200
