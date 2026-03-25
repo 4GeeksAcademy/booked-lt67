@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos
+from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Reviews
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -436,4 +436,10 @@ def delete_lector_autor_favorito(fav_id):
 
     return jsonify({"msg": "Eliminado con éxito"}), 200
 
- 
+@api.route('/reviews', methods=['GET'])
+def get_reviews():
+
+    all_reviews = Reviews.query.all()
+    print(all_reviews)
+    results = list( map(lambda reviews: reviews.serialize(),all_reviews) )
+    return jsonify(results), 200
