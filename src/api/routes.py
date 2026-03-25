@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos
+from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -383,4 +383,57 @@ def update_libro_favorito(fav_id):
             "result": favorito.serialize()
         }), 200
     
-    
+@api.route('/lector_autores_favoritos', methods=['GET'])
+def get_lector_autores_favoritos():
+
+    all_lector_autores_favoritos = Lector_Autores_Favoritos.query.all()
+    print(all_lector_autores_favoritos)
+    results = list( map(lambda lector_autores_favoritos: lector_autores_favoritos.serialize(),all_lector_autores_favoritos) )
+    return jsonify(results), 200
+
+@api.route('/lector_autores_favoritos/<int:fav_id>', methods=['GET'])
+def get_lector_autor_favorito(fav_id):
+
+    item = Lector_Autores_Favoritos.query.filter_by(id=fav_id).first()
+    return jsonify(item.serialize()), 200
+
+@api.route('/lector_autores_favoritos', methods=['POST'])
+def create_lector_autor_favorito():
+
+    body = request.get_json()
+
+    nuevo = Lector_Autores_Favoritos(
+        lector_id=body["lector_id"],
+        autor_id=body["autor_id"]
+    )
+
+    db.session.add(nuevo)
+    db.session.commit()
+
+    return jsonify(nuevo.serialize()), 201
+
+@api.route('/lector_autores_favoritos/<int:fav_id>', methods=['PUT'])
+def update_lector_autores_favoritos(fav_id):
+
+    fav = Lector_Autores_Favoritos.query.get_or_404(fav_id)
+
+    body = request.get_json()
+
+    fav.lector_id = body["lector_id"]
+    fav.autor_id = body["autor_id"]
+
+    db.session.commit()
+
+    return jsonify(fav.serialize()), 200
+
+@api.route('/lector_autores_favoritos/<int:fav_id>', methods=['DELETE'])
+def delete_lector_autor_favorito(fav_id):
+
+    fav = Lector_Autores_Favoritos.query.get_or_404(fav_id)
+
+    db.session.delete(fav)
+    db.session.commit()
+
+    return jsonify({"msg": "Eliminado con éxito"}), 200
+
+ 
