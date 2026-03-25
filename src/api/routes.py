@@ -443,3 +443,52 @@ def get_reviews():
     print(all_reviews)
     results = list( map(lambda reviews: reviews.serialize(),all_reviews) )
     return jsonify(results), 200
+
+@api.route('/reviews/<int:review_id>', methods=['GET'])
+def get_review(review_id):
+
+    item = Reviews.query.filter_by(id=review_id).first()
+    return jsonify(item.serialize()), 200
+
+@api.route('/reviews', methods=['POST'])
+def create_review():
+
+    body = request.get_json()
+
+    nuevo = Reviews(
+        lector_id=body["lector_id"],
+        libro_id=body["libro_id"],
+        texto=body["texto"],
+        puntuacion=body["puntuacion"]
+    )
+
+    db.session.add(nuevo)
+    db.session.commit()
+
+    return jsonify(nuevo.serialize()), 201
+
+@api.route('/reviews/<int:review_id>', methods=['PUT'])
+def update_review(review_id):
+
+    rev = Reviews.query.get_or_404(review_id)
+
+    body = request.get_json()
+
+    rev.texto = body["texto"]
+    rev.puntuacion = body["puntuacion"]
+    rev.lector_id = body("lector_id")
+    rev.libro_id = body("libro_id")
+
+    db.session.commit()
+
+    return jsonify(rev.serialize()), 200
+
+@api.route('/reviews/<int:review_id>', methods=['DELETE'])
+def delete_review(review_id):
+
+    rev = Reviews.query.get_or_404(review_id)
+
+    db.session.delete(rev)
+    db.session.commit()
+
+    return jsonify({"msg": "Eliminado con éxito"}), 200

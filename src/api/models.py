@@ -182,6 +182,7 @@ class Reviews(db.Model):
         return {
             "id": self.id,
             "lector_id": self.lector_id,
+            "nombre_lector": f"{self.lector.nombre} {self.lector.apellido}" if self.lector else None,
             "libro": self.libro.serialize() if self.libro else None,
             "texto": self.texto,
             "puntuacion": self.puntuacion
