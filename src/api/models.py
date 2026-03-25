@@ -32,6 +32,11 @@ class Lector(db.Model):
     pais_donde_reside: Mapped[str] = mapped_column(String(120), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
 
+    libros_fav: Mapped[List["LibrosFavoritos"]] = relationship(back_populates="lector")
+
+    def __repr__(self):
+        return f'<Lector: {self.username}>'
+
     def serialize(self):
         return {
             "id": self.id,
@@ -48,11 +53,13 @@ class Editorial(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(String(120), nullable=False)
     pais: Mapped[str] = mapped_column(String(120), nullable=False)
-    email: Mapped[str] = mapped_column(
-        String(120), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
 
     libros: Mapped[List["Libro"]] = relationship(back_populates="editorial")
+
+    def __repr__(self):
+        return f'<Editorial: {self.nombre}>'
 
     def serialize(self):
         return {
@@ -68,11 +75,13 @@ class Autor(db.Model):
     nombre: Mapped[str] = mapped_column(String(120), nullable=False)
     apellido: Mapped[str] = mapped_column(String(120), nullable=False)
     pais: Mapped[str] = mapped_column(String(120), nullable=False)
-    email: Mapped[str] = mapped_column(
-        String(120), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
 
     libros: Mapped[List["Libro"]] = relationship(back_populates="autor")
+
+    def __repr__(self):
+        return f'<Autor: {self.nombre} {self.apellido}>'
 
     def serialize(self):
         return {
@@ -95,6 +104,11 @@ class Libro(db.Model):
     autor_id: Mapped[int] = mapped_column(ForeignKey("autor.id"), nullable=False)
     autor: Mapped["Autor"] = relationship(back_populates="libros")
 
+    libros_fav: Mapped[List["LibrosFavoritos"]] = relationship(back_populates="libro")
+
+    def __repr__(self):
+        return f'<Libro: {self.nombre}>'
+
     def serialize(self):
         return {
             "id": self.id,
@@ -104,4 +118,22 @@ class Libro(db.Model):
             "editorial_id": self.editorial_id,
             "nombre_autor": f"{self.autor.nombre} {self.autor.apellido}" if self.autor else "Sin autor",
             "nombre_editorial": self.editorial.nombre if self.editorial else "Sin editorial"
+        }
+
+class LibrosFavoritos(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    
+    lector_id: Mapped[int] = mapped_column(ForeignKey("lector.id"))
+    lector: Mapped["Lector"] = relationship(back_populates="libros_fav")
+
+    libro_id: Mapped[int] = mapped_column(ForeignKey("libro.id"), nullable=False)
+    libro: Mapped["Libro"] = relationship(back_populates="libros_fav")
+
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "lector_id": self.lector_id,
+            "libro": self.libro.serialize() if self.libro else None
+            # do not serialize the password, its a security breach
         }

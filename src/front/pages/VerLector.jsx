@@ -43,6 +43,9 @@ const VerLector = () => {
                             <p><strong>País:</strong> {lector.pais_donde_reside}</p>
                         </div>
                     </div>
+                    <Link to={`/lector/${theId}/favoritos`}>
+                        <button className="btn btn-primary">Ver Libros Favoritos</button>
+                    </Link>
 
                     <hr />
                     <Link to="/lector">

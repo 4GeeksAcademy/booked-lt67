@@ -47,8 +47,8 @@ const Lector = () => {
                         <div className="card p-3 shadow-sm">
                             <h5 className="mb-3">{lector.nombre}</h5>
                             <div className="d-flex flex-wrap gap-2">
-                                <Link to={"/ver_libro/" + lector.id} className="btn btn-sm btn-outline-primary">Ver</Link>
-                                <Link to={"/editar_libro/" + lector.id} className="btn btn-sm btn-outline-primary">Editar</Link>
+                                <Link to={"/ver_lector/" + lector.id} className="btn btn-sm btn-outline-primary">Ver</Link>
+                                <Link to={"/editar_lector/" + lector.id} className="btn btn-sm btn-outline-primary">Editar</Link>
                                 <button onClick={() => deleteLector(lector.id)} className="btn btn-sm btn-danger">Eliminar</button>
                             </div>
                         </div>
