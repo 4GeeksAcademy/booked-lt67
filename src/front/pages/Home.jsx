@@ -47,6 +47,8 @@ export const Home = () => {
 
 			<Link className="btn btn-primary" to="/libro">Ver Libros</Link>
 
+			<Link className="btn btn-primary" to="/lector_autores_favoritos">Ver lector autores favoritos</Link>
+
 			<div className="alert alert-info">
 				{store.message ? (
 					<span>{store.message}</span>

@@ -34,6 +34,8 @@ class Lector(db.Model):
 
     libros_fav: Mapped[List["LibrosFavoritos"]] = relationship(back_populates="lector")
 
+    favorites_autor: Mapped[List["Lector_Autores_Favoritos"]] = relationship(back_populates="lector")
+
     def __repr__(self):
         return f'<Lector: {self.username}>'
 
@@ -79,6 +81,8 @@ class Autor(db.Model):
     password: Mapped[str] = mapped_column(String(255), nullable=False)
 
     libros: Mapped[List["Libro"]] = relationship(back_populates="autor")
+
+    favorited: Mapped[List["Lector_Autores_Favoritos"]] = relationship(back_populates="autor")
 
     def __repr__(self):
         return f'<Autor: {self.nombre} {self.apellido}>'
@@ -136,4 +140,23 @@ class LibrosFavoritos(db.Model):
             "lector_id": self.lector_id,
             "libro": self.libro.serialize() if self.libro else None
             # do not serialize the password, its a security breach
+        }
+
+class Lector_Autores_Favoritos(db.Model):
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    lector_id: Mapped[int] = mapped_column(ForeignKey("lector.id"), nullable=False)
+    autor_id: Mapped[int] = mapped_column(ForeignKey("autor.id"), nullable=False)
+
+    lector: Mapped["Lector"] = relationship(back_populates="favorites_autor")
+    autor: Mapped["Autor"] = relationship(back_populates="favorited")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "lector_id": self.lector_id,
+            "autor_id": self.autor_id,
+            "nombre_lector": f"{self.lector.nombre} {self.lector.apellido}" if self.lector else None,
+            "nombre_autor": f"{self.autor.nombre} {self.autor.apellido}" if self.autor else None
         }
