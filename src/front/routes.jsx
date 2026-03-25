@@ -25,6 +25,9 @@ import Libro from "./pages/4_Libro";
 import EditarLibro from "./pages/4_EditarLibro";
 import VerLibro from "./pages/4_VerLibro";
 import NuevoLibro from "./pages/4_NuevoLibro";
+import LibrosFavoritos from "./pages/5_LibrosFavoritos";
+import AgregarLibroFavorito from "./pages/5_AgregarLibroFavorito";
+import EditarLibroFavorito from "./pages/5_EditarLibroFavorito";
 
 export const router = createBrowserRouter(
     createRoutesFromElements(
@@ -60,6 +63,10 @@ export const router = createBrowserRouter(
         <Route path="/nuevo_libro" element={<NuevoLibro />} />
         <Route path="/ver_libro/:theId" element={<VerLibro />} />
         <Route path="/editar_libro/:theId" element={<EditarLibro />} />
+
+        <Route path="/lector/:lectorId/favoritos" element={<LibrosFavoritos />} />
+        <Route path="/lector/:lectorId/favoritos/agregar" element={<AgregarLibroFavorito />} />
+        <Route path="/lector/:lectorId/favoritos/editar/:favId" element={<EditarLibroFavorito />} />
 
 
       </Route>

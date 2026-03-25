@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
+
 
 const VerLibro = () => {
     const { theId } = useParams();
     const [libro, setLibro] = useState(null);
 
-    
+    const navigate = useNavigate();
+
+
     useEffect(() => {
         fetch(import.meta.env.VITE_BACKEND_URL + "api/libro/" + theId)
             .then(response => {
@@ -31,7 +34,7 @@ const VerLibro = () => {
                 <div className="card-body">
                     <h1 className="display-4">Detalles del Libro</h1>
                     <hr className="my-4" />
-                    
+
                     <div className="row">
                         <div className="col-md-6">
                             <p><strong>Nombre:</strong> {libro.nombre}</p>
@@ -39,17 +42,14 @@ const VerLibro = () => {
                             <p><strong>Autor:</strong> {libro.nombre_autor}</p>
                         </div>
                         <div className="col-md-6">
-                           <p><strong>Editorial:</strong> {libro.nombre_editorial}</p>
+                            <p><strong>Editorial:</strong> {libro.nombre_editorial}</p>
                         </div>
                     </div>
-
                     <hr />
-                    <Link to="/libro">
-                        <button className="btn btn-secondary">Volver a la lista</button>
-                    </Link>
-                </div>
+                    <button onClick={() => navigate(-1)} className="btn btn-secondary">Volver</button>
             </div>
         </div>
+        </div >
     );
 };
 

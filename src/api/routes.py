@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Lector, Editorial, Autor, Libro
+from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -311,3 +311,76 @@ def update_libros(libro_id):
     }
 
     return jsonify(response_body), 200
+
+@api.route('/lector/<int:lector_id>/favoritos', methods=['GET'])
+def get_favoritos_por_lector(lector_id):
+    favoritos = LibrosFavoritos.query.filter_by(lector_id=lector_id).all()
+    if not favoritos:
+        return jsonify([]), 200
+    
+    results = [fav.serialize() for fav in favoritos]
+    
+    return jsonify(results), 200
+
+@api.route('/favoritos/libros', methods=['POST'])
+def add_libro_favorito():
+    body = request.get_json()
+
+    existe = LibrosFavoritos.query.filter_by(
+        lector_id=body["lector_id"], 
+        libro_id=body["libro_id"]
+    ).first()
+
+    if existe:
+        return jsonify({"msg": "Este libro ya está en tus favoritos"}), 400
+
+    libro = Libro.query.get(body["libro_id"])
+    if libro is None:
+        return jsonify({"msg": "El Libro que intentas agregar no existe"}), 404
+    
+    new_fav = LibrosFavoritos (
+        lector_id = body["lector_id"],
+        libro_id = body["libro_id"]
+    )
+    db.session.add(new_fav)
+    db.session.commit()
+
+    return jsonify(new_fav.serialize()), 200
+
+@api.route('/favoritos/libros/<int:lector_id>/<int:libro_id>', methods=['DELETE'])
+def delete_libro_favorito(lector_id, libro_id):
+
+    fav_to_delete = LibrosFavoritos.query.filter_by(
+        lector_id=lector_id, 
+        libro_id=libro_id
+    ).first()
+
+    if fav_to_delete is None:
+        return jsonify({"msg": "No se encontró el favorito para eliminar"}), 404
+    
+    db.session.delete(fav_to_delete)
+    db.session.commit()
+    return jsonify({"msg": "Libro eliminado de la lista"}), 200
+
+@api.route('/favoritos/libros/<int:fav_id>', methods=['PUT'])
+def update_libro_favorito(fav_id):
+    
+    favorito = LibrosFavoritos.query.filter_by(id=fav_id).first()       
+
+    if favorito is None:
+        return jsonify({"msg": "Ese registro de favorito no existe"}), 404 
+
+    body = request.get_json()
+
+    if "lector_id" in body:
+        favorito.lector_id = body["lector_id"]
+    if "libro_id" in body:
+        favorito.libro_id = body["libro_id"]
+
+    db.session.commit()
+    return jsonify({
+            "msg": "Favorito actualizado con éxito",
+            "result": favorito.serialize()
+        }), 200
+    
+    
