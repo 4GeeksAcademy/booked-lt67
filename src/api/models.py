@@ -39,6 +39,8 @@ class Lector(db.Model):
 
     seguidores: Mapped[List["Seguidor"]] = relationship("Seguidor",foreign_keys="Seguidor.seguido_id",back_populates="lector_seguido",cascade="all, delete-orphan")
 
+    reviews: Mapped[List["Reviews"]] = relationship(back_populates="lector")
+
     def __repr__(self):
         return f'<Lector: {self.username}>'
 
@@ -120,6 +122,8 @@ class Libro(db.Model):
     libros_fav: Mapped[List["LibrosFavoritos"]
                        ] = relationship(back_populates="libro")
 
+    reviews: Mapped[List["Reviews"]] = relationship(back_populates="libro")
+
     def __repr__(self):
         return f'<Libro: {self.nombre}>'
 
@@ -172,7 +176,6 @@ class Lector_Autores_Favoritos(db.Model):
             "nombre_autor": f"{self.autor.nombre} {self.autor.apellido}" if self.autor else None
         }
 
-
 class Seguidor(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -205,4 +208,27 @@ class Seguidor(db.Model):
             "relacion_id": self.id,
             "seguidor_id": self.lector_id,
             "nombre_seguidor": self.lector_que_sigue.nombre 
+        }
+
+class Reviews(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    
+    lector_id: Mapped[int] = mapped_column(ForeignKey("lector.id"))
+    lector: Mapped["Lector"] = relationship(back_populates="reviews")
+
+    libro_id: Mapped[int] = mapped_column(ForeignKey("libro.id"), nullable=False)
+    libro: Mapped["Libro"] = relationship(back_populates="reviews")
+
+    texto: Mapped[str] = mapped_column(String(120), nullable=False)
+    puntuacion: Mapped[int] = mapped_column(nullable=False)
+
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "lector_id": self.lector_id,
+            "nombre_lector": f"{self.lector.nombre} {self.lector.apellido}" if self.lector else None,
+            "libro": self.libro.serialize() if self.libro else None,
+            "texto": self.texto,
+            "puntuacion": self.puntuacion
         }

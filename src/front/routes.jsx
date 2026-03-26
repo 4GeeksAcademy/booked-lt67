@@ -35,6 +35,10 @@ import NuevoLectorAutoresFavoritos from "./pages/6_NuevoLectorAutoresFavoritos";
 import Seguidores from "./pages/7_Seguidores"
 import AgregarNuevoSeguidor from "./pages/7_AgregarNuevoSeguidor";
 import EditarSeguidos from "./pages/7_EditarSeguidos";
+import Reviews from "./pages/8_Reviews";
+import NuevaReview from "./pages/8_NuevaReview";
+import VerReviews from "./pages/8_VerReviews";
+import EditarReview from "./pages/8_EditarReview";
 
 
 export const router = createBrowserRouter(
@@ -84,8 +88,12 @@ export const router = createBrowserRouter(
       <Route path="/ver_seguidores" element={<Seguidores />} />
       <Route path="/nuevo_seguidor" element={<AgregarNuevoSeguidor />} />
       <Route path="/editar_seguido/:segId" element={<EditarSeguidos />} />
-      
 
-    </Route>
-  )
+      <Route path="/review" element={<Reviews />} />
+      <Route path="/nueva_review" element={<NuevaReview />} />
+      <Route path="/ver_review/:theId" element={<VerReviews />} />
+      <Route path="/editar_review/:theId" element={<EditarReview />} />
+
+      </Route>
+    )
 );
