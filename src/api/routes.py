@@ -495,36 +495,44 @@ def delete_review(review_id):
     return jsonify({"msg": "Eliminado con éxito"}), 200
 
 @api.route("/login_autor", methods=["POST"])
-def login():
+def login_autor():
     email = request.json.get("email", None)
     password = request.json.get("password", None)
-    user = User.query.filter_by(email=email).first()
-    if user is None:
+    autor = Autor.query.filter_by(email=email).first()
+    if autor is None:
         return jsonify({"msg": "Bad username or password"}), 401
-    if password != user.password:
+    if password != autor.password:
         return jsonify({"msg": "Bad username or password"}), 401
 
     access_token = create_access_token(identity=email)
     return jsonify(access_token=access_token)
 
 @api.route("/signup_autor", methods=["POST"])
-def signup():
+def signup_autor():
     body = request.get_json()
+
     email = body.get("email")
     password = body.get("password")
-    user = User.query.filter_by(email=body["email"]).first()
-    if user:
+    nombre = body.get("nombre")
+    apellido = body.get("apellido")
+    pais = body.get("pais")
+
+    if not all([email, password, nombre, apellido, pais]):
+        return jsonify({"msg": "Faltan datos obligatorios"}), 400
+
+    autor = Autor.query.filter_by(email=email).first()
+    if autor:
         return jsonify({"msg": "Ya se encuentra un usuario creado con ese correo"}), 401
     
-    user = User(email=email, password=password, is_active=True)
+    autor = Autor(email=email, password=password, nombre=nombre, apellido=apellido, pais=pais)
 
-    db.session.add(user)
+    db.session.add(autor)
     db.session.commit()
 
     access_token = create_access_token(identity=email)
 
     response_body = {
-        "msg": "Usuario creado",
+        "msg": "Autor creado",
         "access_token":access_token
     }
     return jsonify(response_body), 201

@@ -5,6 +5,11 @@ import React, { useState } from "react";
 const SignUpAutor = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+
+  const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
+  const [pais, setPais] = useState('');
+
   const { store, dispatch } = useGlobalReducer()
 
   function sendData(e){
@@ -16,14 +21,17 @@ const SignUpAutor = () => {
     body: JSON.stringify(
         {
             "email": email,
-            "password": password
+            "password": password,
+            "nombre": nombre,
+            "apellido": apellido,
+            "pais": pais
             }
         )
     };
 
     fetch(import.meta.env.VITE_BACKEND_URL + '/api/signup_autor', requestOptions)
         .then(response => {
-          if(response.status == 200){
+          if(response.ok){
             alert("Usuario creado")
             dispatch({ type : "set_auth", payload: true })
           }
@@ -39,6 +47,33 @@ const SignUpAutor = () => {
             <form className="w-50 mx-auto" onSubmit={sendData}>
                 <h2 className="text-center mb-4">Sing Up</h2>
                 
+                <div className="mb-3">
+                    <label className="form-label">Nombre</label>
+                    <input 
+                        value={nombre} onChange={(e) => setNombre(e.target.value)} 
+                        type="text" className="form-control" placeholder="Pon tu nombre"
+                        required 
+                    />
+                </div>
+
+                <div className="mb-3">
+                    <label className="form-label">Apellido</label>
+                    <input 
+                        value={apellido} onChange={(e) => setApellido(e.target.value)} 
+                        type="text" className="form-control" placeholder="Pon tu apellido"
+                        required 
+                    />
+                </div>
+
+                <div className="mb-3">
+                    <label className="form-label">Pais</label>
+                    <input 
+                        value={pais} onChange={(e) => setPais(e.target.value)} 
+                        type="text" className="form-control" placeholder="Pon tu pais"
+                        required 
+                    />
+                </div>
+
                 <div className="mb-3">
                     <label className="form-label">Email address</label>
                     <input 
