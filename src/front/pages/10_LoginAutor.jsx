@@ -22,7 +22,7 @@ const LogInAutor = () => {
         )
     };
 
-    fetch(import.meta.env.VITE_BACKEND_URL + '/api/login', requestOptions)
+    fetch(import.meta.env.VITE_BACKEND_URL + '/api/login_autor', requestOptions)
         .then(response => {
           if(response.status == 200){
             dispatch({ type : "set_auth", payload: true})
