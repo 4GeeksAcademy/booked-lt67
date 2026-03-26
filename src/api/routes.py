@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos
+from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -436,4 +436,87 @@ def delete_lector_autor_favorito(fav_id):
 
     return jsonify({"msg": "Eliminado con éxito"}), 200
 
- 
+@api.route('/lector/<int:id>/seguidores', methods=['GET'])
+def get_seguidores(id):
+    lector = Lector.query.get(id)
+    if not lector: return jsonify({"msg": "No existe"}), 404
+    
+    lista = [{
+        "relacion_id": s.id,        
+        "lector_que_me_sigue_id": s.lector_id,
+        "username": s.lector_que_sigue.username
+    } for s in lector.seguidores]
+
+    return jsonify(lista), 200
+
+@api.route('/lector/<int:id>/siguiendo', methods=['GET'])
+def get_siguiendo(id):
+    lector = Lector.query.get(id)
+    if not lector: return jsonify({"msg": "No existe"}), 404
+    
+    
+    lista = [{
+        "relacion_id": s.id,       
+        "lector_seguido_id": s.seguido_id,
+        "username": s.lector_seguido.username 
+    } for s in lector.siguiendo]
+
+    return jsonify(lista), 200
+
+@api.route('/follow', methods=['POST'])
+def add_seguidor():
+    
+    body = request.get_json()
+
+    check = Seguidor.query.filter_by(
+        lector_id=body["seguidor_id"],
+        seguido_id=body["seguido_id"]
+    ).first()
+
+    if check:
+        return jsonify({"msg": "Ya sigues a este lector"}), 400
+    
+    nueva_relacion = Seguidor(
+        lector_id=body["seguidor_id"],
+        seguido_id=body["seguido_id"]
+    )
+
+    db.session.add(nueva_relacion)
+    db.session.commit()
+    
+    return jsonify(nueva_relacion.serialize()), 201
+
+
+@api.route('/unfollow/<int:id_relacion>', methods=['DELETE'])
+def delete_seguido(id_relacion):
+    
+    relacion = Seguidor.query.get(id_relacion)
+
+    if relacion is None:
+        return jsonify({"msg": "Esa relación de seguimiento no existe"}), 404
+
+    db.session.delete(relacion)
+    db.session.commit()
+    return jsonify({"msg": "Has dejado de seguir a este usuario correctamente"}), 200
+
+@api.route('/seguidores/<int:id_relacion>', methods=['PUT'])
+def update_seguidor(id_relacion):
+    
+    relacion = Seguidor.query.get(id_relacion)
+
+    if relacion is None:
+        return jsonify({"msg": "Ese registro de seguimiento no existe"}), 404 
+    
+    body = request.get_json()
+    nuevo_seguido_id = body.get("nuevo_seguido_id")
+
+    if not nuevo_seguido_id:
+        return jsonify({"msg": "Debes proporcionar el nuevo_seguido_id"}), 400
+
+    relacion.seguido_id = nuevo_seguido_id
+    db.session.commit()
+
+    return jsonify({
+        "msg": "Seguimiento actualizado",
+        "resultado": relacion.serialize()
+    }), 200
