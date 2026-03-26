@@ -8,6 +8,10 @@ export const Demo = () => {
   // Access the global state and dispatch function using the useGlobalReducer hook.
   const { store, dispatch } = useGlobalReducer()
 
+  if (!store.auth) {
+    return <Navigate to="/" />;
+  }
+
   return (
     <div className="container">
 

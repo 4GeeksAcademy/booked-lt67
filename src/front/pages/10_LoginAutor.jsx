@@ -2,11 +2,16 @@
 import { Link } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import React, { useState } from "react";
+import { Navigate } from "react-router-dom";
 
 const LogInAutor = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const { store, dispatch } = useGlobalReducer()
+
+  if (store.auth === true) {
+    return <Navigate to="/demo" />;
+  }
 
   function sendData(e){
     e.preventDefault()
