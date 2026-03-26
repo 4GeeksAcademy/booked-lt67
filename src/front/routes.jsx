@@ -36,6 +36,8 @@ import Reviews from "./pages/8_Reviews";
 import NuevaReview from "./pages/8_NuevaReview";
 import VerReviews from "./pages/8_VerReviews";
 import EditarReview from "./pages/8_EditarReview";
+import LogInAutor from "./pages/10_LoginAutor";
+import SignUpAutor from "./pages/10_SignUpAutor";
 
 
 export const router = createBrowserRouter(
@@ -86,6 +88,9 @@ export const router = createBrowserRouter(
         <Route path="/nueva_review" element={<NuevaReview />} />
         <Route path="/ver_review/:theId" element={<VerReviews />} />
         <Route path="/editar_review/:theId" element={<EditarReview />} />
+
+        <Route path="/login_autor" element={<LogInAutor />} />
+        <Route element={<SignUpAutor />} path="/signup_autor" />
 
       </Route>
     )
