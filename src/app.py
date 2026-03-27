@@ -67,7 +67,7 @@ def sitemap():
 
 
 @app.route("/login_autor", methods=["POST"])
-def login():
+def login_autor():
     email = request.json.get("email", None)
     password = request.json.get("password", None)
     user = Autor.query.filter_by(email=email).first()
@@ -81,7 +81,7 @@ def login():
 
 @app.route("/protected_autor", methods=["GET"])
 @jwt_required()
-def protected():
+def protected_autor():
     current_user = get_jwt_identity()
     return jsonify(logged_in_as=current_user), 200
 
