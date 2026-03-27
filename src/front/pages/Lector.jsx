@@ -38,7 +38,7 @@ const Lector = () => {
             <div className="container mt-5">
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <h1>Lector</h1>
-                        <Link to="/nuevo_libro" className="btn btn-primary">Nuevo Lector</Link>
+                        <Link to="/nuevo_lector" className="btn btn-primary">Nuevo Lector</Link>
                     </div>
             
             <div className="row g-4">
