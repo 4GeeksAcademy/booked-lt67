@@ -6,11 +6,12 @@ from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavorito
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
+from flask_jwt_extended import create_access_token
+
 api = Blueprint('api', __name__)
 
 # Allow CORS requests to this API
 CORS(api)
-
 
 @api.route('/hello', methods=['POST', 'GET'])
 def handle_hello():
@@ -561,8 +562,8 @@ def update_review(review_id):
 
     rev.texto = body["texto"]
     rev.puntuacion = body["puntuacion"]
-    rev.lector_id = body("lector_id")
-    rev.libro_id = body("libro_id")
+    rev.lector_id = body["lector_id"]
+    rev.libro_id = body["libro_id"]
 
     db.session.commit()
 
@@ -577,3 +578,46 @@ def delete_review(review_id):
     db.session.commit()
 
     return jsonify({"msg": "Eliminado con éxito"}), 200
+
+@api.route("/login_autor", methods=["POST"])
+def login_autor():
+    email = request.json.get("email", None)
+    password = request.json.get("password", None)
+    autor = Autor.query.filter_by(email=email).first()
+    if autor is None:
+        return jsonify({"msg": "Bad username or password"}), 401
+    if password != autor.password:
+        return jsonify({"msg": "Bad username or password"}), 401
+
+    access_token = create_access_token(identity=email)
+    return jsonify(access_token=access_token)
+
+@api.route("/signup_autor", methods=["POST"])
+def signup_autor():
+    body = request.get_json()
+
+    email = body.get("email")
+    password = body.get("password")
+    nombre = body.get("nombre")
+    apellido = body.get("apellido")
+    pais = body.get("pais")
+
+    if not all([email, password, nombre, apellido, pais]):
+        return jsonify({"msg": "Faltan datos obligatorios"}), 400
+
+    autor = Autor.query.filter_by(email=email).first()
+    if autor:
+        return jsonify({"msg": "Ya se encuentra un usuario creado con ese correo"}), 401
+    
+    autor = Autor(email=email, password=password, nombre=nombre, apellido=apellido, pais=pais)
+
+    db.session.add(autor)
+    db.session.commit()
+
+    access_token = create_access_token(identity=email)
+
+    response_body = {
+        "msg": "Autor creado",
+        "access_token":access_token
+    }
+    return jsonify(response_body), 201
