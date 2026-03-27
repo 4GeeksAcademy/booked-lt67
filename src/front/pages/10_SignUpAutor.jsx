@@ -13,7 +13,7 @@ const SignUpAutor = () => {
 
   const { store, dispatch } = useGlobalReducer()
 
-  if (store.auth === true) {
+  if (store.auth_autor === true) {
     return <Navigate to="/demo" />;
   }
 
@@ -38,12 +38,12 @@ const SignUpAutor = () => {
         .then(response => {
           if(response.ok){
             alert("Usuario creado")
-            dispatch({ type : "set_auth", payload: true })
+            dispatch({ type : "set_auth_autor", payload: true })
           }
           return response.json()
         })
         .then(data => {
-          localStorage.setItem("token", data.access_token)
+          localStorage.setItem("token_autor", data.access_token)
         })
         .catch(err => console.error("Error:", err));
   }

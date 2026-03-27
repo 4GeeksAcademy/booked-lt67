@@ -9,7 +9,7 @@ const LogInAutor = () => {
   const [password, setPassword] = useState('')
   const { store, dispatch } = useGlobalReducer()
 
-  if (store.auth === true) {
+  if (store.auth_autor === true) {
     return <Navigate to="/demo" />;
   }
 
@@ -30,13 +30,13 @@ const LogInAutor = () => {
     fetch(import.meta.env.VITE_BACKEND_URL + 'api/login_autor', requestOptions)
         .then(response => {
           if(response.status == 200){
-            dispatch({ type : "set_auth", payload: true})
+            dispatch({ type : "set_auth_autor", payload: true})
           }
           return response.json()
         })
         .then(data => {
           console.log(data.access_token)
-          localStorage.setItem("token", data.access_token)
+          localStorage.setItem("token_autor", data.access_token)
         });
   }
   return (
