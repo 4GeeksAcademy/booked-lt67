@@ -34,7 +34,7 @@ const SignUpAutor = () => {
         )
     };
 
-    fetch(import.meta.env.VITE_BACKEND_URL + '/api/signup_autor', requestOptions)
+    fetch(import.meta.env.VITE_BACKEND_URL + 'api/signup_autor', requestOptions)
         .then(response => {
           if(response.ok){
             alert("Usuario creado")

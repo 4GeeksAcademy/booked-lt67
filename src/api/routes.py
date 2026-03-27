@@ -477,8 +477,8 @@ def update_review(review_id):
 
     rev.texto = body["texto"]
     rev.puntuacion = body["puntuacion"]
-    rev.lector_id = body("lector_id")
-    rev.libro_id = body("libro_id")
+    rev.lector_id = body["lector_id"]
+    rev.libro_id = body["libro_id"]
 
     db.session.commit()
 
