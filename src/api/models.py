@@ -23,8 +23,7 @@ class User(db.Model):
 
 class Lector(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str] = mapped_column(
-        String(120), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(nullable=False)
     username: Mapped[str] = mapped_column(String(120), nullable=False)
     nombre: Mapped[str] = mapped_column(String(120),  nullable=False)
@@ -35,6 +34,10 @@ class Lector(db.Model):
     libros_fav: Mapped[List["LibrosFavoritos"]] = relationship(back_populates="lector")
 
     favorites_autor: Mapped[List["Lector_Autores_Favoritos"]] = relationship(back_populates="lector")
+
+    siguiendo: Mapped[List["Seguidor"]] = relationship("Seguidor",foreign_keys="Seguidor.lector_id",back_populates="lector_que_sigue",cascade="all, delete-orphan")
+
+    seguidores: Mapped[List["Seguidor"]] = relationship("Seguidor",foreign_keys="Seguidor.seguido_id",back_populates="lector_seguido",cascade="all, delete-orphan")
 
     reviews: Mapped[List["Reviews"]] = relationship(back_populates="lector")
 
@@ -49,6 +52,8 @@ class Lector(db.Model):
             "nombre": self.nombre,
             "apellido": self.apellido,
             "pais_donde_reside": self.pais_donde_reside,
+            "siguiendo": [s.serialize_as_siguiendo() for s in self.siguiendo],
+            "seguidores": [f.serialize_as_seguidor() for f in self.seguidores]
             # do not serialize the password, its a security breach
         }
 
@@ -57,7 +62,8 @@ class Editorial(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(String(120), nullable=False)
     pais: Mapped[str] = mapped_column(String(120), nullable=False)
-    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(
+        String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
 
     libros: Mapped[List["Libro"]] = relationship(back_populates="editorial")
@@ -79,7 +85,8 @@ class Autor(db.Model):
     nombre: Mapped[str] = mapped_column(String(120), nullable=False)
     apellido: Mapped[str] = mapped_column(String(120), nullable=False)
     pais: Mapped[str] = mapped_column(String(120), nullable=False)
-    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(
+        String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
 
     libros: Mapped[List["Libro"]] = relationship(back_populates="autor")
@@ -104,13 +111,16 @@ class Libro(db.Model):
     nombre: Mapped[str] = mapped_column(String(120), nullable=False)
     genero: Mapped[str] = mapped_column(String(120), nullable=False)
 
-    editorial_id: Mapped[int] = mapped_column(ForeignKey("editorial.id"), nullable=False)
+    editorial_id: Mapped[int] = mapped_column(
+        ForeignKey("editorial.id"), nullable=False)
     editorial: Mapped["Editorial"] = relationship(back_populates="libros")
-    
-    autor_id: Mapped[int] = mapped_column(ForeignKey("autor.id"), nullable=False)
+
+    autor_id: Mapped[int] = mapped_column(
+        ForeignKey("autor.id"), nullable=False)
     autor: Mapped["Autor"] = relationship(back_populates="libros")
 
-    libros_fav: Mapped[List["LibrosFavoritos"]] = relationship(back_populates="libro")
+    libros_fav: Mapped[List["LibrosFavoritos"]
+                       ] = relationship(back_populates="libro")
 
     reviews: Mapped[List["Reviews"]] = relationship(back_populates="libro")
 
@@ -128,15 +138,15 @@ class Libro(db.Model):
             "nombre_editorial": self.editorial.nombre if self.editorial else "Sin editorial"
         }
 
+
 class LibrosFavoritos(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
-    
+
     lector_id: Mapped[int] = mapped_column(ForeignKey("lector.id"))
     lector: Mapped["Lector"] = relationship(back_populates="libros_fav")
 
     libro_id: Mapped[int] = mapped_column(ForeignKey("libro.id"), nullable=False)
     libro: Mapped["Libro"] = relationship(back_populates="libros_fav")
-
 
     def serialize(self):
         return {
@@ -145,6 +155,7 @@ class LibrosFavoritos(db.Model):
             "libro": self.libro.serialize() if self.libro else None
             # do not serialize the password, its a security breach
         }
+
 
 class Lector_Autores_Favoritos(db.Model):
 
@@ -163,6 +174,40 @@ class Lector_Autores_Favoritos(db.Model):
             "autor_id": self.autor_id,
             "nombre_lector": f"{self.lector.nombre} {self.lector.apellido}" if self.lector else None,
             "nombre_autor": f"{self.autor.nombre} {self.autor.apellido}" if self.autor else None
+        }
+
+class Seguidor(db.Model):
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    lector_id: Mapped[int] = mapped_column(ForeignKey("lector.id"), nullable=False)
+    seguido_id: Mapped[int] = mapped_column(ForeignKey("lector.id"), nullable=False)
+
+    __table_args__ = (db.UniqueConstraint('lector_id', 'seguido_id', name='_lector_seguido_uc'),)
+
+    lector_que_sigue: Mapped["Lector"] = relationship("Lector",foreign_keys=[lector_id],back_populates="siguiendo")
+    lector_seguido: Mapped["Lector"] = relationship("Lector",foreign_keys=[seguido_id],back_populates="seguidores")
+    
+    def serialize(self):
+        return {
+            "id": self.id,
+            "lector_id": self.lector_id,   
+            "seguidor_id": self.lector_id, 
+            "seguido_id": self.seguido_id
+        }
+
+    def serialize_as_siguiendo(self):
+        return {
+            "relacion_id": self.id,
+            "seguido_id": self.seguido_id,
+            "nombre_seguido": self.lector_seguido.nombre 
+        }
+
+    def serialize_as_seguidor(self):
+        return {
+            "relacion_id": self.id,
+            "seguidor_id": self.lector_id,
+            "nombre_seguidor": self.lector_que_sigue.nombre 
         }
 
 class Reviews(db.Model):
