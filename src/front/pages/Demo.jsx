@@ -8,14 +8,14 @@ export const Demo = () => {
   // Access the global state and dispatch function using the useGlobalReducer hook.
   const { store, dispatch } = useGlobalReducer()
 
-  if (!store.auth) {
+  if (!store.auth_autor) {
     return <Navigate to="/" />;
   }
 
   return (
     <div className="container">
 
-      {store.auth? 
+      {store.auth_autor? 
       <>
        <ul className="list-group">
         {store && store.todos?.map((item) => {
