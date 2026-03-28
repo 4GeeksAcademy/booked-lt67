@@ -8,9 +8,9 @@ export const Navbar = () => {
 
 	const navigate = useNavigate()
 
-	function logout(){
-		localStorage.removeItem("token")
-		dispatch({ type: "set_auth", payload: false})
+	function logout_lector(){
+		localStorage.removeItem("token_lector")
+		dispatch({ type: "set_auth_lector", payload: false})
 		navigate('/')
 	}
 
@@ -23,9 +23,9 @@ export const Navbar = () => {
 					<span className="navbar-brand mb-0 h1">React Boilerplate</span>
 				</Link>
 				
-				<Link className="btn btn-primary" to="/login_autor">Log In Autor</Link>
+				<Link className="btn btn-primary" to="/login_lector">Log In Lector</Link>
 
-				{store.auth? <button className="btn btn-primary" onClick={logout}>LogOut</button>:null}
+				{store.auth_lector? <button className="btn btn-primary" onClick={logout_lector}>LogOut</button>:null}
 				
 				<div className="ml-auto">
 					<Link to="/demo">
