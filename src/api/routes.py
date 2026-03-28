@@ -621,3 +621,46 @@ def signup_autor():
         "access_token":access_token
     }
     return jsonify(response_body), 201
+
+@api.route("/login_editorial", methods=["POST"])
+def login_editorial():
+    email = request.json.get("email", None)
+    password = request.json.get("password", None)
+    editorial = Editorial.query.filter_by(email=email).first()
+    if editorial is None:
+        return jsonify({"msg": "Bad username or password"}), 401
+    if password != editorial.password:
+        return jsonify({"msg": "Bad username or password"}), 401
+
+    access_token = create_access_token(identity=email)
+    return jsonify(access_token=access_token)
+
+@api.route("/signup_editorial", methods=["POST"])
+def signup_editorial():
+    body = request.get_json()
+
+    email = body.get("email")
+    password = body.get("password")
+    nombre = body.get("nombre")
+    pais = body.get("pais")
+
+    if not all([email, password, nombre, pais]):
+        return jsonify({"msg": "Faltan datos obligatorios"}), 400
+
+    editorial = Editorial.query.filter_by(email=email).first()
+    if editorial:
+        return jsonify({"msg": "Ya se encuentra un usuario creado con ese correo"}), 401
+    
+    editorial = Editorial(email=email, password=password, nombre=nombre, pais=pais)
+
+    db.session.add(editorial)
+    db.session.commit()
+
+    access_token = create_access_token(identity=email)
+
+    response_body = {
+        "msg": "Editorial creada",
+        "access_token":access_token
+    }
+    return jsonify(response_body), 201
+

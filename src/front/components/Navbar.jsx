@@ -8,12 +8,19 @@ export const Navbar = () => {
 
 	const navigate = useNavigate()
 
-	function logout(){
-		localStorage.removeItem("token")
-		dispatch({ type: "set_auth", payload: false})
+	const isAuthorized = store.auth_autor || store.auth_editorial;
+
+	function logout_autor(){
+		localStorage.removeItem("token_autor")
+		dispatch({ type: "set_auth_autor", payload: false})
 		navigate('/')
 	}
 
+	function logout_editorial(){
+		localStorage.removeItem("token_editorial")
+		dispatch({ type: "set_auth_editorial", payload: false})
+		navigate('/')
+	}
 
 	return (
 		<nav className="navbar navbar-light bg-light">
@@ -23,9 +30,15 @@ export const Navbar = () => {
 					<span className="navbar-brand mb-0 h1">React Boilerplate</span>
 				</Link>
 				
-				<Link className="btn btn-primary" to="/login_autor">Log In Autor</Link>
+				{!isAuthorized && (
+                    <>
+                        <Link className="btn btn-primary" to="/login_autor">Log In Autor</Link>
+                        <Link className="btn btn-primary" to="/login_editorial">Log In Editorial</Link>
+                    </>
+                )}
 
-				{store.auth? <button className="btn btn-primary" onClick={logout}>LogOut</button>:null}
+				{store.auth_autor? <button className="btn btn-primary" onClick={logout_autor}>LogOut</button>:null}
+				{store.auth_editorial? <button className="btn btn-primary" onClick={logout_editorial}>LogOut</button>:null}
 				
 				<div className="ml-auto">
 					<Link to="/demo">
