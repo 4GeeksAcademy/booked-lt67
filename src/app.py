@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify, url_for, send_from_directory
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from api.utils import APIException, generate_sitemap
-from api.models import db, Autor, Editorial
+from api.models import db, Autor, Editorial, Lector
 from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
@@ -85,6 +85,12 @@ def protected_autor():
     current_user = get_jwt_identity()
     return jsonify(logged_in_as=current_user), 200
 
+@app.route("/login_lector", methods=["POST"])
+def login_lector():
+    email = request.json.get("email", None)
+    password = request.json.get("password", None)
+    user = Lector.query.filter_by(email=email).first()
+
 @app.route("/login_editorial", methods=["POST"])
 def login_editorial():
     email = request.json.get("email", None)
@@ -97,6 +103,12 @@ def login_editorial():
 
     access_token = create_access_token(identity=email)
     return jsonify(access_token=access_token)
+
+@app.route("/protected_lector", methods=["GET"])
+@jwt_required()
+def protected_lector():
+    current_user = get_jwt_identity()
+    return jsonify(logged_in_as=current_user), 200
 
 @app.route("/protected_editorial", methods=["GET"])
 @jwt_required()

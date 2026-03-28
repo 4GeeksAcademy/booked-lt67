@@ -8,7 +8,12 @@ export const Navbar = () => {
 
 	const navigate = useNavigate()
 
-	const isAuthorized = store.auth_autor || store.auth_editorial;
+	function logout_lector(){
+		localStorage.removeItem("token_lector")
+		dispatch({ type: "set_auth_lector", payload: false})
+			navigate('/')
+	}
+	const isAuthorized = store.auth_autor || store.auth_editorial || store.auth_lector;
 
 	function logout_autor(){
 		localStorage.removeItem("token_autor")
@@ -30,13 +35,17 @@ export const Navbar = () => {
 					<span className="navbar-brand mb-0 h1">React Boilerplate</span>
 				</Link>
 				
+			
+
+	
 				{!isAuthorized && (
-                    <>
+                    <>	
+						<Link className="btn btn-primary" to="/login_lector">Log In Lector</Link>
                         <Link className="btn btn-primary" to="/login_autor">Log In Autor</Link>
                         <Link className="btn btn-primary" to="/login_editorial">Log In Editorial</Link>
                     </>
                 )}
-
+				{store.auth_lector? <button className="btn btn-primary" onClick={logout_lector}>LogOut</button>:null}
 				{store.auth_autor? <button className="btn btn-primary" onClick={logout_autor}>LogOut</button>:null}
 				{store.auth_editorial? <button className="btn btn-primary" onClick={logout_editorial}>LogOut</button>:null}
 				

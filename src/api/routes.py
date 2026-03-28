@@ -622,6 +622,19 @@ def signup_autor():
     }
     return jsonify(response_body), 201
 
+@api.route("/login_lector", methods=["POST"])
+def login_lector():
+    email = request.json.get("email", None)
+    password = request.json.get("password", None)
+    lector = Lector.query.filter_by(email=email).first()
+    if lector is None:
+        return jsonify({"msg": "Bad username or password"}), 401
+    if password != lector.password:
+            return jsonify({"msg": "Bad username or password"}), 401
+
+    access_token = create_access_token(identity=email)
+    return jsonify(access_token=access_token)
+
 @api.route("/login_editorial", methods=["POST"])
 def login_editorial():
     email = request.json.get("email", None)
@@ -634,6 +647,38 @@ def login_editorial():
 
     access_token = create_access_token(identity=email)
     return jsonify(access_token=access_token)
+
+@api.route("/signup_lector", methods=["POST"])
+def signup_lector():
+    body = request.get_json()
+
+    email = body.get("email")
+    username = body.get("username")
+    password = body.get("password")
+    nombre = body.get("nombre")
+    apellido = body.get("apellido")
+    pais = body.get("pais")
+
+    if not all([email, username, password, nombre, apellido, pais]):
+        return jsonify({"msg": "Faltan datos obligatorios"}), 400
+
+    lector = Lector.query.filter_by(email=email).first()
+    if lector:
+        return jsonify({"msg": "Ya se encuentra un usuario creado con ese correo"}), 401
+    
+    lector = Lector(email=email, username=username, password=password, nombre=nombre, apellido=apellido, pais=pais)
+
+    db.session.add(lector)
+    db.session.commit()
+
+    access_token = create_access_token(identity=email)
+
+    response_body = {
+        "msg": "Lector creado",
+        "access_token":access_token
+    }
+    return jsonify(response_body), 201
+    
 
 @api.route("/signup_editorial", methods=["POST"])
 def signup_editorial():

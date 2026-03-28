@@ -14,6 +14,7 @@ export const initialStore=()=>{
       }
     ],
     auth_autor: false,
+    auth_lector: false,
     auth_editorial: false
   }
 }
@@ -32,6 +33,12 @@ export default function storeReducer(store, action = {}) {
         auth_autor: action.payload
       };
 
+    case 'set_auth_lector':
+      return {
+        ...store,
+        auth_lector: action.payload
+      };
+      
     case 'set_auth_editorial':
       return {
         ...store,

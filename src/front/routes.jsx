@@ -41,6 +41,8 @@ import VerReviews from "./pages/8_VerReviews";
 import EditarReview from "./pages/8_EditarReview";
 import LogInAutor from "./pages/10_LoginAutor";
 import SignUpAutor from "./pages/10_SignUpAutor";
+import LogInLector from "./pages/9_LogInLector";
+import SignUpLector from "./pages/9_SingUpLector";
 import LogInEditorial from "./pages/11_LogInEditorial";
 import SignUpEditorial from "./pages/11_SignUpEditorial";
 
@@ -97,6 +99,9 @@ export const router = createBrowserRouter(
       <Route path="/nueva_review" element={<NuevaReview />} />
       <Route path="/ver_review/:theId" element={<VerReviews />} />
       <Route path="/editar_review/:theId" element={<EditarReview />} />
+
+      <Route path="/login_lector" element={<LogInLector />} />
+      <Route element={<SignUpLector />} path="/signup_lector" />
 
       <Route path="/login_autor" element={<LogInAutor />} />
       <Route element={<SignUpAutor />} path="/signup_autor" />

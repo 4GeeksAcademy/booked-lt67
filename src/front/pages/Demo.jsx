@@ -8,7 +8,8 @@ export const Demo = () => {
   // Access the global state and dispatch function using the useGlobalReducer hook.
   const { store, dispatch } = useGlobalReducer()
 
-  const isAuthorized = store.auth_autor || store.auth_editorial;
+ 
+  const isAuthorized = store.auth_autor || store.auth_editorial || store.auth_lector;
 
   if (!isAuthorized) {
     return <Navigate to="/" />;
