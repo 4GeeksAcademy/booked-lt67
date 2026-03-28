@@ -11,9 +11,21 @@ export const Navbar = () => {
 	function logout_lector(){
 		localStorage.removeItem("token_lector")
 		dispatch({ type: "set_auth_lector", payload: false})
+			navigate('/')
+	}
+	const isAuthorized = store.auth_autor || store.auth_editorial || store.auth_lector;
+
+	function logout_autor(){
+		localStorage.removeItem("token_autor")
+		dispatch({ type: "set_auth_autor", payload: false})
 		navigate('/')
 	}
 
+	function logout_editorial(){
+		localStorage.removeItem("token_editorial")
+		dispatch({ type: "set_auth_editorial", payload: false})
+		navigate('/')
+	}
 
 	return (
 		<nav className="navbar navbar-light bg-light">
@@ -23,9 +35,19 @@ export const Navbar = () => {
 					<span className="navbar-brand mb-0 h1">React Boilerplate</span>
 				</Link>
 				
-				<Link className="btn btn-primary" to="/login_lector">Log In Lector</Link>
+			
 
+	
+				{!isAuthorized && (
+                    <>	
+						<Link className="btn btn-primary" to="/login_lector">Log In Lector</Link>
+                        <Link className="btn btn-primary" to="/login_autor">Log In Autor</Link>
+                        <Link className="btn btn-primary" to="/login_editorial">Log In Editorial</Link>
+                    </>
+                )}
 				{store.auth_lector? <button className="btn btn-primary" onClick={logout_lector}>LogOut</button>:null}
+				{store.auth_autor? <button className="btn btn-primary" onClick={logout_autor}>LogOut</button>:null}
+				{store.auth_editorial? <button className="btn btn-primary" onClick={logout_editorial}>LogOut</button>:null}
 				
 				<div className="ml-auto">
 					<Link to="/demo">

@@ -43,7 +43,8 @@ import LogInAutor from "./pages/10_LoginAutor";
 import SignUpAutor from "./pages/10_SignUpAutor";
 import LogInLector from "./pages/9_LogInLector";
 import SignUpLector from "./pages/9_SingUpLector";
-
+import LogInEditorial from "./pages/11_LogInEditorial";
+import SignUpEditorial from "./pages/11_SignUpEditorial";
 
 
 export const router = createBrowserRouter(
@@ -99,11 +100,14 @@ export const router = createBrowserRouter(
       <Route path="/ver_review/:theId" element={<VerReviews />} />
       <Route path="/editar_review/:theId" element={<EditarReview />} />
 
-        <Route path="/login_autor" element={<LogInAutor />} />
-        <Route element={<SignUpAutor />} path="/signup_autor" />
-      
       <Route path="/login_lector" element={<LogInLector />} />
       <Route element={<SignUpLector />} path="/signup_lector" />
+
+      <Route path="/login_autor" element={<LogInAutor />} />
+      <Route element={<SignUpAutor />} path="/signup_autor" />
+
+      <Route path="/login_editorial" element={<LogInEditorial />} />
+      <Route element={<SignUpEditorial />} path="/signup_editorial" />
 
       </Route>
     )
