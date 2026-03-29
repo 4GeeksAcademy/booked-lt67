@@ -45,7 +45,8 @@ import LogInLector from "./pages/9_LogInLector";
 import SignUpLector from "./pages/9_SingUpLector";
 import LogInEditorial from "./pages/11_LogInEditorial";
 import SignUpEditorial from "./pages/11_SignUpEditorial";
-
+import LogInAdmin from "./pages/12_LoginAdmin";
+import SignUpAdmin from "./pages/12_SignUpAdmin";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -108,6 +109,10 @@ export const router = createBrowserRouter(
 
       <Route path="/login_editorial" element={<LogInEditorial />} />
       <Route element={<SignUpEditorial />} path="/signup_editorial" />
+
+      <Route path="/login_admin" element={<LogInAdmin />} />
+      <Route element={<SignUpAdmin />} path="/signup_admin" />
+      
 
       </Route>
     )
