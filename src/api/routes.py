@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor, Reviews
+from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor, Reviews, Admin
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -709,3 +709,43 @@ def signup_editorial():
     }
     return jsonify(response_body), 201
 
+@api.route("/login_admin", methods=["POST"])
+def login_admin():
+    email = request.json.get("email", None)
+    password = request.json.get("password", None)
+    admin = Admin.query.filter_by(email=email).first()
+    if admin is None:
+        return jsonify({"msg": "Bad username or password"}), 401
+    if password != admin.password:
+        return jsonify({"msg": "Bad username or password"}), 401
+
+    access_token = create_access_token(identity=email)
+    return jsonify(access_token=access_token)
+
+@api.route("/signup_admin", methods=["POST"])
+def signup_admin():
+    body = request.get_json()
+
+    email = body.get("email")
+    password = body.get("password")
+    
+
+    if not all([email, password]):
+        return jsonify({"msg": "Faltan datos obligatorios"}), 400
+
+    admin = Editorial.query.filter_by(email=email).first()
+    if admin:
+        return jsonify({"msg": "Ya se encuentra un admin creado con ese correo"}), 401
+    
+    admin = Admin(email=email, password=password)
+
+    db.session.add(admin)
+    db.session.commit()
+
+    access_token = create_access_token(identity=email)
+
+    response_body = {
+        "msg": "Admin creado",
+        "access_token":access_token
+    }
+    return jsonify(response_body), 201

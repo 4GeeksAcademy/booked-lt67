@@ -8,12 +8,19 @@ export const Navbar = () => {
 
 	const navigate = useNavigate()
 
+	const isAuthorized = store.auth_autor || store.auth_editorial || store.auth_lector || store.auth_admin
+
+	function logout_admin(){
+		localStorage.removeItem("token_admin")
+		dispatch({ type: "set_auth_admin", payload: false})
+			navigate('/')
+	}
+	
 	function logout_lector(){
 		localStorage.removeItem("token_lector")
 		dispatch({ type: "set_auth_lector", payload: false})
 			navigate('/')
 	}
-	const isAuthorized = store.auth_autor || store.auth_editorial || store.auth_lector;
 
 	function logout_autor(){
 		localStorage.removeItem("token_autor")
@@ -43,11 +50,13 @@ export const Navbar = () => {
 						<Link className="btn btn-primary" to="/login_lector">Log In Lector</Link>
                         <Link className="btn btn-primary" to="/login_autor">Log In Autor</Link>
                         <Link className="btn btn-primary" to="/login_editorial">Log In Editorial</Link>
+						<Link className="btn btn-primary" to="/login_admin">Log In Admin</Link>
                     </>
                 )}
 				{store.auth_lector? <button className="btn btn-primary" onClick={logout_lector}>LogOut</button>:null}
 				{store.auth_autor? <button className="btn btn-primary" onClick={logout_autor}>LogOut</button>:null}
 				{store.auth_editorial? <button className="btn btn-primary" onClick={logout_editorial}>LogOut</button>:null}
+				{store.auth_admin? <button className="btn btn-primary" onClick={logout_admin}>LogOut</button>:null}
 				
 				<div className="ml-auto">
 					<Link to="/demo">

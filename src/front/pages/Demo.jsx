@@ -9,7 +9,7 @@ export const Demo = () => {
   const { store, dispatch } = useGlobalReducer()
 
  
-  const isAuthorized = store.auth_autor || store.auth_editorial || store.auth_lector;
+  const isAuthorized = store.auth_autor || store.auth_editorial || store.auth_lector || store.auth_admin
 
   if (!isAuthorized) {
     return <Navigate to="/" />;
