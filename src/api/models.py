@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import String, Boolean, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from datetime import datetime, timezone
 from typing import List
 
 db = SQLAlchemy()
@@ -67,6 +68,7 @@ class Editorial(db.Model):
     password: Mapped[str] = mapped_column(String(255), nullable=False)
 
     libros: Mapped[List["Libro"]] = relationship(back_populates="editorial")
+    posts: Mapped[List["PostEditorial"]] = relationship(back_populates="editorial")
 
     def __repr__(self):
         return f'<Editorial: {self.nombre}>'
@@ -248,3 +250,22 @@ class Admin(db.Model):
             "email": self.email,
            
         }
+    
+class PostEditorial(db.Model):
+        id: Mapped[int] = mapped_column(primary_key=True)
+    
+        editorial_id: Mapped[int] = mapped_column(ForeignKey("editorial.id"))
+        editorial: Mapped["Editorial"] = relationship(back_populates="posts")
+
+        texto: Mapped[str] = mapped_column(db.Text, nullable=False)
+
+        fecha: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
+
+        def serialize(self):
+            return {
+                "id": self.id,
+                "editorial_id": self.editorial_id,
+                "nombre_editorial": f"{self.editorial.nombre}" if self.editorial else None,
+                "texto": self.texto,
+                "fecha": self.fecha.strftime("%d-%m-%Y %H:%M") if self.fecha else None
+            }

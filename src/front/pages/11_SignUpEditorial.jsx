@@ -13,7 +13,7 @@ const SignUpEditorial = () => {
   const { store, dispatch } = useGlobalReducer()
 
   if (store.auth_editorial === true) {
-    return <Navigate to="/demo" />;
+    return <Navigate to="/pagina_editorial" />;
   }
 
   function sendData(e){
