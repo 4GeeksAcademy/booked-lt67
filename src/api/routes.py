@@ -633,7 +633,11 @@ def login_lector():
             return jsonify({"msg": "Bad username or password"}), 401
 
     access_token = create_access_token(identity=email)
-    return jsonify(access_token=access_token)
+    return jsonify({
+        "access_token": access_token,
+        "lector_id": lector.id,
+        "nombre": lector.nombre
+    }), 200
 
 @api.route("/login_editorial", methods=["POST"])
 def login_editorial():
@@ -651,34 +655,33 @@ def login_editorial():
 @api.route("/signup_lector", methods=["POST"])
 def signup_lector():
     body = request.get_json()
-
-    email = body.get("email")
-    username = body.get("username")
-    password = body.get("password")
-    nombre = body.get("nombre")
-    apellido = body.get("apellido")
-    pais = body.get("pais")
-
-    if not all([email, username, password, nombre, apellido, pais]):
-        return jsonify({"msg": "Faltan datos obligatorios"}), 400
-
-    lector = Lector.query.filter_by(email=email).first()
-    if lector:
-        return jsonify({"msg": "Ya se encuentra un usuario creado con ese correo"}), 401
     
-    lector = Lector(email=email, username=username, password=password, nombre=nombre, apellido=apellido, pais=pais)
+    # Validamos que no falten datos antes de procesar
+    nuevo_lector = Lector(
+        email=body["email"],
+        username=body["username"],
+        password=body["password"], 
+        nombre=body["nombre"],
+        apellido=body["apellido"],
+        pais_donde_reside=body["pais"], 
+        is_active=True 
+    )
+    
+    try:
+        db.session.add(nuevo_lector)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": "Error de integridad o datos duplicados", "error": str(e)}), 400
 
-    db.session.add(lector)
-    db.session.commit()
-
-    access_token = create_access_token(identity=email)
-
-    response_body = {
+    access_token = create_access_token(identity=nuevo_lector.email)
+    
+    return jsonify({
         "msg": "Lector creado",
-        "access_token":access_token
-    }
-    return jsonify(response_body), 201
-    
+        "access_token": access_token,
+        "lector_id": nuevo_lector.id,
+        "nombre": nuevo_lector.nombre
+    }), 201
 
 @api.route("/signup_editorial", methods=["POST"])
 def signup_editorial():

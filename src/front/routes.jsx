@@ -47,6 +47,8 @@ import LogInEditorial from "./pages/11_LogInEditorial";
 import SignUpEditorial from "./pages/11_SignUpEditorial";
 import LogInAdmin from "./pages/12_LoginAdmin";
 import SignUpAdmin from "./pages/12_SignUpAdmin";
+import PaginaLector from "./pages/13_PaginaLector";
+import FormularioReview from "./pages/13_FormularioReview";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -112,7 +114,11 @@ export const router = createBrowserRouter(
 
       <Route path="/login_admin" element={<LogInAdmin />} />
       <Route element={<SignUpAdmin />} path="/signup_admin" />
-      
+
+      <Route path="/pagina_lector" element={<PaginaLector />} />
+
+      <Route path="/pagina_lector/:theId/reviews" element={<FormularioReview />} />
+
 
       </Route>
     )

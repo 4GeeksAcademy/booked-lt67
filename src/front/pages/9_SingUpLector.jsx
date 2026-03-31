@@ -14,39 +14,52 @@ const SignUpLector = () => {
   const { store, dispatch } = useGlobalReducer()
 
   if (store.auth_lector === true) {
-    return <Navigate to="/demo" />;
+    return <Navigate to="/pagina_lector" />;
   }
 
-  function sendData(e){
-    e.preventDefault()
+function sendData(e) {
+    e.preventDefault();
 
     const requestOptions = {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(
-        {
-            "email": email,
-            "username": username,
-            "password": password,
-            "nombre": nombre,
-            "apellido": apellido,
-            "pais": pais
-            }
-        )
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        "email": email,
+        "username": username,
+        "password": password,
+        "nombre": nombre,
+        "apellido": apellido,
+        "pais": pais
+      })
     };
 
     fetch(import.meta.env.VITE_BACKEND_URL + 'api/signup_lector', requestOptions)
-        .then(response => {
-          if(response.ok){
-            alert("LEctor creado")
-            dispatch({ type : "set_auth_lector", payload: true })
-          }
-          return response.json()
-        })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Error al crear el lector");
+        }
+        return response.json();
+      })
+      
         .then(data => {
-          localStorage.setItem("token_lector", data.access_token)
+            alert("Lector creado con éxito");
+            localStorage.setItem("token_lector", data.access_token);
+            localStorage.setItem("lector_id", data.lector_id);
+            localStorage.setItem("nombre_lector", data.nombre);
+
+            dispatch({
+                type: "set_auth_lector",
+                payload: {
+                    auth: true,
+                    id: data.lector_id,
+                    nombre: data.nombre
+                }
+            });
         })
-        .catch(err => console.error("Error:", err));
+      .catch(err => {
+        console.error("Error:", err);
+        alert("No se pudo completar el registro. Verifica los datos.");
+      });
   }
   return (
 <div className="container mt-5">
@@ -54,7 +67,7 @@ const SignUpLector = () => {
                 <h2 className="text-center mb-4">Sing Up</h2>
                 
                 <div className="mb-3">
-                    <label className="form-label">Nombre</label>
+                    <label className="form-label">Username</label>
                     <input 
                         value={username} onChange={(e) => setUsername(e.target.value)} 
                         type="text" className="form-control" placeholder="Pon tu Username"
