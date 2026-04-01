@@ -21,7 +21,7 @@ const BotonSeguirComunidad = ({ onFollowSuccess, siguiendoActualmente }) => {
                 setLectores(otrosLectores);
             })
             .catch(err => console.error("Error al cargar lectores:", err));
-    }, [seguidorId, siguiendoActualmente]); // Se ejecuta cada vez que cambia la lista de seguidos
+    }, [seguidorId, siguiendoActualmente]);
 
     const guardarRelacion = (e) => {
         e.preventDefault();

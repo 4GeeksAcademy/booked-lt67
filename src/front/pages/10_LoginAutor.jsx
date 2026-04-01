@@ -1,43 +1,55 @@
 // Import necessary components from react-router-dom and other parts of the application.
-import { Link } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import React, { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom"
 
 const LogInAutor = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const { store, dispatch } = useGlobalReducer()
+  const navigate = useNavigate()
 
   if (store.auth_autor === true) {
-    return <Navigate to="/demo" />;
+    return <Navigate to="/pagina_autor" />;
   }
 
-  function sendData(e){
-    e.preventDefault()
+  function sendData(e) {
+    e.preventDefault();
 
     const requestOptions = {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(
-        {
-            "email": email,
-            "password": password
-            }
-        )
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        "email": email,
+        "password": password
+      })
     };
 
     fetch(import.meta.env.VITE_BACKEND_URL + 'api/login_autor', requestOptions)
-        .then(response => {
-          if(response.status == 200){
-            dispatch({ type : "set_auth_autor", payload: true})
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Error en el login");
+        }
+        return response.json();
+      })
+      .then(data => {
+        dispatch({
+          type: "set_auth_autor",
+          payload: {
+            auth: true,
+            id: data.autor_id,
+            nombre: data.nombre
           }
-          return response.json()
-        })
-        .then(data => {
-          console.log(data.access_token)
-          localStorage.setItem("token_autor", data.access_token)
         });
+        localStorage.setItem("autor_id", data.autor_id);
+        localStorage.setItem("token_autor", data.access_token);
+        localStorage.setItem("nombre_autor", data.nombre);
+        navigate("/pagina_autor")
+      })
+      .catch(error => {
+        console.error("Error:", error);
+        alert("Credenciales incorrectas o error de servidor");
+      });
   }
   return (
 <div className="container mt-5">

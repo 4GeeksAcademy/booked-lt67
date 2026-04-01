@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor, Reviews, Admin, PostEditorial, LecturaActual
+from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor, Reviews, Admin, PostEditorial, LecturaActual, PostAutor
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -598,7 +598,11 @@ def login_autor():
         return jsonify({"msg": "Bad username or password"}), 401
 
     access_token = create_access_token(identity=email)
-    return jsonify(access_token=access_token)
+    return jsonify({
+        "access_token": access_token,
+        "autor_id": autor.id,
+        "nombre": autor.nombre
+    }), 200
 
 @api.route("/signup_autor", methods=["POST"])
 def signup_autor():
@@ -817,9 +821,7 @@ def create_post_editorial():
 
     nuevo = PostEditorial(
         editorial_id=body["editorial_id"],
-        texto=body["texto"],
-        
-        
+        texto=body["texto"]
     )
 
     db.session.add(nuevo)
@@ -849,3 +851,53 @@ def delete_post_editorial(post_editorial_id):
     db.session.commit()
 
     return jsonify({"msg": "Eliminado con éxito"}), 200
+
+@api.route('/postautor', methods=['GET'])
+def get_all_posts_autor():
+    all_posts = PostAutor.query.order_by(PostAutor.fecha.desc()).all()
+    results = [post.serialize() for post in all_posts]
+    return jsonify(results), 200
+
+@api.route('/postautor/autor/<int:aut_id>', methods=['GET'])
+def get_muro_autor(aut_id):
+    posts = PostAutor.query.filter_by(autor_id=aut_id).order_by(PostAutor.fecha.desc()).all()
+    return jsonify([p.serialize() for p in posts]), 200
+
+@api.route('/postautor', methods=['POST'])
+def create_post_autor():
+    body = request.get_json()
+    if not body or "autor_id" not in body or "texto" not in body:
+        return jsonify({"msg": "Faltan datos: autor_id y texto son obligatorios"}), 400
+
+    nuevo_post = PostAutor(
+        autor_id=body["autor_id"],
+        texto=body["texto"]
+    )
+
+    db.session.add(nuevo_post)
+    db.session.commit()
+
+    return jsonify(nuevo_post.serialize()), 201
+
+@api.route('/postautor/<int:post_id>', methods=['DELETE'])
+def delete_post_autor(post_id):
+    post = PostAutor.query.get(post_id)
+    if not post:
+        return jsonify({"msg": "Post no encontrado"}), 404
+    
+    db.session.delete(post)
+    db.session.commit()
+    return jsonify({"msg": "Post de autor eliminado"}), 200
+
+@api.route('/postautor/<int:post_id>', methods=['PUT'])
+def update_post_autor(post_id):
+    post = PostAutor.query.get(post_id)
+    if not post:
+        return jsonify({"msg": "Post no encontrado"}), 404
+    body = request.get_json()
+    if "texto" in body:
+        post.texto = body["texto"]
+    
+    db.session.commit()
+
+    return jsonify(post.serialize()), 200
