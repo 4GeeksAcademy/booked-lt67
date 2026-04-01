@@ -13,7 +13,8 @@ export const initialStore=()=>{
         background: null,
       }
     ],
-    auth_autor: false,
+    auth_autor: !!localStorage.getItem("token_autor"),
+    autor_id: localStorage.getItem("autor_id") || null,
     auth_admin: false,
     auth_editorial: false,
     editorial_id: localStorage.getItem("editorial_id") || null,
@@ -36,7 +37,9 @@ export default function storeReducer(store, action = {}) {
     case 'set_auth_autor':
       return {
         ...store,
-        auth_autor: action.payload
+        auth_autor: action.payload,
+        autor_id: action.payload.id,
+        nombre_autor: action.payload.nombre
       };
 
     case 'set_auth_lector':
