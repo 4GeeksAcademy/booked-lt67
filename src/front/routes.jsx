@@ -47,6 +47,14 @@ import LogInEditorial from "./pages/11_LogInEditorial";
 import SignUpEditorial from "./pages/11_SignUpEditorial";
 import LogInAdmin from "./pages/12_LoginAdmin";
 import SignUpAdmin from "./pages/12_SignUpAdmin";
+import TodosLosPostEditorial from "./pages/15_TodosLosPostEditorial";
+import VerPostEditorial from "./pages/15_VerPostEditorial";
+import CrearPostEditorial from "./pages/15_CrearPostEditorial";
+import CrearPostEditorialbyId from "./pages/15_CrearPostEditorialById";
+import PaginaEditorial from "./pages/15_PaginaEditorial";
+import NuevoLibroEditorial from "./pages/15_NuevoLibroEditorial";
+import EditarLibroEditorial from "./pages/15_EditarLibroEditorial";
+import ActualizarEditorial from "./pages/15_ActualizarEditorial";
 import PaginaLector from "./pages/13_PaginaLector";
 import FormularioReview from "./pages/13_FormularioReview";
 
@@ -115,10 +123,19 @@ export const router = createBrowserRouter(
       <Route path="/login_admin" element={<LogInAdmin />} />
       <Route element={<SignUpAdmin />} path="/signup_admin" />
 
+
+      <Route path="/pagina_editorial" element={<PaginaEditorial />} />    
+      <Route path="/all_post_editorial" element={<TodosLosPostEditorial />} />
+      <Route path="/post_editorial/:theId" element={<VerPostEditorial />} />
+      <Route path="/nueva_publicacion_editorial" element={<CrearPostEditorial />} />
+      <Route path="/nueva_publicacion_editorial/:theId" element={<CrearPostEditorialbyId />} />
+      <Route path="/nuevo_libro_editorial/:theId" element={<NuevoLibroEditorial />} />
+      <Route path="/editar_libro_editorial/:theId" element={<EditarLibroEditorial />} />
+      <Route path="/actualizar_editorial/:theId" element={<ActualizarEditorial />} />
+
+
       <Route path="/pagina_lector" element={<PaginaLector />} />
-
       <Route path="/pagina_lector/:theId/reviews" element={<FormularioReview />} />
-
 
       </Route>
     )

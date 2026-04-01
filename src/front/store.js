@@ -14,11 +14,14 @@ export const initialStore=()=>{
       }
     ],
     auth_autor: false,
-    auth_lector: !!localStorage.getItem("token_lector"),
-    auth_editorial: false,
     auth_admin: false,
+    auth_editorial: false,
+    editorial_id: localStorage.getItem("editorial_id") || null,
+    nombre_editorial: null,
+    auth_lector: !!localStorage.getItem("token_lector"),
     lector_id: localStorage.getItem("lector_id") || null,
     nombre_lector: localStorage.getItem("nombre_lector") || null
+
   }
 }
 
@@ -44,11 +47,13 @@ export default function storeReducer(store, action = {}) {
         nombre_lector: action.payload.nombre
       };
       
-    case 'set_auth_editorial':
-      return {
+    case "set_auth_editorial":
+    return {
         ...store,
-        auth_editorial: action.payload
-      };
+        auth_editorial: action.payload.auth,
+        editorial_id: action.payload.id,
+        nombre_editorial: action.payload.nombre
+    };
     
     case 'set_auth_admin':
       return {

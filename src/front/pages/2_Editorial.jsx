@@ -40,6 +40,7 @@ const Editorial = () => {
                 <div className="container mt-5">
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <h1>EDITORIAL</h1>
+                        <Link to={"/all_post_editorial/"} className="btn btn-sm btn-outline-primary">Ver Publicaciones</Link>
                         <Link to="/nueva_editorial" className="btn btn-primary">Nueva Editorial</Link>
                     </div>
 
@@ -51,6 +52,7 @@ const Editorial = () => {
                                     <div className="d-flex flex-wrap gap-2">
                                         <Link to={"/ver_editorial/" + editorial.id} className="btn btn-sm btn-outline-primary">Ver</Link>
                                         <Link to={"/editar_editorial/" + editorial.id} className="btn btn-sm btn-outline-primary">Editar</Link>
+                                        <Link to={"/post_editorial/" + editorial.id} className="btn btn-sm btn-outline-primary">Ver Posts</Link>
                                         <button onClick={() => deleteEditorial(editorial.id)} className="btn btn-sm btn-danger">Eliminar</button>
                                     </div>
                                 </div>

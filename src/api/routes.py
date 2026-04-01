@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor, Reviews, Admin, LecturaActual
+from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor, Reviews, Admin, PostEditorial, LecturaActual
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -261,6 +261,12 @@ def get_libro(libro_id):
     print(editorial.serialize)
     return jsonify(editorial.serialize()), 200
 
+@api.route('/libro/editorial/<int:ed_id>', methods=['GET'])
+def get_libros_por_editorial(ed_id):
+    
+    libros = Libro.query.filter_by(editorial_id=ed_id).all()
+    return jsonify([l.serialize() for l in libros]), 200
+
 @api.route('/libro', methods=['POST'])
 def create_libro():
     body = request.get_json()
@@ -298,10 +304,12 @@ def update_libros(libro_id):
 
     body = request.get_json()
 
-    libro.email = body.get("email", libro.email)
+    libro.nombre = body.get("nombre", libro.nombre)
     libro.genero = body.get("genero", libro.genero)
-    libro.autor_id = body.get("autor_id", libro.autor_id)
-    libro.editorial_id = body.get("editorial_id", libro.editorial_id)
+    if body.get("autor_id"):
+        libro.autor_id = int(body["autor_id"])
+    if body.get("editorial_id"):
+        libro.editorial_id = int(body["editorial_id"])
     
     
     db.session.commit()
@@ -650,7 +658,11 @@ def login_editorial():
         return jsonify({"msg": "Bad username or password"}), 401
 
     access_token = create_access_token(identity=email)
-    return jsonify(access_token=access_token)
+    return jsonify({
+        "access_token": access_token,
+        "editorial_id": editorial.id,
+        "nombre": editorial.nombre
+    }), 200
 
 @api.route("/signup_lector", methods=["POST"])
 def signup_lector():
@@ -751,8 +763,6 @@ def signup_admin():
         "access_token":access_token
     }
     return jsonify(response_body), 201
-
-
 @api.route('/lector/<int:lector_id>/leyendo', methods=['GET'])
 def get_lectura_actual(lector_id):
     # Buscamos todos los registros de lectura actual para ese lector
@@ -779,3 +789,63 @@ def delete_lectura_actual(lector_id, libro_id):
     db.session.delete(registro)
     db.session.commit()
     return jsonify({"msg": "Lectura eliminada"}), 200
+
+@api.route('/posteditorial', methods=['GET'])
+def get_post_editorial():
+
+    all_posts = PostEditorial.query.all()
+    print(all_posts)
+    results = list( map(lambda posts: posts.serialize(),all_posts) )
+    return jsonify(results), 200
+
+@api.route('/posteditorial/<int:post_editorial_id>', methods=['GET'])
+def get_post_editorial_by_id(post_editorial_id):
+
+    item = PostEditorial.query.get_or_404(post_editorial_id)
+    return jsonify(item.serialize()), 200
+
+@api.route('/posteditorial/editorial/<int:ed_id>', methods=['GET'])
+def get_muro_editorial(ed_id):
+    
+    posts = PostEditorial.query.filter_by(editorial_id=ed_id).all()
+    return jsonify([p.serialize() for p in posts]), 200
+
+@api.route('/posteditorial', methods=['POST'])
+def create_post_editorial():
+
+    body = request.get_json()
+
+    nuevo = PostEditorial(
+        editorial_id=body["editorial_id"],
+        texto=body["texto"],
+        
+        
+    )
+
+    db.session.add(nuevo)
+    db.session.commit()
+
+    return jsonify(nuevo.serialize()), 201
+
+@api.route('/posteditorial/<int:post_editorial_id>', methods=['PUT'])
+def update_post_editorial(post_editorial_id):
+
+    repos = PostEditorial.query.get_or_404(post_editorial_id)
+
+    body = request.get_json()
+
+    repos.texto = body["texto"]
+    
+    db.session.commit()
+
+    return jsonify(repos.serialize()), 200
+
+@api.route('/posteditorial/<int:post_editorial_id>', methods=['DELETE'])
+def delete_post_editorial(post_editorial_id):
+
+    repos = PostEditorial.query.get_or_404(post_editorial_id)
+
+    db.session.delete(repos)
+    db.session.commit()
+
+    return jsonify({"msg": "Eliminado con éxito"}), 200
