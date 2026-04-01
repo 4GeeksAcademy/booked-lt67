@@ -5,8 +5,8 @@ import useGlobalReducer from "../hooks/useGlobalReducer";
 const PaginaAutor = () => {
     const { store } = useGlobalReducer();
     const [db, setDb] = useState({ perfil: null, misLibros: [], misSeguidores: [], noticias: [], loading: true });
-    const [editando, setEditando] = useState(null); // Guarda el ID de la noticia que se edita
-    const [nuevoTexto, setNuevoTexto] = useState(""); // Texto temporal de edición
+    const [editando, setEditando] = useState(null);
+    const [nuevoTexto, setNuevoTexto] = useState("");
 
     const autorId = store.autor_id || localStorage.getItem("autor_id");
     const api = `${import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "")}/api`;
@@ -67,11 +67,11 @@ const PaginaAutor = () => {
             <div className="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
                 <div>
                     <h2 className="mb-0">{db.perfil?.nombre} {db.perfil?.apellido}</h2>
-                    <small className="text-muted">{db.perfil?.pais} | {db.misSeguidores.length} Seguidores</small>
+                    <small className="text-muted">{db.perfil?.pais}</small>
                 </div>
                 <div>
                     <Link to="/crear_post_autor" className="btn btn-sm btn-primary me-2">Nueva Noticia</Link>
-                    <button className="btn btn-sm btn-outline-secondary" onClick={loadData}>Actualizar</button>
+                    {/* <button className="btn btn-sm btn-outline-secondary" onClick={loadData}>Actualizar</button> */}
                 </div>
             </div>
 
@@ -102,12 +102,22 @@ const PaginaAutor = () => {
                 </div>
 
                 <div className="col-md-4">
+
                     <h5 className="mb-3">Mis Libros ({db.misLibros.length})</h5>
                     <div className="list-group mb-4">
                         {db.misLibros.map(l => (
                             <div key={l.id} className="list-group-item small">
                                 <strong>{l.nombre}</strong> <br/>
                                 <span className="text-muted">{l.genero}</span>
+                            </div>
+                        ))}
+                    </div>
+                    <h5 className="mb-3">Mis Seguidores ({db.misSeguidores.length})</h5>
+                    <div className="list-group mb-4">
+                        {db.misSeguidores.map(s => (
+                            <div key={s.id} className="list-group-item small">
+                                <strong>{s.nombre_lector}</strong> <br/>
+                                <span className="text-muted">{s.username}</span>
                             </div>
                         ))}
                     </div>

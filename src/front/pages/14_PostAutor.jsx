@@ -57,7 +57,7 @@ const CrearPostAutor = () => {
                         <button type="button" className="btn btn-outline-secondary px-4" onClick={() => navigate("/pagina_autor")}>
                             Volver al panel
                         </button>
-                                                <button type="submit" className="btn btn-dark px-4 shadow-sm">
+                        <button type="submit" className="btn btn-dark px-4 shadow-sm">
                             Publicar en mi Mural
                         </button>
                     </div>

@@ -25,8 +25,9 @@ const TarjetaLibro = ({ libro, esFavorito, loEstaLeyendo, alHacerClic, lectorId 
 
 const PaginaLector = () => {
     const { store } = useGlobalReducer();
-    const [db, setDb] = useState({ usuario: null, favoritos: [], leyendo: [], todos: [], otros: [], loading: true });
+    const [db, setDb] = useState({ usuario: null, favoritos: [], leyendo: [], todos: [], otros: [], autoresFav: [], todosAutores: [], loading: true});
     const [idASeguir, setIdASeguir] = useState("");
+    const [idAutorASeguir, setIdAutorASeguir] = useState("");
     const api = `${import.meta.env.VITE_BACKEND_URL}/api`;
 
     const request = async (url, m = "GET", b = null) => {
@@ -40,14 +41,43 @@ const PaginaLector = () => {
     };
 
     const load = useCallback(async () => {
-        if (!store.lector_id) return;
-        const [u, f, l, t, all] = await Promise.all([
-            request(`lector/${store.lector_id}`), request(`lector/${store.lector_id}/favoritos`),
-            request(`lector/${store.lector_id}/leyendo`), request(`libro`), request(`lector`)
+    if (!store.lector_id) return;
+    
+    try {
+        // Ejecutamos todas las peticiones
+        const [u, f, l, t, all, af, ta] = await Promise.all([
+            request(`lector/${store.lector_id}`), 
+            request(`lector/${store.lector_id}/favoritos`),
+            request(`lector/${store.lector_id}/leyendo`), 
+            request(`libro`), 
+            request(`lector`),
+            request(`lector_autores_favoritos`), // <-- esto es 'af'
+            request(`autor`)                      // <-- esto es 'ta'
         ]);
+
         const otros = all?.filter(o => o.id !== store.lector_id && !u?.siguiendo?.some(s => s.seguido_id === o.id)) || [];
-        setDb({ usuario: u, favoritos: f || [], leyendo: l || [], todos: t || [], otros, loading: false });
-    }, [store.lector_id]);
+
+        const misAutoresFav = af?.filter(item => Number(item.lector_id) === Number(store.lector_id)) || [];
+        
+        const autoresDisponibles = ta?.filter(a => 
+            !misAutoresFav.some(fav => Number(fav.autor_id) === Number(a.id))
+        ) || [];
+
+        setDb({ 
+            usuario: u, 
+            favoritos: f || [], 
+            leyendo: l || [], 
+            todos: t || [], 
+            otros, 
+            autoresFav: misAutoresFav, 
+            todosAutores: autoresDisponibles, 
+            loading: false 
+        });
+    } catch (error) {
+        console.error("Error cargando datos:", error);
+        setDb(prev => ({ ...prev, loading: false }));
+    }
+}, [store.lector_id]);
 
     useEffect(() => { if (store.auth_lector) load(); }, [store.auth_lector, load]);
 
@@ -71,6 +101,40 @@ const PaginaLector = () => {
                         ))}
                     </div>
 
+                    <form className="card p-3 mb-3 border-0 shadow-sm bg-success bg-opacity-10" 
+                        onSubmit={async (e) => { 
+                            e.preventDefault(); 
+                            if(!idAutorASeguir) return; 
+                            await request(`lector_autores_favoritos`, "POST", { lector_id: store.lector_id, autor_id: parseInt(idAutorASeguir) }); 
+                            setIdAutorASeguir(""); 
+                            load(); 
+                        }}>
+                        <h6 className="fw-bold small">Seguir Autor</h6>
+                        <div className="d-flex gap-2">
+                            <select className="form-select form-select-sm" value={idAutorASeguir} onChange={e => setIdAutorASeguir(e.target.value)}>
+                                <option value="">Elegir...</option>
+                                {db.todosAutores?.map(a => <option key={a.id} value={a.id}>{a.nombre} {a.apellido}</option>)}
+                            </select>
+                            <button className="btn btn-success btn-sm">Ok</button>
+                        </div>
+                    </form>
+
+                    <div className="card p-2 mb-2 shadow-sm border-0">
+                        <h6 className="fw-bold text-success small mb-1">Autores Favoritos ({db.autoresFav?.length || 0})</h6>
+                        {db.autoresFav?.map((af) => (
+                            <div key={af.id} className="d-flex justify-content-between small border-bottom py-1">
+                                {/* Usamos nombre_autor que es lo que viene en tu JSON de respuesta */}
+                                <span className="text-truncate">{af.nombre_autor || "Autor desconocido"}</span>
+                                <button 
+                                    className="btn btn-sm text-danger p-0 border-0" 
+                                    onClick={() => exec(`lector_autores_favoritos/${af.id}`, "DELETE")}
+                                >
+                                    Quitar de favoritos
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
                     <form className="card p-3 mb-3 border-0 shadow-sm bg-primary bg-opacity-10" onSubmit={async (e) => { e.preventDefault(); await request(`follow`, "POST", { seguidor_id: store.lector_id, seguido_id: parseInt(idASeguir) }); setIdASeguir(""); load(); }}>
                         <h6 className="fw-bold small">Seguir Lector</h6>
                         <div className="d-flex gap-2">
@@ -88,7 +152,7 @@ const PaginaLector = () => {
                             {db.usuario?.[tipo]?.map((r, i) => (
                                 <div key={i} className="d-flex justify-content-between small border-bottom py-1">
                                     <span className="text-truncate">{r.nombre_seguido || r.nombre_seguidor}</span>
-                                    {tipo === "siguiendo" && <button className="btn btn-sm text-danger p-0 border-0" onClick={() => exec(`unfollow/${r.relacion_id}`, "DELETE")}>Dejar</button>}
+                                    {tipo === "siguiendo" && <button className="btn btn-sm text-danger p-0 border-0" onClick={() => exec(`unfollow/${r.relacion_id}`, "DELETE")}>Dejar de seguir</button>}
                                 </div>
                             ))}
                         </div>

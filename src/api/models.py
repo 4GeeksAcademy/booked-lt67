@@ -119,11 +119,10 @@ class Libro(db.Model):
     editorial: Mapped["Editorial"] = relationship(back_populates="libros")
 
     autor_id: Mapped[int] = mapped_column(
-        ForeignKey("autor.id"), nullable=False)
+    ForeignKey("autor.id"), nullable=False)
     autor: Mapped["Autor"] = relationship(back_populates="libros")
 
-    libros_fav: Mapped[List["LibrosFavoritos"]
-                       ] = relationship(back_populates="libro")
+    libros_fav: Mapped[List["LibrosFavoritos"]] = relationship(back_populates="libro")
 
     reviews: Mapped[List["Reviews"]] = relationship(back_populates="libro")
 
@@ -174,6 +173,7 @@ class Lector_Autores_Favoritos(db.Model):
         return {
             "id": self.id,
             "lector_id": self.lector_id,
+            "username": self.lector.username,
             "autor_id": self.autor_id,
             "nombre_lector": f"{self.lector.nombre} {self.lector.apellido}" if self.lector else None,
             "nombre_autor": f"{self.autor.nombre} {self.autor.apellido}" if self.autor else None
