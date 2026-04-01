@@ -14,7 +14,7 @@ const SignUpAutor = () => {
   const { store, dispatch } = useGlobalReducer()
 
   if (store.auth_autor === true) {
-    return <Navigate to="/demo" />;
+    return <Navigate to="/pagina_autor" />;
   }
 
   function sendData(e){

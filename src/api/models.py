@@ -87,13 +87,14 @@ class Autor(db.Model):
     nombre: Mapped[str] = mapped_column(String(120), nullable=False)
     apellido: Mapped[str] = mapped_column(String(120), nullable=False)
     pais: Mapped[str] = mapped_column(String(120), nullable=False)
-    email: Mapped[str] = mapped_column(
-        String(120), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
 
     libros: Mapped[List["Libro"]] = relationship(back_populates="autor")
 
     favorited: Mapped[List["Lector_Autores_Favoritos"]] = relationship(back_populates="autor")
+
+    posts: Mapped[List["PostAutor"]] = relationship(back_populates="autor")
 
     def __repr__(self):
         return f'<Autor: {self.nombre} {self.apellido}>'
@@ -118,11 +119,10 @@ class Libro(db.Model):
     editorial: Mapped["Editorial"] = relationship(back_populates="libros")
 
     autor_id: Mapped[int] = mapped_column(
-        ForeignKey("autor.id"), nullable=False)
+    ForeignKey("autor.id"), nullable=False)
     autor: Mapped["Autor"] = relationship(back_populates="libros")
 
-    libros_fav: Mapped[List["LibrosFavoritos"]
-                       ] = relationship(back_populates="libro")
+    libros_fav: Mapped[List["LibrosFavoritos"]] = relationship(back_populates="libro")
 
     reviews: Mapped[List["Reviews"]] = relationship(back_populates="libro")
 
@@ -173,6 +173,7 @@ class Lector_Autores_Favoritos(db.Model):
         return {
             "id": self.id,
             "lector_id": self.lector_id,
+            "username": self.lector.username,
             "autor_id": self.autor_id,
             "nombre_lector": f"{self.lector.nombre} {self.lector.apellido}" if self.lector else None,
             "nombre_autor": f"{self.autor.nombre} {self.autor.apellido}" if self.autor else None
@@ -283,3 +284,21 @@ class PostEditorial(db.Model):
                 "texto": self.texto,
                 "fecha": self.fecha.strftime("%d-%m-%Y %H:%M") if self.fecha else None
             }
+
+class PostAutor(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    
+    autor_id: Mapped[int] = mapped_column(ForeignKey("autor.id"))
+    autor: Mapped["Autor"] = relationship(back_populates="posts")
+
+    texto: Mapped[str] = mapped_column(db.Text, nullable=False)
+    fecha: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "autor_id": self.autor_id,
+            "nombre_autor": f"{self.autor.nombre} {self.autor.apellido}" if self.autor else None,
+            "texto": self.texto,
+            "fecha": self.fecha.strftime("%d-%m-%Y %H:%M")
+        }

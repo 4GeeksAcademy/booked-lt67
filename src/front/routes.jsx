@@ -58,6 +58,8 @@ import ActualizarEditorial from "./pages/15_ActualizarEditorial";
 import PaginaLector from "./pages/13_PaginaLector";
 import FormularioReview from "./pages/13_FormularioReview";
 import AdminHome from "./pages/16_AdminHome";
+import PaginaAutor from "./pages/14_PaginaAutor";
+import CrearPostAutor from "./pages/14_PostAutor";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -139,6 +141,10 @@ export const router = createBrowserRouter(
       <Route path="/pagina_lector/:theId/reviews" element={<FormularioReview />} />
 
       <Route path="/admin_home" element={<AdminHome />} />
+
+      <Route path="/pagina_autor" element={<PaginaAutor />} />
+      <Route path="/crear_post_autor" element={<CrearPostAutor />} />
+
 
       </Route>
     )
