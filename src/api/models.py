@@ -250,7 +250,21 @@ class Admin(db.Model):
             "email": self.email,
            
         }
+
+class LecturaActual(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    lector_id: Mapped[int] = mapped_column(ForeignKey("lector.id"), nullable=False)
+    libro_id: Mapped[int] = mapped_column(ForeignKey("libro.id"), nullable=False)
     
+    # Relaciones
+    libro: Mapped["Libro"] = relationship()
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "libro": self.libro.serialize() if self.libro else None
+        }
+
 class PostEditorial(db.Model):
         id: Mapped[int] = mapped_column(primary_key=True)
     

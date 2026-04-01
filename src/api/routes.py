@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor, Reviews, Admin, PostEditorial
+from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor, Reviews, Admin, PostEditorial, LecturaActual
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -641,7 +641,11 @@ def login_lector():
             return jsonify({"msg": "Bad username or password"}), 401
 
     access_token = create_access_token(identity=email)
-    return jsonify(access_token=access_token)
+    return jsonify({
+        "access_token": access_token,
+        "lector_id": lector.id,
+        "nombre": lector.nombre
+    }), 200
 
 @api.route("/login_editorial", methods=["POST"])
 def login_editorial():
@@ -664,33 +668,31 @@ def login_editorial():
 def signup_lector():
     body = request.get_json()
 
-    email = body.get("email")
-    username = body.get("username")
-    password = body.get("password")
-    nombre = body.get("nombre")
-    apellido = body.get("apellido")
-    pais = body.get("pais")
-
-    if not all([email, username, password, nombre, apellido, pais]):
-        return jsonify({"msg": "Faltan datos obligatorios"}), 400
-
-    lector = Lector.query.filter_by(email=email).first()
-    if lector:
-        return jsonify({"msg": "Ya se encuentra un usuario creado con ese correo"}), 401
+    nuevo_lector = Lector(
+        email=body["email"],
+        username=body["username"],
+        password=body["password"], 
+        nombre=body["nombre"],
+        apellido=body["apellido"],
+        pais_donde_reside=body["pais"],
+        is_active=True 
+    )
     
-    lector = Lector(email=email, username=username, password=password, nombre=nombre, apellido=apellido, pais=pais)
+    try:
+        db.session.add(nuevo_lector)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": "Error de integridad o datos duplicados", "error": str(e)}), 400
 
-    db.session.add(lector)
-    db.session.commit()
-
-    access_token = create_access_token(identity=email)
-
-    response_body = {
+    access_token = create_access_token(identity=nuevo_lector.email)
+    
+    return jsonify({
         "msg": "Lector creado",
-        "access_token":access_token
-    }
-    return jsonify(response_body), 201
-    
+        "access_token": access_token,
+        "lector_id": nuevo_lector.id,
+        "nombre": nuevo_lector.nombre
+    }), 201
 
 @api.route("/signup_editorial", methods=["POST"])
 def signup_editorial():
@@ -761,6 +763,32 @@ def signup_admin():
         "access_token":access_token
     }
     return jsonify(response_body), 201
+@api.route('/lector/<int:lector_id>/leyendo', methods=['GET'])
+def get_lectura_actual(lector_id):
+    # Buscamos todos los registros de lectura actual para ese lector
+    lecturas = LecturaActual.query.filter_by(lector_id=lector_id).all()
+    return jsonify([l.serialize() for l in lecturas]), 200
+
+@api.route('/leyendo/libros', methods=['POST'])
+def add_lectura_actual():
+    body = request.get_json()
+    # Evitar duplicados
+    existe = LecturaActual.query.filter_by(lector_id=body["lector_id"], libro_id=body["libro_id"]).first()
+    if existe: return jsonify({"msg": "Ya lo estás leyendo"}), 400
+
+    nueva_lectura = LecturaActual(lector_id=body["lector_id"], libro_id=body["libro_id"])
+    db.session.add(nueva_lectura)
+    db.session.commit()
+    return jsonify(nueva_lectura.serialize()), 200
+
+@api.route('/leyendo/libros/<int:lector_id>/<int:libro_id>', methods=['DELETE'])
+def delete_lectura_actual(lector_id, libro_id):
+    registro = LecturaActual.query.filter_by(lector_id=lector_id, libro_id=libro_id).first()
+    if not registro: return jsonify({"msg": "No encontrado"}), 404
+    
+    db.session.delete(registro)
+    db.session.commit()
+    return jsonify({"msg": "Lectura eliminada"}), 200
 
 @api.route('/posteditorial', methods=['GET'])
 def get_post_editorial():

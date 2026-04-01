@@ -10,7 +10,7 @@ const LogInLector = () => {
   const { store, dispatch } = useGlobalReducer()
 
   if (store.auth_lector === true) {
-    return <Navigate to="/demo" />;
+    return <Navigate to="/pagina_lector" />;
   }
 
   function sendData(e){
@@ -28,16 +28,30 @@ const LogInLector = () => {
     };
 
     fetch(import.meta.env.VITE_BACKEND_URL + 'api/login_lector', requestOptions)
-        .then(response => {
-          if(response.status == 200){
-            dispatch({ type : "set_auth_lector", payload: true})
-          }
-          return response.json()
-        })
-        .then(data => {
-          console.log(data.access_token)
-          localStorage.setItem("token_lector", data.access_token)
+    .then(response => {
+        if (!response.ok) {
+            // Manejar error de credenciales
+            alert("Email o contraseña incorrectos");
+            throw new Error("Login failed");
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Guardar en localStorage
+        localStorage.setItem("token_lector", data.access_token);
+        localStorage.setItem("lector_id", data.lector_id);
+        
+        // Despachar al reducer
+        dispatch({
+            type: "set_auth_lector",
+            payload: {
+                auth: true,
+                id: data.lector_id,
+                nombre: data.nombre
+            }
         });
+    })
+    .catch(error => console.error("Error:", error));
   }
   return (
 <div className="container mt-5">

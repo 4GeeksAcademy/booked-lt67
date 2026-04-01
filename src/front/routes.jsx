@@ -55,6 +55,8 @@ import PaginaEditorial from "./pages/15_PaginaEditorial";
 import NuevoLibroEditorial from "./pages/15_NuevoLibroEditorial";
 import EditarLibroEditorial from "./pages/15_EditarLibroEditorial";
 import ActualizarEditorial from "./pages/15_ActualizarEditorial";
+import PaginaLector from "./pages/13_PaginaLector";
+import FormularioReview from "./pages/13_FormularioReview";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -130,7 +132,10 @@ export const router = createBrowserRouter(
       <Route path="/nuevo_libro_editorial/:theId" element={<NuevoLibroEditorial />} />
       <Route path="/editar_libro_editorial/:theId" element={<EditarLibroEditorial />} />
       <Route path="/actualizar_editorial/:theId" element={<ActualizarEditorial />} />
-      
+
+
+      <Route path="/pagina_lector" element={<PaginaLector />} />
+      <Route path="/pagina_lector/:theId/reviews" element={<FormularioReview />} />
 
       </Route>
     )
