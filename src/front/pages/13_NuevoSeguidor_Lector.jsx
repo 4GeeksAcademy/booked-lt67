@@ -13,9 +13,6 @@ const BotonSeguirComunidad = ({ onFollowSuccess, siguiendoActualmente }) => {
         fetch(`${import.meta.env.VITE_BACKEND_URL}api/lector`)
             .then(res => res.json())
             .then(data => {
-                // FILTRO: 
-                // 1. Que no sea yo mismo (l.id !== seguidorId)
-                // 2. Que NO esté en la lista de personas que ya sigo
                 const otrosLectores = data.filter(l => {
                     const soyYo = l.id === parseInt(seguidorId);
                     const yaLoSigo = siguiendoActualmente?.some(s => s.seguido_id === l.id);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
@@ -6,202 +6,68 @@ const FormularioReview = () => {
     const { theId } = useParams();
     const navigate = useNavigate();
     const { store } = useGlobalReducer();
+    const [db, setDb] = useState({ libro: null, reviews: [], edit: null });
+    const url = `${import.meta.env.VITE_BACKEND_URL}/api/reviews`;
 
-    const [reviewsLibro, setReviewsLibro] = useState([]);
-    const [libro, setLibro] = useState(null);
-    
-    // Estados del formulario
-    const [texto, setTexto] = useState("");
-    const [puntuacion, setPuntuacion] = useState(5);
-    
-    // Estado para controlar si estamos editando o creando
-    const [miReviewExistente, setMiReviewExistente] = useState(null);
-    const [modoEdicion, setModoEdicion] = useState(false);
-    
-    const [loading, setLoading] = useState(true);
-
-    const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-    const lectorIdActual = store.lector_id;
-
-    const cargarDatos = useCallback(async () => {
-        if (!theId) return;
-        try {
-            setLoading(true);
-            const respLibro = await fetch(`${baseUrl}/api/libro/${theId}`);
-            if (respLibro.ok) setLibro(await respLibro.json());
-
-            const respReviews = await fetch(`${baseUrl}/api/reviews`);
-            if (respReviews.ok) {
-                const todasLasReviews = await respReviews.json();
-                const filtradasPorLibro = todasLasReviews.filter(r => 
-                    r.libro && Number(r.libro.id) === Number(theId)
-                );
-
-                const miReview = filtradasPorLibro.find(r => 
-                    Number(r.lector_id) === Number(lectorIdActual)
-                );
-
-                // Solo guardamos la referencia, no llenamos el form automáticamente
-                setMiReviewExistente(miReview);
-                
-                const ordenadas = [...filtradasPorLibro].sort((a, b) => {
-                    if (Number(a.lector_id) === Number(lectorIdActual)) return -1;
-                    return b.id - a.id;
-                });
-                setReviewsLibro(ordenadas);
-            }
-        } catch (error) {
-            console.error("Error cargando reviews:", error);
-        } finally {
-            setLoading(false);
-        }
-    }, [theId, lectorIdActual, baseUrl]);
-
-    useEffect(() => {
-        cargarDatos();
-    }, [cargarDatos]);
-
-    // Función para activar la edición desde la lista
-    const activarEdicion = () => {
-        if (miReviewExistente) {
-            setTexto(miReviewExistente.texto);
-            setPuntuacion(miReviewExistente.puntuacion);
-            setModoEdicion(true);
-            window.scrollTo(0, 0); // Sube la pantalla al formulario
-        }
+    const getData = async () => {
+        const [l, r] = await Promise.all([
+            fetch(`${url.replace('reviews', 'libro')}/${theId}`).then(res => res.json()),
+            fetch(url).then(res => res.json())
+        ]);
+        setDb({ ...db, libro: l, reviews: r.filter(i => i.libro?.id == theId).sort((a,b) => a.lector_id == store.lector_id ? -1 : b.id - a.id) });
     };
 
-    // Cancelar edición y limpiar form
-    const cancelarEdicion = () => {
-        setTexto("");
-        setPuntuacion(5);
-        setModoEdicion(false);
-    };
+    useEffect(() => { getData() }, [theId]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!lectorIdActual) return alert("Inicia sesión");
-
-        // Usamos el ID de miReviewExistente si estamos en modoEdicion
-        const url = modoEdicion ? `${baseUrl}/api/reviews/${miReviewExistente.id}` : `${baseUrl}/api/reviews`;
-        const method = modoEdicion ? 'PUT' : 'POST';
-
-        try {
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    "lector_id": parseInt(lectorIdActual),
-                    "libro_id": parseInt(theId),
-                    "texto": texto,
-                    "puntuacion": parseInt(puntuacion)
-                })
-            });
-
-            if (response.ok) {
-                alert("¡Guardado correctamente!");
-                setModoEdicion(false);
-                setTexto("");
-                setPuntuacion(5);
-                await cargarDatos(); 
-            }
-        } catch (error) { console.error(error); }
+        const fd = new FormData(e.target);
+        const body = { texto: fd.get("texto"), puntuacion: parseInt(fd.get("puntuacion")), lector_id: store.lector_id, libro_id: theId };
+        
+        await fetch(db.edit ? `${url}/${db.edit.id}` : url, {
+            method: db.edit ? "PUT" : "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
+        setDb({ ...db, edit: null });
+        e.target.reset();
+        getData();
     };
 
-    const handleDelete = async (reviewId) => {
-        if (!window.confirm("¿Borrar reseña?")) return;
-        try {
-            const response = await fetch(`${baseUrl}/api/reviews/${reviewId}`, { method: 'DELETE' });
-            if (response.ok) {
-                alert("Eliminada");
-                if (modoEdicion) cancelarEdicion();
-                await cargarDatos();
-            }
-        } catch (error) { console.error(error); }
-    };
+    const del = async (id) => { if(confirm("¿Borrar?")) { await fetch(`${url}/${id}`, { method: "DELETE" }); getData(); }};
 
-    if (loading) return <div className="text-center mt-5"><h3>Cargando comunidad...</h3></div>;
+    if (!db.libro) return <p>Cargando...</p>;
 
     return (
-        <div className="container mt-5">
-            <button onClick={() => navigate(-1)} className="btn btn-outline-secondary mb-4 btn-sm">
-                <i className="fas fa-arrow-left me-2"></i>Volver
-            </button>
-
+        <div className="container mt-4">
+            <button onClick={() => navigate(-1)} className="btn btn-sm btn-light mb-3">← Volver</button>
             <div className="row">
-                {/* LADO IZQUIERDO: FORMULARIO */}
-                <div className="col-md-5">
-                    <div className="card shadow-sm border-0 p-3 bg-white">
-                        <h2 className="text-primary h4">{libro?.nombre}</h2>
-                        <p className="text-muted small">Autor: {libro?.nombre_autor}</p>
-                        <hr />
-                        
-                        <div className="d-flex justify-content-between align-items-center mb-3">
-                            <h6 className="fw-bold m-0">
-                                {modoEdicion ? "Editando mi opinión" : "Escribir nueva reseña"}
-                            </h6>
-                            {modoEdicion && (
-                                <button className="btn btn-sm btn-link text-secondary p-0" onClick={cancelarEdicion}>
-                                    Cancelar
-                                </button>
+                <div className="col-md-5 card p-3 shadow-sm">
+                    <h4>{db.libro.nombre}</h4>
+                    <form onSubmit={handleSubmit} key={db.edit?.id}>
+                        <textarea name="texto" className="form-control mb-2" defaultValue={db.edit?.texto} required placeholder="Tu opinión..." />
+                        <div className="d-flex gap-2">
+                            <input name="puntuacion" type="number" className="form-control w-25" defaultValue={db.edit?.puntuacion || 5} min="0" max="10" />
+                            <button className={`btn w-100 ${db.edit ? "btn-warning" : "btn-primary"}`}>{db.edit ? "Editar" : "Publicar"}</button>
+                        </div>
+                        {db.edit && <button type="button" className="btn btn-link btn-sm w-100" onClick={() => setDb({...db, edit: null})}>Cancelar</button>}
+                    </form>
+                </div>
+                <div className="col-md-7">
+                    {db.reviews.map(r => (
+                        <div key={r.id} className="p-2 border-bottom d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>{r.nombre_lector}</strong> <span className="badge bg-warning text-dark">{r.puntuacion}</span>
+                                <p className="small text-muted mb-0">{r.texto}</p>
+                            </div>
+                            {r.lector_id == store.lector_id && (
+                                <div>
+                                    <button className="btn btn-sm text-primary" onClick={() => setDb({...db, edit: r})}><i className="fas fa-edit"/></button>
+                                    <button className="btn btn-sm text-danger" onClick={() => del(r.id)}><i className="fas fa-trash"/></button>
+                                </div>
                             )}
                         </div>
-
-                        <form onSubmit={handleSubmit}>
-                            <textarea 
-                                className="form-control mb-3" 
-                                rows="4" 
-                                placeholder="Escribe tu opinión aquí..."
-                                value={texto} 
-                                onChange={(e) => setTexto(e.target.value)} 
-                                required 
-                            />
-                            <div className="d-flex align-items-center gap-3">
-                                <label className="mb-0 small fw-bold">Nota:</label>
-                                <input type="number" className="form-control" style={{width: "70px"}}
-                                    min="0" max="10" value={puntuacion} 
-                                    onChange={(e) => setPuntuacion(e.target.value)} required 
-                                />
-                                <button type="submit" className={`btn ${modoEdicion ? "btn-warning text-dark" : "btn-primary"} flex-grow-1 fw-bold`}>
-                                    {modoEdicion ? "Actualizar Cambios" : "Publicar Review"}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                {/* LADO DERECHO: LISTA */}
-                <div className="col-md-7">
-                    <h4 className="mb-4">Comunidad ({reviewsLibro.length})</h4>
-                    <div className="list-group">
-                        {reviewsLibro.map(rev => {
-                            const esMia = Number(rev.lector_id) === Number(lectorIdActual);
-                            return (
-                                <div key={rev.id} className={`list-group-item mb-3 rounded border-0 shadow-sm p-3 ${esMia ? "border-start border-4 border-primary bg-light" : ""}`}>
-                                    <div className="d-flex justify-content-between align-items-center">
-                                        <span className={`fw-bold ${esMia ? "text-primary" : ""}`}>
-                                            {rev.nombre_lector} {esMia && <span className="badge bg-primary ms-1">Tú</span>}
-                                        </span>
-                                        <div className="d-flex align-items-center gap-2">
-                                            <span className="badge bg-warning text-dark">{rev.puntuacion}/10</span>
-                                            {esMia && (
-                                                <>
-                                                    {/* BOTÓN EDITAR QUE CARGA EL FORMULARIO */}
-                                                    <button className="btn btn-sm btn-outline-primary border-0" onClick={activarEdicion} title="Editar">
-                                                        <i className="fas fa-edit"></i>
-                                                    </button>
-                                                    <button className="btn btn-sm btn-outline-danger border-0" onClick={() => handleDelete(rev.id)} title="Borrar">
-                                                        <i className="fas fa-trash-alt"></i>
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <p className="mt-2 mb-0 text-secondary italic small">"{rev.texto}"</p>
-                                </div>
-                            );
-                        })}
-                    </div>
+                    ))}
                 </div>
             </div>
         </div>

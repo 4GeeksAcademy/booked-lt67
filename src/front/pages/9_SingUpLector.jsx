@@ -33,7 +33,7 @@ function sendData(e) {
       })
     };
 
-    fetch(import.meta.env.VITE_BACKEND_URL + 'api/signup_lector', requestOptions)
+    fetch(import.meta.env.VITE_BACKEND_URL + 'api/signup_lector', requestOptions, requestOptions)
       .then(response => {
         if (!response.ok) {
           throw new Error("Error al crear el lector");

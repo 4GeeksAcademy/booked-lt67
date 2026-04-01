@@ -15,7 +15,6 @@ const BotonAgregarLibroExistente = ({ onAddSuccess, librosActuales }) => {
         fetch(`${baseUrl}/api/libro`)
             .then(res => res.json())
             .then(data => {
-                // FILTRO: Solo mostrar libros que el lector NO tenga ya en su lista
                 const filtrados = data.filter(libro => {
                     return !librosActuales?.some(miLibro => miLibro.id === libro.id);
                 });
@@ -32,7 +31,6 @@ const BotonAgregarLibroExistente = ({ onAddSuccess, librosActuales }) => {
             return;
         }
 
-        // Aquí usamos tu endpoint de favoritos como "mis libros" o el que definas para el catálogo
         const requestOptions = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -42,7 +40,6 @@ const BotonAgregarLibroExistente = ({ onAddSuccess, librosActuales }) => {
             })
         };
 
-        // Nota: Ajusta la URL al endpoint que uses para vincular libro con lector
         fetch(`${baseUrl}/api/favoritos/libros`, requestOptions)
             .then(response => {
                 if (!response.ok) throw new Error("Error al agregar el libro");

@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor, Reviews, Admin
+from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor, Reviews, Admin, LecturaActual
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -655,15 +655,14 @@ def login_editorial():
 @api.route("/signup_lector", methods=["POST"])
 def signup_lector():
     body = request.get_json()
-    
-    # Validamos que no falten datos antes de procesar
+
     nuevo_lector = Lector(
         email=body["email"],
         username=body["username"],
         password=body["password"], 
         nombre=body["nombre"],
         apellido=body["apellido"],
-        pais_donde_reside=body["pais"], 
+        pais_donde_reside=body["pais"],
         is_active=True 
     )
     
@@ -752,3 +751,31 @@ def signup_admin():
         "access_token":access_token
     }
     return jsonify(response_body), 201
+
+
+@api.route('/lector/<int:lector_id>/leyendo', methods=['GET'])
+def get_lectura_actual(lector_id):
+    # Buscamos todos los registros de lectura actual para ese lector
+    lecturas = LecturaActual.query.filter_by(lector_id=lector_id).all()
+    return jsonify([l.serialize() for l in lecturas]), 200
+
+@api.route('/leyendo/libros', methods=['POST'])
+def add_lectura_actual():
+    body = request.get_json()
+    # Evitar duplicados
+    existe = LecturaActual.query.filter_by(lector_id=body["lector_id"], libro_id=body["libro_id"]).first()
+    if existe: return jsonify({"msg": "Ya lo estás leyendo"}), 400
+
+    nueva_lectura = LecturaActual(lector_id=body["lector_id"], libro_id=body["libro_id"])
+    db.session.add(nueva_lectura)
+    db.session.commit()
+    return jsonify(nueva_lectura.serialize()), 200
+
+@api.route('/leyendo/libros/<int:lector_id>/<int:libro_id>', methods=['DELETE'])
+def delete_lectura_actual(lector_id, libro_id):
+    registro = LecturaActual.query.filter_by(lector_id=lector_id, libro_id=libro_id).first()
+    if not registro: return jsonify({"msg": "No encontrado"}), 404
+    
+    db.session.delete(registro)
+    db.session.commit()
+    return jsonify({"msg": "Lectura eliminada"}), 200
