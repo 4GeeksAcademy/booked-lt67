@@ -10,7 +10,7 @@ const LogInAdmin = () => {
   const { store, dispatch } = useGlobalReducer()
 
   if (store.auth_admin === true) {
-    return <Navigate to="/demo" />;
+    return <Navigate to="/admin_home" />;
   }
 
   function sendData(e){

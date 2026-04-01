@@ -1,5 +1,6 @@
 import React, { useEffect } from "react"
 import rigoImageUrl from "../assets/img/rigo-baby.jpg";
+import logoBookedUrl from "../assets/img/logo_booked.png";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import { Link } from "react-router-dom";
 
@@ -36,11 +37,12 @@ export const Home = () => {
 	return (
 		<div className="text-center mt-5">
 
-			<h1 className="display-4">Hello Rigo!!</h1>
+			<h1 className="display-4">Bienvenido al desarrollo de Booked!</h1>
 			<p className="lead">
-				<img src={rigoImageUrl} className="img-fluid rounded-circle mb-3" alt="Rigo Baby" />
+				{/* <img src={rigoImageUrl} className="img-fluid rounded-circle mb-3" alt="Rigo Baby" /> */}
+				<img src={logoBookedUrl} style={{ width: "500px", height: "auto" }} className="img-fluid rounded-circle mb-3" alt="Logo Booked" />
 			</p>
-			<Link className="btn btn-primary" to="/lector">Ver Lectores</Link>
+			{/* <Link className="btn btn-primary" to="/lector">Ver Lectores</Link>
 
 			<Link className="btn btn-primary" to="/editorial">Ver Editoriales</Link>
 			
@@ -52,7 +54,7 @@ export const Home = () => {
 
 			<Link className="btn btn-primary" to="/ver_seguidores">Ver Seguidores</Link>
 
-			<Link className="btn btn-primary" to="/review">Ver Reviews</Link>
+			<Link className="btn btn-primary" to="/review">Ver Reviews</Link> */}
 			
 
 			<div className="alert alert-info">
