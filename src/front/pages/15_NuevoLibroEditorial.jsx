@@ -11,6 +11,7 @@ const NuevoLibroEditorial = () => {
     const [autorId, setAutorId] = useState("");
     const [autores, setAutores] = useState([]);
     const [editorialId, setEditorialId] = useState("");
+    const [nombreEditorial, setNombreEditorial] = useState("");
 
     
 
@@ -65,7 +66,7 @@ const NuevoLibroEditorial = () => {
     return (
         <>
             <div className="container mt-5">
-                <h2>Registro de Libro Nuevo</h2>
+                <h2>Registro de Libro Nuevo para {nombreEditorial}</h2>
                 <form onSubmit={sendData} className="col-md-6">
                     <div className="mb-3">
                         <label className="form-label">Nombre</label>
