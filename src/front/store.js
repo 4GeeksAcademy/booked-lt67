@@ -16,7 +16,7 @@ export const initialStore=()=>{
     auth_autor: !!localStorage.getItem("token_autor"),
     autor_id: localStorage.getItem("autor_id") || null,
     auth_admin: false,
-    auth_editorial: false,
+    auth_editorial: !!localStorage.getItem("token_editorial"),
     editorial_id: localStorage.getItem("editorial_id") || null,
     nombre_editorial: null,
     auth_lector: !!localStorage.getItem("token_lector"),
