@@ -1,7 +1,7 @@
-import { Link } from "react-router-dom";
+
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import React, { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link, useNavigate } from "react-router-dom";
 
 const SignUpEditorial = () => {
   const [email, setEmail] = useState('')
@@ -11,6 +11,7 @@ const SignUpEditorial = () => {
   const [pais, setPais] = useState('');
 
   const { store, dispatch } = useGlobalReducer()
+  const navigate = useNavigate();
 
   if (store.auth_editorial === true) {
     return <Navigate to="/pagina_editorial" />;
@@ -41,7 +42,8 @@ const SignUpEditorial = () => {
           return response.json()
         })
         .then(data => {
-          localStorage.setItem("token_editorial", data.access_token)
+          localStorage.setItem("token_editorial", data.access_token);
+          navigate("/pagina_editorial")
         })
         .catch(err => console.error("Error:", err));
   }
