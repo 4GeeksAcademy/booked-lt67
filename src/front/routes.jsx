@@ -61,6 +61,9 @@ import AdminHome from "./pages/16_AdminHome";
 import PostSinLogin from "./pages/17_Post_sin_login";
 import PaginaAutor from "./pages/14_PaginaAutor";
 import CrearPostAutor from "./pages/14_PostAutor";
+import VerPerfilAutorEditorial from "./pages/18_VerPerfilAutorEditorial";
+import VerAutorFree from "./pages/18_VerAutor_Free";
+import VerEditorialFree from "./pages/18_VerEditorialFree";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -148,6 +151,9 @@ export const router = createBrowserRouter(
       <Route path="/pagina_autor" element={<PaginaAutor />} />
       <Route path="/crear_post_autor" element={<CrearPostAutor />} />
 
+      <Route path="/ver_autor_editorial" element={<VerPerfilAutorEditorial />} />
+      <Route path="/ver_autor_free/:theId" element={<VerAutorFree />} />
+      <Route path="/ver_editorial_free/:theId" element={<VerEditorialFree />} />
 
       </Route>
     )
