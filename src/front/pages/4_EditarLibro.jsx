@@ -13,6 +13,8 @@ const EditarLibro = () => {
 
     const [imageUrl, setImageUrl] = useState("");
 
+    const [originalData, setOriginalData] = useState(null);
+
     const [autores, setAutores] = useState([]); 
     const [editoriales, setEditoriales] = useState([]);
 
@@ -33,13 +35,24 @@ const EditarLibro = () => {
                 return response.json();
             })
             .then(data => {
+                const libroData = {
+                    nombre: data.nombre || "",
+                    genero: data.genero || "",
+                    autor_id: data.autor_id || "",
+                    editorial_id: data.editorial_id || "",
+                    image_url: data.image_url || ""
+                };
 
-                setNombre(data.nombre);
-                setGenero(data.genero);
-                setAutorId(data.autor_id || "");
-                setEditorialId(data.editorial_id || "");
-                setImageUrl(data.image_url || "");
-            })
+                // Seteamos todos los estados del formulario usando el objeto
+                setNombre(libroData.nombre);
+                setGenero(libroData.genero);
+                setAutorId(libroData.autor_id);
+                setEditorialId(libroData.editorial_id);
+                setImageUrl(libroData.image_url);
+                
+                // Guardamos la copia original para la comparación posterior
+                setOriginalData(libroData);
+            });
 
         fetch(`${import.meta.env.VITE_BACKEND_URL}api/autor`)
             .then(res => res.json())
@@ -74,12 +87,19 @@ const EditarLibro = () => {
     const updateData = (e) => {
         e.preventDefault();
 
+        const hasChanged = 
+            nombre !== originalData.nombre ||
+            genero !== originalData.genero ||
+            autorId !== originalData.autor_id ||
+            editorialId !== originalData.editorial_id ||
+            imageUrl !== originalData.image_url;
+
         const requestOptions = {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 "nombre": nombre,
-                "genero": genero,
+                "genero":genero ,
                 "autor_id": autorId,
                 "editorial_id": editorialId,
                 "image_url": imageUrl
@@ -92,7 +112,9 @@ const EditarLibro = () => {
                     throw new Error("Ese nombre o genero ya está en uso por otro lector");
                 }
                 if (response.ok) {
-                    alert("¡Libro actualizado con éxito!");
+                    if (hasChanged) {
+                        alert("¡Libro actualizado con éxito!");
+                    }
                     navigate("/libro");
                 }
             })
@@ -111,6 +133,13 @@ const EditarLibro = () => {
                     <button type="button" className="btn btn-outline-secondary btn-sm" onClick={handleUpload}>
                         {imageUrl ? "Cambiar Portada" : "Subir Portada"}
                     </button>
+
+                    {imageUrl && (
+                        <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => setImageUrl("")}>
+                            Eliminar Imagen
+                        </button>
+                    )}
+
                 </div>
 
                 <div className="mb-3">
@@ -137,6 +166,13 @@ const EditarLibro = () => {
                 </div>
 
                 <button type="submit" className="btn btn-success me-2">Actualizar Libro</button>
+
+                <div className="mt-4">
+                     <button onClick={() => navigate(-1)} className="btn btn-secondary">
+                        <i className="fas fa-arrow-left me-2"></i>Volver
+                    </button>
+                </div>
+
             </form>
         </div>
     );

@@ -12,6 +12,8 @@ const EditarEditorial = () => {
 
     const [imageUrl, setImageUrl] = useState("");
 
+    const [originalEditorial, setOriginalEditorial] = useState(null);
+
     useEffect(() => {
 
         const scriptId = "cloudinary-upload-widget-script";
@@ -26,16 +28,34 @@ const EditarEditorial = () => {
         fetch(import.meta.env.VITE_BACKEND_URL + "api/editorial/" + theId)
             .then(response => response.json())
             .then(data => {
-            setEmail(data.email || "");
-            setPassword(data.password || "");
-            setNombre(data.nombre || "");
-            setPais(data.pais || "");
-            setImageUrl(data.image_url || "");
-        });
+            const fields = {
+                    email: data.email || "",
+                    password: data.password || "",
+                    nombre: data.nombre || "",
+                    pais: data.pais || "",
+                    image_url: data.image_url || ""
+                };
+                
+                    setEmail(fields.email);
+                    setPassword(fields.password);
+                    setNombre(fields.nombre);
+                    setPais(fields.pais);
+                    setImageUrl(fields.image_url);
+
+                    setOriginalEditorial(fields);
+                });
     }, [theId]);
 
     const handleUpload = async (e) => {
         e.preventDefault();
+
+        const hasChanged = 
+            email !== originalEditorial.email ||
+            password !== originalEditorial.password ||
+            nombre !== originalEditorial.nombre ||
+            pais !== originalEditorial.pais ||
+            imageUrl !== originalEditorial.image_url;
+
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + "api/upload_image");
         const data = await response.json();
 
@@ -75,7 +95,9 @@ const EditarEditorial = () => {
                 throw new Error("Ese username o email ya está en uso por otra editorial");
             }
                 if (response.ok) {
-                    alert("¡Editorial actualizado con éxito!");
+                    if (hasChanged) {
+                        alert("¡Editorial actualizado con éxito!");
+                    }
                     navigate("/editorial"); 
                 }
             })
@@ -94,6 +116,13 @@ const EditarEditorial = () => {
                     <button type="button" className="btn btn-outline-secondary btn-sm" onClick={handleUpload}>
                         {imageUrl ? "Cambiar Portada" : "Subir Portada"}
                     </button>
+
+                    {imageUrl && (
+                        <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => setImageUrl("")}>
+                            Eliminar Imagen
+                        </button>
+                    )}
+
                 </div>
 
                 <div className="mb-3">
@@ -114,6 +143,13 @@ const EditarEditorial = () => {
                 </div>
 
                 <button type="submit" className="btn btn-success me-2">Actualizar Editorial</button>
+
+                <div className="mt-4">
+                     <button onClick={() => navigate(-1)} className="btn btn-secondary">
+                        <i className="fas fa-arrow-left me-2"></i>Volver
+                    </button>
+                </div>
+                
             </form>
         </div>
     );
