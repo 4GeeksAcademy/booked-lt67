@@ -49,13 +49,6 @@ const EditarEditorial = () => {
     const handleUpload = async (e) => {
         e.preventDefault();
 
-        const hasChanged = 
-            email !== originalEditorial.email ||
-            password !== originalEditorial.password ||
-            nombre !== originalEditorial.nombre ||
-            pais !== originalEditorial.pais ||
-            imageUrl !== originalEditorial.image_url;
-
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + "api/upload_image");
         const data = await response.json();
 
@@ -76,6 +69,13 @@ const EditarEditorial = () => {
     
     const updateData = (e) => {
         e.preventDefault();
+        
+        const hasChanged = 
+            email !== originalEditorial.email ||
+            password !== originalEditorial.password ||
+            nombre !== originalEditorial.nombre ||
+            pais !== originalEditorial.pais ||
+            imageUrl !== originalEditorial.image_url;
         
         const requestOptions = {
             method: 'PUT', 
