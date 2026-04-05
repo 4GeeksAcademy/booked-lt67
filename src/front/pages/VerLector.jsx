@@ -1,9 +1,15 @@
-import React, { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, Navigate } from "react-router-dom"
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const VerLector = () => {
     const { theId } = useParams();
     const [lector, setLector] = useState(null);
+    const { store, dispatch } = useGlobalReducer()
+    
+        if (!store.auth_admin) {
+                return <Navigate to="/login_admin" />;
+            }
 
     
     useEffect(() => {

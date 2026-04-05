@@ -69,7 +69,7 @@ const TodosLosPostEditorial = () => {
                                             <button className="btn btn-outline-primary btn-sm me-2">
                                                 <i className="">Editar</i>
                                             </button>
-                                            <button 
+                                            <button
                                                 className="btn btn-outline-danger btn-sm"
                                                 onClick={() => handleDelete(post.id)}
                                             >
@@ -85,7 +85,11 @@ const TodosLosPostEditorial = () => {
                     ))}
                 </div>
             )}
+            <div className="d-flex justify-content-center">
+                <Link to={"/pagina_editorial/"} className="m-3 btn btn-sm btn-outline-primary">Volver al Dashboard</Link>
+            </div>
         </div>
+
     );
 };
 

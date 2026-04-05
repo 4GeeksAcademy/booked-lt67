@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useState, } from "react";
+import { Link, Navigate, useParams, useNavigate } from "react-router-dom";
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 
 const VerLibro = () => {
     const { theId } = useParams();
     const [libro, setLibro] = useState(null);
+    const { store, dispatch } = useGlobalReducer()
+                    
+
 
     const navigate = useNavigate();
 
