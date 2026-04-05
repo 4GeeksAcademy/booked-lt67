@@ -40,7 +40,7 @@ const Autor = () => {
 
     }
 
-    const imagenFinal = autor.foto || `https://ui-avatars.com/api/?name=${autor.nombre}+${autor.apellido}&background=random`;
+    /* const imagenFinal = autor.foto || `https://ui-avatars.com/api/?name=${autor.nombre}+${autor.apellido}&background=random`; */
 
     return (
         <>
@@ -56,7 +56,7 @@ const Autor = () => {
                             <div className="card p-3 shadow-sm">
                                 <h5 className="mb-3">{autor.nombre} {autor.apellido}</h5>
                                 <img
-                                    src={imagenFinal}
+                                    src={autor.foto}
                                     alt={autor.nombre}
                                     className="img-thumbnail"
                                     style={{ width: "100px", height: "100px", objectFit: "cover" }}
