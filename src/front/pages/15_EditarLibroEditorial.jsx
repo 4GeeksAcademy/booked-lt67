@@ -12,7 +12,9 @@ const EditarLibroEditorial = () => {
     const [imageUrl, setImageUrl] = useState(""); // Nuevo estado
     const [originalData, setOriginalData] = useState(null);
 
-    const [autores, setAutores] = useState([]); 
+    const [autores, setAutores] = useState([]);
+    const [editoriales, setEditoriales] = useState([]);
+
 
     useEffect(() => {
         // Cargar Script de Cloudinary
@@ -131,6 +133,9 @@ const EditarLibroEditorial = () => {
                 </div>
                 <button type="submit" className="btn btn-success">Actualizar Libro</button>
             </form>
+            <div className="d-flex justify-content-center">
+                <Link to={"/pagina_editorial/"} className="m-3 btn btn-sm btn-outline-primary">Volver al Dashboard</Link>
+            </div>
         </div>
     );
 };

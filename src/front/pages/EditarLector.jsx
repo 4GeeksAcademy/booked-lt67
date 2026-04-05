@@ -1,9 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, Navigate } from "react-router-dom"
+import useGlobalReducer from "../hooks/useGlobalReducer";
+
 
 const EditarLector = () => {
     const { theId } = useParams();
     const navigate = useNavigate();
+    const { store, dispatch } = useGlobalReducer()
+    
+        if (!store.auth_admin) {
+                return <Navigate to="/login_admin" />;
+            }
 
     
     const [email, setEmail] = useState("");

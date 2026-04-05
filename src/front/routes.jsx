@@ -64,6 +64,7 @@ import CrearPostAutor from "./pages/14_PostAutor";
 import VerPerfilAutorEditorial from "./pages/18_VerPerfilAutorEditorial";
 import VerAutorFree from "./pages/18_VerAutor_Free";
 import VerEditorialFree from "./pages/18_VerEditorialFree";
+import ActualizarAutor from "./pages/20_ActualizarAutor";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -154,6 +155,8 @@ export const router = createBrowserRouter(
       <Route path="/ver_autor_editorial" element={<VerPerfilAutorEditorial />} />
       <Route path="/ver_autor_free/:theId" element={<VerAutorFree />} />
       <Route path="/ver_editorial_free/:theId" element={<VerEditorialFree />} />
+
+      <Route path="/actualizar_autor/:theId" element={<ActualizarAutor />} />
 
       </Route>
     )

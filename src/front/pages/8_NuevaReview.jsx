@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, Navigate } from "react-router-dom"
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const NuevaReview = () => {
 
@@ -14,6 +15,14 @@ const NuevaReview = () => {
     const [texto, setTexto] = useState([""])
     const [puntuacion, setPuntuacion] = useState([])
 
+    const [mensaje, setMensaje] = useState("");
+
+    const { store, dispatch } = useGlobalReducer()
+
+    if (!store.auth_admin) {
+        return <Navigate to="/login_admin" />;
+    }
+
     useEffect(() => {
         fetch(import.meta.env.VITE_BACKEND_URL + "api/lector")
             .then(response => response.json())
@@ -23,8 +32,8 @@ const NuevaReview = () => {
             .then(response => response.json())
             .then(data => setLibros(data))
     }, [])
-    
-    function sendData(e){
+
+    function sendData(e) {
         e.preventDefault()
 
         const requestOptions = {
@@ -42,10 +51,10 @@ const NuevaReview = () => {
             .then(response => response.json())
             .then(data => {
                 console.log(data)
-                navigate("/review") 
-            }) 
+                navigate("/review")
+            })
     }
-    
+
     return (
         <div className="container mt-5">
             <h2>Agregar Review</h2>
@@ -84,7 +93,7 @@ const NuevaReview = () => {
                 <button type="submit" className="btn btn-primary">Crear Review</button>
             </form>
         </div>
-    );  
+    );
 };
 
 export default NuevaReview;
