@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const CrearPostEditorial = () => {
 
@@ -15,8 +15,8 @@ const CrearPostEditorial = () => {
             .then(data => setEditoriales(data))
 
     }, [])
-    
-    function sendData(e){
+
+    function sendData(e) {
         e.preventDefault()
 
         const requestOptions = {
@@ -32,10 +32,10 @@ const CrearPostEditorial = () => {
             .then(response => response.json())
             .then(data => {
                 console.log(data)
-                navigate("/editorial") 
-            }) 
+                navigate("/editorial")
+            })
     }
-    
+
     return (
         <div className="container mt-5">
             <h2>Crear Post</h2>
@@ -59,11 +59,14 @@ const CrearPostEditorial = () => {
                     <textarea type="text" className="form-control" value={texto} onChange={(e) => setTexto(e.target.value)} required />
                 </div>
 
-                
+
                 <button type="submit" className="btn btn-primary">Crear Post</button>
             </form>
+            <div className="d-flex justify-content-center">
+                <Link to={"/pagina_editorial/"} className="m-3 btn btn-sm btn-outline-primary">Volver al Dashboard</Link>
+            </div>
         </div>
-    );  
+    );
 };
 
 export default CrearPostEditorial;

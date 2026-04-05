@@ -1,9 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState, } from "react";
+import { Link, Navigate, useParams } from "react-router-dom";
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const Seguidores = () => {
     const [lectores, setLectores] = useState([]);
     const [cargando, setCargando] = useState(true);
+
+    const { store, dispatch } = useGlobalReducer()
+
+    if (!store.auth_admin) {
+        return <Navigate to="/login_admin" />;
+    }
 
     const cargarTodo = () => {
         fetch(`${import.meta.env.VITE_BACKEND_URL}api/lector/`)
@@ -19,10 +26,10 @@ const Seguidores = () => {
         cargarTodo();
     }, []);
 
-    
+
     const handleUnfollow = (idRelacion) => {
         fetch(`${import.meta.env.VITE_BACKEND_URL}api/unfollow/${idRelacion}`, { method: "DELETE" })
-            .then(() => cargarTodo()); 
+            .then(() => cargarTodo());
     };
 
     if (cargando) return <div className="container mt-5 text-center"><div className="spinner-border"></div></div>;
@@ -52,21 +59,20 @@ const Seguidores = () => {
                                                     <span className="small">{s.nombre_seguido}</span>
                                                     <div className="d-flex gap-1">
                                                         <Link to={`/editar_seguido/${s.relacion_id}`} className="text-warning">Editar</Link>
-                                                        <span onClick={() => handleUnfollow(s.relacion_id)} className="text-danger" style={{cursor: 'pointer'}}>Dejar de Seguir</span>
+                                                        <span onClick={() => handleUnfollow(s.relacion_id)} className="text-danger" style={{ cursor: 'pointer' }}>Dejar de Seguir</span>
                                                     </div>
                                                 </div>
                                             ))
                                         ) : <span className="text-muted small">A nadie</span>}
                                     </div>
 
-                                    {/* Sub-sección: Seguidores */}
                                     <div className="col-6">
                                         <h6 className="text-success small fw-bold">LO SIGUEN:</h6>
                                         {lector.seguidores && lector.seguidores.length > 0 ? (lector.seguidores.map(f => (
-                                                <div key={f.relacion_id} className="mb-1 p-1 bg-light rounded">
-                                                    <span className="small">{f.nombre_seguidor}</span>
-                                                </div>
-                                            ))
+                                            <div key={f.relacion_id} className="mb-1 p-1 bg-light rounded">
+                                                <span className="small">{f.nombre_seguidor}</span>
+                                            </div>
+                                        ))
                                         ) : <span className="text-muted small">Nadie</span>}
                                     </div>
                                 </div>
@@ -74,6 +80,9 @@ const Seguidores = () => {
                         </div>
                     </div>
                 ))}
+            </div>
+            <div className="d-flex justify-content-center">
+                <Link to={"/admin_home/"} className="m-3 btn btn-sm btn-outline-primary">Volver al Dashboard</Link>
             </div>
         </div>
     );

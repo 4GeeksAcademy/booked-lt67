@@ -1,7 +1,9 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, Navigate } from "react-router-dom"
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const NuevaEditorial = () => {
+    const { store, dispatch } = useGlobalReducer()
 
     const navigate = useNavigate()
 
@@ -9,6 +11,10 @@ const NuevaEditorial = () => {
     const [password, setPassword] = useState("")
     const [nombre, setNombre] = useState("")
     const [pais, setPais] = useState("")
+
+    if (!store.auth_admin) {
+                return <Navigate to="/login_admin" />;
+            }
     
     function sendData(e){
         e.preventDefault()

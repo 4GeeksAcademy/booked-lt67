@@ -16,7 +16,7 @@ const ActualizarEditorial = () => {
                 return response.json();
             })
             .then(data => {
-                
+
                 setEmail(data.email);
                 setPassword(data.password);
                 setNombre(data.nombre);
@@ -24,30 +24,30 @@ const ActualizarEditorial = () => {
             })
     }, [theId]);
 
-    
+
     const updateData = (e) => {
         e.preventDefault();
-        
+
         const requestOptions = {
-            method: 'PUT', 
+            method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 "email": email,
                 "password": password,
                 "nombre": nombre,
                 "pais": pais,
-                
+
             })
         };
 
         fetch(import.meta.env.VITE_BACKEND_URL + "api/editorial/" + theId, requestOptions)
             .then(response => {
                 if (response.status === 409) {
-                throw new Error("Ese username o email ya está en uso por otra editorial");
-            }
+                    throw new Error("Ese username o email ya está en uso por otra editorial");
+                }
                 if (response.ok) {
                     alert("¡Editorial actualizado con éxito!");
-                    navigate("/pagina_editorial"); 
+                    navigate("/pagina_editorial");
                 }
             })
     };
@@ -75,6 +75,9 @@ const ActualizarEditorial = () => {
 
                 <button type="submit" className="btn btn-success me-2">Actualizar Editorial</button>
             </form>
+            <div className="d-flex justify-content-center">
+                <Link to={"/pagina_editorial/"} className="m-3 btn btn-sm btn-outline-primary">Volver al Dashboard</Link>
+            </div>
         </div>
     );
 };

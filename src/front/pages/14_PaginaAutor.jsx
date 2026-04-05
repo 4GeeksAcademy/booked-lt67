@@ -10,6 +10,7 @@ const PaginaAutor = () => {
 
     const autorId = store.autor_id || localStorage.getItem("autor_id");
     const api = `${import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "")}/api`;
+    const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
 
     const request = async (url, m = "GET", b = null) => {
         try {
@@ -31,16 +32,24 @@ const PaginaAutor = () => {
             request(`postautor/autor/${autorId}`)
         ]);
 
-        if (perfil) {
+        // MIRA LA CONSOLA (F12) PARA VER ESTO:
+        console.log("¿Qué trae perfil?", perfil);
+
+        const datosLimpios = perfil?.autor || perfil;
+
+        if (datosLimpios) {
             const id = parseInt(autorId);
             setDb({
-                perfil,
-                misLibros: libros?.filter(l => parseInt(l.autor_id) === id) || [],
-                misSeguidores: favs?.filter(f => parseInt(f.autor_id) === id) || [],
+                perfil: datosLimpios,
+                // Aseguramos que la comparación de IDs sea siempre numérica
+                misLibros: libros?.filter(l => Number(l.autor_id) === id) || [],
+                misSeguidores: favs?.filter(f => Number(f.autor_id) === id) || [],
                 noticias: posts || [],
                 loading: false
             });
-        } else setDb(prev => ({ ...prev, loading: false }));
+        } else {
+            setDb(prev => ({ ...prev, loading: false }));
+        }
     }, [autorId]);
 
     useEffect(() => { if (autorId) loadData(); }, [loadData]);
@@ -65,9 +74,27 @@ const PaginaAutor = () => {
     return (
         <div className="container mt-4">
             <div className="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
-                <div>
-                    <h2 className="mb-0">{db.perfil?.nombre} {db.perfil?.apellido}</h2>
-                    <small className="text-muted">{db.perfil?.pais}</small>
+                <div className="d-flex align-items-center">
+                    <img
+                        src={db.perfil?.foto
+                            ? (db.perfil.foto.startsWith("http")
+                                ? db.perfil.foto
+                                : `${baseUrl}${db.perfil.foto.startsWith('/') ? '' : '/'}${db.perfil.foto}`)
+                            : `https://ui-avatars.com/api/?name=${db.perfil?.nombre || "Autor"}+${db.perfil?.apellido || ""}`
+                        }
+                        alt={db.perfil?.nombre}
+                        className="img-thumbnail me-3"
+                        style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "50%" }}
+                    />
+                    <div>
+                        <h2 className="mb-0">{db.perfil?.nombre} {db.perfil?.apellido}</h2>
+                        <small className="text-muted">{db.perfil?.pais}</small>
+                        <div>
+                            <Link to={`/actualizar_autor/${autorId}`} className="btn btn-sm btn-outline-warning mt-2">
+                                Editar Perfil
+                            </Link>
+                        </div>
+                    </div>
                 </div>
                 <div>
                     <Link to="/crear_post_autor" className="btn btn-sm btn-primary me-2">Nueva Noticia</Link>
@@ -87,7 +114,7 @@ const PaginaAutor = () => {
                                     <button className="btn btn-sm text-danger" onClick={() => handleEliminar(post.id)}>Eliminar</button>
                                 </div>
                             </div>
-                            
+
                             {editando === post.id ? (
                                 <div>
                                     <textarea className="form-control mb-2" value={nuevoTexto} onChange={(e) => setNuevoTexto(e.target.value)} />
@@ -107,7 +134,7 @@ const PaginaAutor = () => {
                     <div className="list-group mb-4">
                         {db.misLibros.map(l => (
                             <div key={l.id} className="list-group-item small">
-                                <strong>{l.nombre}</strong> <br/>
+                                <strong>{l.nombre}</strong> <br />
                                 <span className="text-muted">{l.genero}</span>
                             </div>
                         ))}
@@ -116,7 +143,7 @@ const PaginaAutor = () => {
                     <div className="list-group mb-4">
                         {db.misSeguidores.map(s => (
                             <div key={s.id} className="list-group-item small">
-                                <strong>{s.nombre_lector}</strong> <br/>
+                                <strong>{s.nombre_lector}</strong> <br />
                                 <span className="text-muted">{s.username}</span>
                             </div>
                         ))}

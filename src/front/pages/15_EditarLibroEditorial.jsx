@@ -11,7 +11,7 @@ const EditarLibroEditorial = () => {
     const [autorId, setAutorId] = useState("");
     const [editorialId, setEditorialId] = useState("");
 
-    const [autores, setAutores] = useState([]); 
+    const [autores, setAutores] = useState([]);
     const [editoriales, setEditoriales] = useState([]);
 
 
@@ -90,6 +90,9 @@ const EditarLibroEditorial = () => {
 
                 <button type="submit" className="btn btn-success me-2">Actualizar Libro</button>
             </form>
+            <div className="d-flex justify-content-center">
+                <Link to={"/pagina_editorial/"} className="m-3 btn btn-sm btn-outline-primary">Volver al Dashboard</Link>
+            </div>
         </div>
     );
 };

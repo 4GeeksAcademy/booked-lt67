@@ -1,10 +1,16 @@
-import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import React, { useEffect, useState, } from "react";
+import { Link, Navigate, useParams } from "react-router-dom";
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const LibrosFavoritos = () => {
 
     const { lectorId } = useParams();
     const [librosFavoritos, setLibrosFavoritos] = useState([])
+    const { store, dispatch } = useGlobalReducer()
+
+    if (!store.auth_admin) {
+        return <Navigate to="/login_admin" />;
+    }
 
     function getLibrosFavoritos() {
         fetch(`${import.meta.env.VITE_BACKEND_URL}api/lector/${lectorId}/favoritos`)
@@ -59,6 +65,9 @@ const LibrosFavoritos = () => {
                             </div>
                         </div>
                     ))}
+                </div>
+                <div className="d-flex justify-content-center">
+                    <Link to={"/admin_home/"} className="m-3 btn btn-sm btn-outline-primary">Volver al Dashboard</Link>
                 </div>
             </div>
         </>
