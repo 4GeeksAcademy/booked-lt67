@@ -43,11 +43,7 @@ const VerLibro = () => {
                         <div className="col-md-4 mb-3">
                             <div className="ratio ratio-1x1 bg-light rounded shadow-sm border overflow-hidden">
                                 {libro.image_url ? (
-                                    <img 
-                                        src={libro.image_url} 
-                                        alt={libro.nombre} 
-                                        className="w-100 h-100 object-fit-contain p-2" 
-                                    />
+                                    <img src={libro.image_url} alt={libro.nombre} className="w-100 h-100 object-fit-contain p-2"/>
                                 ) : (
                                     <div className="d-flex flex-column align-items-center justify-content-center text-muted h-100">
                                         <i className="fas fa-book fa-3x mb-2 opacity-25"></i>

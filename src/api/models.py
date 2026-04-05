@@ -63,9 +63,10 @@ class Editorial(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(String(120), nullable=False)
     pais: Mapped[str] = mapped_column(String(120), nullable=False)
-    email: Mapped[str] = mapped_column(
-        String(120), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    image_url = mapped_column(String(255), nullable=True)
 
     libros: Mapped[List["Libro"]] = relationship(back_populates="editorial")
     posts: Mapped[List["PostEditorial"]] = relationship(back_populates="editorial")
@@ -78,7 +79,8 @@ class Editorial(db.Model):
             "id": self.id,
             "nombre": self.nombre,
             "pais": self.pais,
-            "email": self.email
+            "email": self.email,
+            "image_url": self.image_url
         }
 
 

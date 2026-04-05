@@ -24,8 +24,8 @@ cloudinary.config(
     secure = True
 )
 
-@api.route('/sign-upload', methods=['GET'])
-def sign_upload():
+@api.route('/upload_image', methods=['GET'])
+def upload_image():
     timestamp = int(time.time())
     params_to_sign = {
         "timestamp": timestamp,
@@ -229,14 +229,15 @@ def get_editorial(editorial_id):
 def create_editorial():
     body = request.get_json()
 
-    if not body or "nombre" not in body or "pais" not in body or "email" not in body or "password" not in body:
+    if not body or "nombre" not in body or "pais" not in body or "email" not in body or "password" not in body or "image_url" not in body:
         return jsonify({"msg": "Todos los campos son obligatorios"}), 400
 
     new_editorial = Editorial(
         nombre=body.get("nombre"),
         pais=body.get("pais"),
         email=body.get("email"),
-        password=body.get("password")
+        password=body.get("password"),
+        image_url=body.get('image_url')
     )
     
     db.session.add(new_editorial)
@@ -266,6 +267,8 @@ def update_editorial(editorial_id):
     editorial.password = body.get("password", editorial.password)
     editorial.nombre = body.get("nombre", editorial.nombre)
     editorial.pais= body.get("pais donde reside", editorial.pais)
+
+    editorial.image_url= body.get("image_url", editorial.image_url)
     
     db.session.commit()
     

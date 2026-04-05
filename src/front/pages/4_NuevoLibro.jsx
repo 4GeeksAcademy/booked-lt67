@@ -49,7 +49,7 @@ const NuevoLibro = () => {
             return;
         }
 
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + "api/sign-upload");
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + "api/upload_image");
         const data = await response.json();
 
         const widget = window.cloudinary.createUploadWidget({

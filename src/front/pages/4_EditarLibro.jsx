@@ -53,7 +53,7 @@ const EditarLibro = () => {
 
     const handleUpload = async (e) => {
         e.preventDefault();
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + "api/sign-upload");
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + "api/upload_image");
         const data = await response.json();
 
         const widget = window.cloudinary.createUploadWidget({
@@ -105,11 +105,7 @@ const EditarLibro = () => {
 
                 <div className="mb-3 text-center">
                     {imageUrl && (
-                        <img 
-                            src={imageUrl} 
-                            alt="Portada" 
-                            style={{ width: "150px", marginBottom: "10px", borderRadius: "5px" }} 
-                        />
+                        <img src={imageUrl} alt="Portada" style={{ width: "150px", marginBottom: "10px", borderRadius: "5px" }}/>
                     )}
                     <br />
                     <button type="button" className="btn btn-outline-secondary btn-sm" onClick={handleUpload}>
