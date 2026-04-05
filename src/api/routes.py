@@ -8,10 +8,40 @@ from flask_cors import CORS
 
 from flask_jwt_extended import create_access_token
 
+import cloudinary
+import cloudinary.utils
+import time
+
 api = Blueprint('api', __name__)
 
 # Allow CORS requests to this API
 CORS(api)
+
+cloudinary.config(
+    cloud_name = "dhdpvuldj",
+    api_key = "568969989281436",
+    api_secret = "JzQfNk5FVz1LUQiMqaFbGJ5xWI0",
+    secure = True
+)
+
+@api.route('/sign-upload', methods=['GET'])
+def sign_upload():
+    timestamp = int(time.time())
+    params_to_sign = {
+        "timestamp": timestamp,
+        "source": "uw",
+        "folder": "libros_portadas"
+    }
+    signature = cloudinary.utils.api_sign_request(
+        params_to_sign, 
+        cloudinary.config().api_secret
+    )
+    return jsonify({
+        "signature": signature,
+        "timestamp": timestamp,
+        "apiKey": cloudinary.config().api_key,
+        "cloudName": cloudinary.config().cloud_name
+    }), 200
 
 @api.route('/hello', methods=['POST', 'GET'])
 def handle_hello():
@@ -257,9 +287,12 @@ def get_libros():
 @api.route('/libro/<int:libro_id>', methods=['GET'])
 def get_libro(libro_id):
 
-    editorial = Libro.query.filter_by(id=libro_id).first()
-    print(editorial.serialize)
-    return jsonify(editorial.serialize()), 200
+    libro = Libro.query.get(libro_id)
+    if libro is None:
+        return jsonify({"msg": "Libro no encontrado"}), 404
+    
+    print(libro.serialize()) 
+    return jsonify(libro.serialize()), 200
 
 @api.route('/libro/editorial/<int:ed_id>', methods=['GET'])
 def get_libros_por_editorial(ed_id):
@@ -278,7 +311,8 @@ def create_libro():
         nombre=body.get("nombre"),
         genero=body.get("genero"),
         autor_id=body.get("autor_id"),
-        editorial_id=body.get("editorial_id") 
+        editorial_id=body.get("editorial_id"),
+        image_url=body.get("image_url")
     )
     
     db.session.add(new_libro)
@@ -310,7 +344,7 @@ def update_libros(libro_id):
         libro.autor_id = int(body["autor_id"])
     if body.get("editorial_id"):
         libro.editorial_id = int(body["editorial_id"])
-    
+    libro.image_url = body.get("image_url", libro.image_url)
     
     db.session.commit()
     

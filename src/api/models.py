@@ -114,9 +114,10 @@ class Libro(db.Model):
     nombre: Mapped[str] = mapped_column(String(120), nullable=False)
     genero: Mapped[str] = mapped_column(String(120), nullable=False)
 
-    editorial_id: Mapped[int] = mapped_column(
-        ForeignKey("editorial.id"), nullable=False)
+    editorial_id: Mapped[int] = mapped_column(ForeignKey("editorial.id"), nullable=False)
     editorial: Mapped["Editorial"] = relationship(back_populates="libros")
+
+    image_url = mapped_column(String(255), nullable=True)
 
     autor_id: Mapped[int] = mapped_column(
     ForeignKey("autor.id"), nullable=False)
@@ -137,7 +138,8 @@ class Libro(db.Model):
             "autor_id": self.autor_id,
             "editorial_id": self.editorial_id,
             "nombre_autor": f"{self.autor.nombre} {self.autor.apellido}" if self.autor else "Sin autor",
-            "nombre_editorial": self.editorial.nombre if self.editorial else "Sin editorial"
+            "nombre_editorial": self.editorial.nombre if self.editorial else "Sin editorial",
+            "image_url": self.image_url
         }
 
 

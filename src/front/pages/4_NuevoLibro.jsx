@@ -10,11 +10,26 @@ const NuevoLibro = () => {
     const [autorId, setAutorId] = useState("");
     const [editorialId, setEditorialId] = useState("");
 
+    const [imageUrl, setImageUrl] = useState("");
+
     const [autores, setAutores] = useState([]);
     const [editoriales, setEditoriales] = useState([]);
 
     
     useEffect(() => {
+
+        const scriptId = "cloudinary-upload-widget-script";
+
+        if (!document.getElementById(scriptId)) {
+            const script = document.createElement("script");
+            script.id = scriptId;
+            script.src = "https://upload-widget.cloudinary.com/global/all.js";
+            script.type = "text/javascript";
+            script.async = true;
+            script.onload = () => console.log("Cloudinary Widget cargado con éxito");
+            document.body.appendChild(script);
+    }
+
         fetch(import.meta.env.VITE_BACKEND_URL + "api/autor")
             .then(res => res.json())
             .then(data => setAutores(data))
@@ -25,6 +40,34 @@ const NuevoLibro = () => {
             .then(data => setEditoriales(data))
             
     }, []);
+
+    const handleUpload = async (e) => {
+        e.preventDefault();
+
+        if (!window.cloudinary) {
+            alert("El cargador de imágenes aún se está preparando. Intenta de nuevo en 2 segundos.");
+            return;
+        }
+
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + "api/sign-upload");
+        const data = await response.json();
+
+        const widget = window.cloudinary.createUploadWidget({
+            cloudName: data.cloudName,
+            apiKey: data.apiKey,
+            uploadSignatureTimestamp: data.timestamp,
+            uploadSignature: data.signature,
+            folder: "libros_portadas",
+            cropping: true
+        }, (error, result) => {
+            if (!error && result && result.event === "success") {
+                console.log("Imagen subida con éxito:", result.info.secure_url);
+                setImageUrl(result.info.secure_url);
+            }
+        });
+
+        widget.open();
+    };
 
     function sendData(e) {
         e.preventDefault()
@@ -44,7 +87,8 @@ const NuevoLibro = () => {
                 "nombre": nombre,
                 "genero": genero,
                 "autor_id": parseInt(autorId), 
-                "editorial_id": parseInt(editorialId)
+                "editorial_id": parseInt(editorialId),
+                "image_url":imageUrl
             })
         };
 
@@ -85,6 +129,15 @@ const NuevoLibro = () => {
                             <option value="">Selecciona una editorial</option>
                             {editoriales.map(ed => <option key={ed.id} value={ed.id}>{ed.nombre}</option>)}
                         </select>
+                    </div>
+
+                    <div className="mb-3">
+                        <label className="form-label">Portada del Libro</label>
+                        <br />
+                        <button type="button" className="btn btn-secondary mb-2" onClick={handleUpload}>
+                            {imageUrl ? "Cambiar Imagen" : "Subir Imagen"}
+                        </button>
+                        {imageUrl && <p className="text-success small">Imagen cargada correctamente ✓</p>}
                     </div>
 
                     <button type="submit" className="btn btn-primary">Agregar Libro</button>
