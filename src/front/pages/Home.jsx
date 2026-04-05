@@ -58,6 +58,8 @@ export const Home = () => {
 			
 			<Link className="btn btn-primary" to="/post_free">Ver Publicaciones y Noticias</Link>
 
+			<Link className="btn btn-primary" to="/ver_autor_editorial">Ver Autores y Editoriales</Link>
+
 
 			<div className="alert alert-info">
 				{store.message ? (

@@ -12,12 +12,17 @@ const VerEditorial = () => {
     }
 
 
+    const navigate = useNavigate();
+
     useEffect(() => {
         fetch(import.meta.env.VITE_BACKEND_URL + "api/editorial/" + theId)
             .then(response => {
                 return response.json();
             })
-            .then(data => setEditorial(data))
+            .then(data => {
+                const editorialData = Array.isArray(data) ? data[0] : data;
+                setEditorial(editorialData);
+            })
     }, [theId]);
 
     if (editorial === null) {
@@ -39,20 +44,36 @@ const VerEditorial = () => {
                     <hr className="my-4" />
 
                     <div className="row">
-                        <div className="col-md-6">
-                            <p><strong>Nombre:</strong> {editorial.nombre}</p>
-                            <p><strong>Email:</strong> {editorial.email}</p>
-                            <p><strong>Password:</strong> {editorial.password}</p>
+                        <div className="col-md-4 mb-3">
+                            <div className="ratio ratio-1x1 bg-light rounded shadow-sm border overflow-hidden">
+                                {editorial.image_url ? (
+                                    <img src={editorial.image_url} alt={editorial.nombre} className="w-100 h-100 object-fit-contain p-2"/>
+                                ) : (
+                                    <div className="d-flex flex-column align-items-center justify-content-center text-muted h-100">
+                                        <i className="fas fa-building fa-3x mb-2 opacity-25"></i>
+                                        <span className="small">Sin Logo</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                        <div className="col-md-6">
-                            <p><strong>País:</strong> {editorial.pais}</p>
+                        <div className="col-md-8">
+                            <div className="row">
+                                <div className="col-md-6">
+                                    <p><strong>Nombre:</strong> {editorial.nombre}</p>
+                                    <p><strong>Email:</strong> {editorial.email}</p>
+                                </div>
+                                <div className="col-md-6">
+                                    <p><strong>País:</strong> {editorial.pais}</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-4">
+                                <button onClick={() => navigate(-1)} className="btn btn-secondary">
+                                    <i className="fas fa-arrow-left me-2"></i>Volver
+                                </button>
+                            </div>
                         </div>
                     </div>
-
-                    <hr />
-                    <Link to="/editorial">
-                        <button className="btn btn-secondary">Volver a la lista</button>
-                    </Link>
                 </div>
             </div>
         </div>

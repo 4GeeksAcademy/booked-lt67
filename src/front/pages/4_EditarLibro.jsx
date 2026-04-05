@@ -11,6 +11,10 @@ const EditarLibro = () => {
     const [autorId, setAutorId] = useState("");
     const [editorialId, setEditorialId] = useState("");
 
+    const [imageUrl, setImageUrl] = useState("");
+
+    const [originalData, setOriginalData] = useState(null);
+
     const [autores, setAutores] = useState([]); 
     const [editoriales, setEditoriales] = useState([]);
 
@@ -22,17 +26,39 @@ const EditarLibro = () => {
 
 
     useEffect(() => {
+
+        const scriptId = "cloudinary-upload-widget-script";
+            if (!document.getElementById(scriptId)) {
+                const script = document.createElement("script");
+                script.id = scriptId;
+                script.src = "https://upload-widget.cloudinary.com/global/all.js";
+                script.async = true;
+                document.body.appendChild(script);
+            }
+
         fetch(import.meta.env.VITE_BACKEND_URL + "api/libro/" + theId)
             .then(response => {
                 return response.json();
             })
             .then(data => {
+                const libroData = {
+                    nombre: data.nombre || "",
+                    genero: data.genero || "",
+                    autor_id: data.autor_id || "",
+                    editorial_id: data.editorial_id || "",
+                    image_url: data.image_url || ""
+                };
 
-                setNombre(data.nombre);
-                setGenero(data.genero);
-                setAutorId(data.autor?.id || "");
-                setEditorialId(data.editorial?.id || "");
-            })
+                // Seteamos todos los estados del formulario usando el objeto
+                setNombre(libroData.nombre);
+                setGenero(libroData.genero);
+                setAutorId(libroData.autor_id);
+                setEditorialId(libroData.editorial_id);
+                setImageUrl(libroData.image_url);
+                
+                // Guardamos la copia original para la comparación posterior
+                setOriginalData(libroData);
+            });
 
         fetch(`${import.meta.env.VITE_BACKEND_URL}api/autor`)
             .then(res => res.json())
@@ -44,18 +70,45 @@ const EditarLibro = () => {
 
     }, [theId]);
 
+    const handleUpload = async (e) => {
+        e.preventDefault();
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + "api/upload_image");
+        const data = await response.json();
+
+        const widget = window.cloudinary.createUploadWidget({
+            cloudName: data.cloudName,
+            apiKey: data.apiKey,
+            uploadSignatureTimestamp: data.timestamp,
+            uploadSignature: data.signature,
+            folder: "libros_portadas",
+            cropping: true
+        }, (error, result) => {
+            if (!error && result && result.event === "success") {
+                setImageUrl(result.info.secure_url); 
+            }
+        });
+        widget.open();
+    };
 
     const updateData = (e) => {
         e.preventDefault();
+
+        const hasChanged = 
+            nombre !== originalData.nombre ||
+            genero !== originalData.genero ||
+            autorId !== originalData.autor_id ||
+            editorialId !== originalData.editorial_id ||
+            imageUrl !== originalData.image_url;
 
         const requestOptions = {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 "nombre": nombre,
-                "genero": genero,
+                "genero":genero ,
                 "autor_id": autorId,
-                "editorial_id": editorialId
+                "editorial_id": editorialId,
+                "image_url": imageUrl
             })
         };
 
@@ -65,7 +118,9 @@ const EditarLibro = () => {
                     throw new Error("Ese nombre o genero ya está en uso por otro lector");
                 }
                 if (response.ok) {
-                    alert("¡Libro actualizado con éxito!");
+                    if (hasChanged) {
+                        alert("¡Libro actualizado con éxito!");
+                    }
                     navigate("/libro");
                 }
             })
@@ -75,6 +130,24 @@ const EditarLibro = () => {
         <div className="container mt-5">
             <h2>Editar libro: {nombre}</h2>
             <form onSubmit={updateData} className="col-md-6 border p-4 shadow-sm">
+
+                <div className="mb-3 text-center">
+                    {imageUrl && (
+                        <img src={imageUrl} alt="Portada" style={{ width: "150px", marginBottom: "10px", borderRadius: "5px" }}/>
+                    )}
+                    <br />
+                    <button type="button" className="btn btn-outline-secondary btn-sm" onClick={handleUpload}>
+                        {imageUrl ? "Cambiar Portada" : "Subir Portada"}
+                    </button>
+
+                    {imageUrl && (
+                        <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => setImageUrl("")}>
+                            Eliminar Imagen
+                        </button>
+                    )}
+
+                </div>
+
                 <div className="mb-3">
                     <label className="form-label">Nombre</label>
                     <input type="text" className="form-control" value={nombre} onChange={(e) => setNombre(e.target.value)} />
@@ -99,6 +172,13 @@ const EditarLibro = () => {
                 </div>
 
                 <button type="submit" className="btn btn-success me-2">Actualizar Libro</button>
+
+                <div className="mt-4">
+                     <button onClick={() => navigate(-1)} className="btn btn-secondary">
+                        <i className="fas fa-arrow-left me-2"></i>Volver
+                    </button>
+                </div>
+
             </form>
         </div>
     );

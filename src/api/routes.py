@@ -8,6 +8,10 @@ from flask_cors import CORS
 
 from flask_jwt_extended import create_access_token
 
+import cloudinary
+import cloudinary.utils
+import time
+
 import os
 from werkzeug.utils import secure_filename
 
@@ -15,6 +19,32 @@ api = Blueprint('api', __name__)
 
 # Allow CORS requests to this API
 CORS(api)
+
+cloudinary.config(
+    cloud_name = "dhdpvuldj",
+    api_key = "568969989281436",
+    api_secret = "JzQfNk5FVz1LUQiMqaFbGJ5xWI0",
+    secure = True
+)
+
+@api.route('/upload_image', methods=['GET'])
+def upload_image():
+    timestamp = int(time.time())
+    params_to_sign = {
+        "timestamp": timestamp,
+        "source": "uw",
+        "folder": "libros_portadas"
+    }
+    signature = cloudinary.utils.api_sign_request(
+        params_to_sign, 
+        cloudinary.config().api_secret
+    )
+    return jsonify({
+        "signature": signature,
+        "timestamp": timestamp,
+        "apiKey": cloudinary.config().api_key,
+        "cloudName": cloudinary.config().cloud_name
+    }), 200
 
 @api.route('/hello', methods=['POST', 'GET'])
 def handle_hello():
@@ -202,14 +232,15 @@ def get_editorial(editorial_id):
 def create_editorial():
     body = request.get_json()
 
-    if not body or "nombre" not in body or "pais" not in body or "email" not in body or "password" not in body:
+    if not body or "nombre" not in body or "pais" not in body or "email" not in body or "password" not in body or "image_url" not in body:
         return jsonify({"msg": "Todos los campos son obligatorios"}), 400
 
     new_editorial = Editorial(
         nombre=body.get("nombre"),
         pais=body.get("pais"),
         email=body.get("email"),
-        password=body.get("password")
+        password=body.get("password"),
+        image_url=body.get('image_url')
     )
     
     db.session.add(new_editorial)
@@ -239,6 +270,8 @@ def update_editorial(editorial_id):
     editorial.password = body.get("password", editorial.password)
     editorial.nombre = body.get("nombre", editorial.nombre)
     editorial.pais= body.get("pais donde reside", editorial.pais)
+
+    editorial.image_url= body.get("image_url", editorial.image_url)
     
     db.session.commit()
     
@@ -260,9 +293,12 @@ def get_libros():
 @api.route('/libro/<int:libro_id>', methods=['GET'])
 def get_libro(libro_id):
 
-    editorial = Libro.query.filter_by(id=libro_id).first()
-    print(editorial.serialize)
-    return jsonify(editorial.serialize()), 200
+    libro = Libro.query.get(libro_id)
+    if libro is None:
+        return jsonify({"msg": "Libro no encontrado"}), 404
+    
+    print(libro.serialize()) 
+    return jsonify(libro.serialize()), 200
 
 @api.route('/libro/editorial/<int:ed_id>', methods=['GET'])
 def get_libros_por_editorial(ed_id):
@@ -281,7 +317,8 @@ def create_libro():
         nombre=body.get("nombre"),
         genero=body.get("genero"),
         autor_id=body.get("autor_id"),
-        editorial_id=body.get("editorial_id") 
+        editorial_id=body.get("editorial_id"),
+        image_url=body.get("image_url")
     )
     
     db.session.add(new_libro)
@@ -313,7 +350,7 @@ def update_libros(libro_id):
         libro.autor_id = int(body["autor_id"])
     if body.get("editorial_id"):
         libro.editorial_id = int(body["editorial_id"])
-    
+    libro.image_url = body.get("image_url", libro.image_url)
     
     db.session.commit()
     
