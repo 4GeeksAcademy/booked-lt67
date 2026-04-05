@@ -1,34 +1,26 @@
-import React, { useEffect, useState, } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
-import useGlobalReducer from "../hooks/useGlobalReducer";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 
-const EditarAutor = () => {
+const ActualizarAutor = () => {
     const { theId } = useParams();
     const navigate = useNavigate();
 
-    // Estados individuales para el formulario
     const [nombre, setNombre] = useState("");
     const [apellido, setApellido] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [pais, setPais] = useState("");
-    const [fotoUrl, setFotoUrl] = useState(null);
-
-    const { store, dispatch } = useGlobalReducer()
-        
-            if (!store.auth_admin) {
-                            return <Navigate to="/login_admin" />;
-                        }
+    const [fotoUrl, setFotoUrl] = useState(null)
 
     const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
 
-
-    const cargarAutor = useCallback(() => {
+    const cargarAutor = () => {
         fetch(`${baseUrl}/api/autor/${theId}`)
-            .then(res => res.json())
+            .then(response => {
+                return response.json();
+            })
             .then(data => {
                 const autor = data.autor || data;
-
                 setEmail(autor.email || "");
                 setPassword(autor.password || "");
                 setNombre(autor.nombre || "");
@@ -36,12 +28,13 @@ const EditarAutor = () => {
                 setPais(autor.pais || "");
                 setFotoUrl(autor.foto || null);
             })
-            .catch(err => console.error("Error:", err));
-    }, [theId, baseUrl]);
+    }
+
+
 
     useEffect(() => {
         cargarAutor();
-    }, [cargarAutor]);
+    }, [theId]);
 
     const handleOpenCloudinary = () => {
         if (!window.cloudinary) {
@@ -83,16 +76,15 @@ const EditarAutor = () => {
     };
 
     const handleUpdateFoto = async (nuevaFoto) => {
-        if (!nuevaFoto) return;
         const formData = new FormData();
         formData.append("foto", nuevaFoto);
 
-        const res = await fetch(`${baseUrl}/api/update_foto/${theId}`, {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/update_foto/${theId}`, {
             method: "PUT",
             body: formData,
         });
 
-        if (res.ok) {
+        if (response.ok) {
             alert("Foto actualizada");
             cargarAutor();
         }
@@ -110,48 +102,59 @@ const EditarAutor = () => {
     };
 
     const handleDeleteFotoDB = async () => {
-        if (!confirm("¿Borrar foto?")) return;
-        const res = await fetch(`${baseUrl}/api/delete_foto/${theId}`, { method: "DELETE" });
-        if (res.ok) {
-            alert("Foto borrada");
+        if (!confirm("¿Estás seguro?")) return;
+
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/delete_foto/${theId}`, {
+            method: "DELETE",
+        });
+
+        if (response.ok) {
+            alert("Foto eliminada");
             setFotoUrl(null);
         }
     };
 
+
     const updateData = (e) => {
         e.preventDefault();
+
         const requestOptions = {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, nombre, apellido, pais })
+            body: JSON.stringify({
+                "email": email,
+                "password": password,
+                "nombre": nombre,
+                "apellido": apellido,
+                "pais": pais,
+
+            })
         };
 
-        fetch(`${baseUrl}/api/autor/${theId}`, requestOptions)
+        fetch(import.meta.env.VITE_BACKEND_URL + "api/autor/" + theId, requestOptions)
             .then(response => {
+                if (response.status === 409) {
+                    throw new Error("Ese username o email ya está en uso por otra autor");
+                }
                 if (response.ok) {
-                    alert("¡Autor actualizado!");
+                    alert("¡Autor actualizado con éxito!");
                     navigate("/pagina_autor");
                 }
             });
-    };
 
-    /* const imagenSrc = fotoUrl 
-        ? (fotoUrl.startsWith("http") ? fotoUrl : `${baseUrl}${fotoUrl.startsWith('/') ? '' : '/'}${fotoUrl}`)
-        : `https://ui-avatars.com/api/?name=${nombre}+${apellido}`; */
+
+    };
 
     const imagenFinal = fotoUrl || `https://ui-avatars.com/api/?name=${nombre}+${apellido}&background=random`;
 
-
     return (
         <div className="container mt-5">
-            <h2>Editar autor: {nombre} {apellido}</h2>
-            <div className="card mb-4 p-3 text-center border-0 shadow-sm">
-
+            <h2>Editar Autor {nombre} {apellido}</h2>
+            <div className="card mb-4 p-3 text-center">
                 <img
                     src={imagenFinal}
-                    className="rounded-circle mb-3 mx-auto border"
-                    style={{ width: "180px", height: "180px", objectFit: "cover" }}
-                    alt="Perfil"
+                    className="rounded-circle mb-3 mx-auto"
+                    style={{ width: "150px", height: "150px", objectFit: "cover" }}
                 />
                 <div className="d-flex justify-content-center gap-2">
                     <button
@@ -159,7 +162,7 @@ const EditarAutor = () => {
                         className="btn btn-sm btn-outline-primary"
                         onClick={handleOpenCloudinary}
                     >
-                        {fotoUrl ? "Cambiar Foto" : "Agregar Foto"} 
+                        {fotoUrl ? "Cambiar Foto" : "Agregar Foto"}
                     </button>
 
                     {fotoUrl && (
@@ -173,18 +176,19 @@ const EditarAutor = () => {
                     )}
                 </div>
 
-                {/* <div className="d-flex justify-content-center gap-2 m-2">
+                {/* <div className="d-flex justify-content-center gap-2 m-3">
                     <label className="btn btn-sm btn-outline-primary">
                         Cambiar Foto
                         <input type="file" hidden onChange={(e) => handleUpdateFoto(e.target.files[0])} />
                     </label>
                     {fotoUrl && (
-                        <button className="btn btn-sm btn-outline-danger" onClick={handleDeleteFotoDB}>
+                        <button className="btn btn-sm btn-outline-danger" onClick={handleDeleteFoto}>
                             Borrar Foto
                         </button>
                     )}
                 </div> */}
             </div>
+
 
             <form onSubmit={updateData} className="col-md-6 border p-4 shadow-sm">
                 <div className="mb-3">
@@ -207,11 +211,14 @@ const EditarAutor = () => {
                     <label className="form-label">País</label>
                     <input type="text" className="form-control" value={pais} onChange={(e) => setPais(e.target.value)} />
                 </div>
-                <button type="button" className="btn btn-light" onClick={() => navigate(-1)}>Cancelar</button>
-                <button type="submit" className="btn btn-success me-2">Actualizar autor</button>
+
+                <button type="submit" className="btn btn-success me-2">Actualizar Autor</button>
             </form>
+            <div className="d-flex justify-content-center">
+                <Link to={"/pagina_autor/"} className="m-3 btn btn-sm btn-outline-primary">Volver al Dashboard</Link>
+            </div>
         </div>
     );
 };
 
-export default EditarAutor;
+export default ActualizarAutor;

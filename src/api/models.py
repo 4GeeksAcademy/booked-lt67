@@ -3,6 +3,7 @@ from sqlalchemy import String, Boolean, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime, timezone
 from typing import List
+import os
 
 db = SQLAlchemy()
 
@@ -91,6 +92,7 @@ class Autor(db.Model):
     pais: Mapped[str] = mapped_column(String(120), nullable=False)
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
+    foto_url = db.Column(db.String(500), nullable=True)
 
     libros: Mapped[List["Libro"]] = relationship(back_populates="autor")
 
@@ -102,12 +104,21 @@ class Autor(db.Model):
         return f'<Autor: {self.nombre} {self.apellido}>'
 
     def serialize(self):
+
+        foto_final = self.foto_url
+        
+        if self.foto_url:
+            if not self.foto_url.startswith("http"):
+                base_url = os.getenv("VITE_BACKEND_URL", "").rstrip("/")
+                foto_final = f"{base_url}/{self.foto_url.lstrip('/')}"
+
         return {
             "id": self.id,
             "nombre": self.nombre,
             "apellido": self.apellido,
             "pais": self.pais,
-            "email": self.email
+            "email": self.email,
+            "foto": foto_final
         }
 
 

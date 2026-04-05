@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, Navigate } from "react-router-dom"
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const EditarReview = () => {
     const { theId } = useParams();
@@ -13,6 +14,14 @@ const EditarReview = () => {
 
     const [texto, setTexto] = useState("");
     const [puntuacion, setPuntuacion] = useState("");
+
+    const [mensaje, setMensaje] = useState("");
+
+    const { store, dispatch } = useGlobalReducer()
+
+    if (!store.auth_admin) {
+        return <Navigate to="/login_admin" />;
+    }
 
     useEffect(() => {
         fetch(import.meta.env.VITE_BACKEND_URL + "api/reviews/" + theId)
@@ -34,7 +43,7 @@ const EditarReview = () => {
 
     }, [theId]);
 
-    
+
     const updateData = (e) => {
         e.preventDefault();
 
@@ -42,9 +51,9 @@ const EditarReview = () => {
             alert("Debes seleccionar lector y libro");
             return;
         }
-        
+
         const requestOptions = {
-            method: 'PUT', 
+            method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 "lector_id": parseInt(lectorId),
@@ -58,7 +67,7 @@ const EditarReview = () => {
             .then(response => {
                 if (response.ok) {
                     alert("¡Actualizado con éxito!");
-                    navigate("/review"); 
+                    navigate("/review");
                 }
             });
     };

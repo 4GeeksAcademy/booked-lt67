@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 
 const NuevoLibroEditorial = () => {
-    
-    const { theId } = useParams(); 
+
+    const { theId } = useParams();
     const navigate = useNavigate()
 
     const [nombre, setNombre] = useState("");
@@ -13,32 +13,32 @@ const NuevoLibroEditorial = () => {
     const [editorialId, setEditorialId] = useState("");
     const [nombreEditorial, setNombreEditorial] = useState("");
 
-    
 
-    
+
+
     useEffect(() => {
         fetch(import.meta.env.VITE_BACKEND_URL + "api/autor")
             .then(res => res.json())
             .then(data => setAutores(data))
             .catch(err => console.error("Error cargando autores:", err));
 
-        
+
         fetch(`${import.meta.env.VITE_BACKEND_URL}api/editorial/${theId}`)
             .then(res => res.json())
             .then(data => setNombreEditorial(data.nombre))
             .catch(err => console.error("Error cargando editorial:", err));
-            
+
     }, [theId]);
 
     function sendData(e) {
         e.preventDefault()
-        
+
         console.log("send data")
         console.log(nombre, genero, autorId, editorialId)
 
         if (!autorId) {
-        alert("Por favor, selecciona un autor");
-        return;
+            alert("Por favor, selecciona un autor");
+            return;
         }
 
         const requestOptions = {
@@ -47,7 +47,7 @@ const NuevoLibroEditorial = () => {
             body: JSON.stringify({
                 "nombre": nombre,
                 "genero": genero,
-                "autor_id": parseInt(autorId), 
+                "autor_id": parseInt(autorId),
                 "editorial_id": parseInt(theId)
             })
         };
@@ -87,6 +87,9 @@ const NuevoLibroEditorial = () => {
 
                     <button type="submit" className="btn btn-primary">Agregar Libro</button>
                 </form>
+            </div>
+            <div className="d-flex justify-content-center">
+                <Link to={"/pagina_editorial/"} className="m-3 btn btn-sm btn-outline-primary">Volver al Dashboard</Link>
             </div>
         </>
     );

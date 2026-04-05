@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import Libro from "./4_Libro";
+import React, { useEffect, useState, } from "react";
+import { Link, Navigate, useParams } from "react-router-dom";
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const EditarLibro = () => {
     const { theId } = useParams();
@@ -17,6 +17,12 @@ const EditarLibro = () => {
 
     const [autores, setAutores] = useState([]); 
     const [editoriales, setEditoriales] = useState([]);
+
+    const { store, dispatch } = useGlobalReducer()
+            
+                if (!store.auth_admin) {
+                                return <Navigate to="/login_admin" />;
+                            }
 
 
     useEffect(() => {

@@ -1,9 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useState, } from "react";
+import { Link, Navigate, useParams } from "react-router-dom";
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const VerEditorial = () => {
     const { theId } = useParams();
     const [editorial, setEditorial] = useState(null);
+    const { store, dispatch } = useGlobalReducer()
+
+    if (!store.auth_admin) {
+        return <Navigate to="/login_admin" />;
+    }
+
 
     const navigate = useNavigate();
 
@@ -35,7 +42,7 @@ const VerEditorial = () => {
                 <div className="card-body">
                     <h1 className="display-4">Detalles de la Editorial</h1>
                     <hr className="my-4" />
-                    
+
                     <div className="row">
                         <div className="col-md-4 mb-3">
                             <div className="ratio ratio-1x1 bg-light rounded shadow-sm border overflow-hidden">

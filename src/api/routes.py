@@ -12,6 +12,9 @@ import cloudinary
 import cloudinary.utils
 import time
 
+import os
+from werkzeug.utils import secure_filename
+
 api = Blueprint('api', __name__)
 
 # Allow CORS requests to this API
@@ -163,7 +166,7 @@ def create_autor():
 
     if not body or "nombre" not in body or "apellido" not in body or "pais" not in body or "email" not in body or "password" not in body:
         return jsonify({"msg": "Todos los campos son obligatorios"}), 400
-
+    
     new_autor = Autor(
         nombre=body.get("nombre"),
         apellido=body.get("apellido"),
@@ -938,3 +941,97 @@ def update_post_autor(post_id):
     db.session.commit()
 
     return jsonify(post.serialize()), 200
+
+@api.route('/upload_foto/<int:autor_id>', methods=['POST'])
+def upload_foto(autor_id):
+    if 'foto' not in request.files:
+        return jsonify({"msg": "No hay archivo"}), 400
+        
+    file = request.files['foto']
+    filename = secure_filename(file.filename)
+    
+    upload_folder = os.path.join(os.getcwd(), "src", "static", "uploads")
+    
+    if not os.path.exists(upload_folder):
+        os.makedirs(upload_folder)
+   
+    file_path = os.path.join(upload_folder, filename)
+    file.save(file_path)
+    
+    autor = Autor.query.get(autor_id)
+    autor.foto_url = f"static/uploads/{filename}"
+    db.session.commit()
+    
+    return jsonify({"msg": "Foto subida con éxito", "url": autor.foto_url}), 200
+
+@api.route('/update_foto/<int:autor_id>', methods=['PUT'])
+def update_foto(autor_id):
+    if 'foto' not in request.files:
+        return jsonify({"msg": "No hay archivo"}), 400
+    
+    autor = Autor.query.get(autor_id)
+    if not autor:
+        return jsonify({"msg": "Autor no encontrado"}), 404
+
+    if autor.foto_url:
+        old_path = os.path.join(os.getcwd(), "src", autor.foto_url)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    file = request.files['foto']
+    filename = secure_filename(file.filename)
+    upload_folder = os.path.join(os.getcwd(), "src", "static", "uploads")
+    
+    file_path = os.path.join(upload_folder, filename)
+    file.save(file_path)
+
+    autor.foto_url = f"static/uploads/{filename}"
+    db.session.commit()
+    
+    return jsonify({"msg": "Foto actualizada", "url": autor.foto_url}), 200
+
+@api.route('/delete_foto/<int:autor_id>', methods=['DELETE'])
+def delete_foto(autor_id):
+    autor = Autor.query.get(autor_id)
+    if not autor or not autor.foto_url:
+        return jsonify({"msg": "No hay foto para borrar"}), 404
+
+    file_path = os.path.join(os.getcwd(), "src", autor.foto_url)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    autor.foto_url = None
+    db.session.commit()
+
+    return jsonify({"msg": "Foto eliminada correctamente"}), 200
+
+@api.route('/update_foto_cloudinary/<int:autor_id>', methods=['PUT'])
+def update_foto_cloudinary(autor_id):
+    
+    data = request.json
+    nueva_url = data.get("foto") 
+
+    if not nueva_url:
+        return jsonify({"msg": "Falta la URL de la foto"}), 400
+        
+    autor = Autor.query.get(autor_id)
+    if not autor:
+        return jsonify({"msg": "Autor no encontrado"}), 404
+
+    
+    autor.foto_url = nueva_url
+    db.session.commit()
+    
+    return jsonify({"msg": "Foto de Cloudinary vinculada", "url": autor.foto_url}), 200
+
+@api.route('/delete_foto_cloudinary/<int:autor_id>', methods=['DELETE'])
+def delete_foto_cloudinary(autor_id):
+    autor = Autor.query.get(autor_id)
+    if not autor:
+        return jsonify({"msg": "Autor no encontrado"}), 404
+
+    # Solo limpiamos el registro en la base de datos
+    autor.foto_url = None
+    db.session.commit()
+
+    return jsonify({"msg": "Referencia de foto eliminada"}), 200

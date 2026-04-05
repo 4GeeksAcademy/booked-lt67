@@ -58,7 +58,7 @@ const VerPostEditorial = () => {
                     </div>
                 ))
             )}
-            <Link to="/editorial">
+            <Link to="/pagina_editorial">
                 <button className="btn btn-secondary m-3">Volver a Editoriales</button>
             </Link>
         </div>
