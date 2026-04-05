@@ -2,11 +2,12 @@ import React, { useEffect } from "react"
 import rigoImageUrl from "../assets/img/rigo-baby.jpg";
 import logoBookedUrl from "../assets/img/logo_booked.png";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
-import { Link } from "react-router-dom";
+import { useNavigate, Link, Navigate } from "react-router-dom";
 
 const AdminHome = () => {
 
     const { store, dispatch } = useGlobalReducer()
+    const navigate = useNavigate()
 
     /* const loadMessage = async () => {
         try {
