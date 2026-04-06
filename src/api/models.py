@@ -31,6 +31,7 @@ class Lector(db.Model):
     nombre: Mapped[str] = mapped_column(String(120),  nullable=False)
     apellido: Mapped[str] = mapped_column(String(120), nullable=False)
     pais_donde_reside: Mapped[str] = mapped_column(String(120), nullable=False)
+    foto_url = db.Column(db.String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
 
     libros_fav: Mapped[List["LibrosFavoritos"]] = relationship(back_populates="lector")

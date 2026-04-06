@@ -1030,8 +1030,76 @@ def delete_foto_cloudinary(autor_id):
     if not autor:
         return jsonify({"msg": "Autor no encontrado"}), 404
 
-    # Solo limpiamos el registro en la base de datos
     autor.foto_url = None
     db.session.commit()
 
     return jsonify({"msg": "Referencia de foto eliminada"}), 200
+
+@api.route('/upload_foto_lector/<int:lector_id>', methods=['POST'])
+def upload_foto_lector(lector_id):
+    if 'foto' not in request.files:
+        return jsonify({"msg": "No hay archivo en la petición"}), 400
+        
+    file = request.files['foto']
+    if file.filename == '':
+        return jsonify({"msg": "No se seleccionó ningún archivo"}), 400
+
+    filename = secure_filename(file.filename)
+    
+    upload_folder = os.path.join(os.getcwd(), "src", "static", "uploads")
+    
+    if not os.path.exists(upload_folder):
+        os.makedirs(upload_folder)
+   
+    file_path = os.path.join(upload_folder, filename)
+    file.save(file_path)
+    
+    lector = Lector.query.get(lector_id)
+    if not lector:
+        return jsonify({"msg": "Lector no encontrado"}), 404
+
+    lector.foto_url = f"static/uploads/{filename}"
+    db.session.commit()
+    
+    return jsonify({"msg": "Foto de lector subida con éxito", "url": lector.foto_url}), 200
+
+@api.route('/update_foto_lector/<int:lector_id>', methods=['PUT'])
+def update_foto_lector(lector_id):
+    if 'foto' not in request.files:
+        return jsonify({"msg": "No hay archivo"}), 400
+    
+    lector = Lector.query.get(lector_id)
+    if not lector:
+        return jsonify({"msg": "Lector no encontrado"}), 404
+
+    if lector.foto_url:
+        old_path = os.path.join(os.getcwd(), "src", lector.foto_url)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    file = request.files['foto']
+    filename = secure_filename(file.filename)
+    upload_folder = os.path.join(os.getcwd(), "src", "static", "uploads")
+    
+    file_path = os.path.join(upload_folder, filename)
+    file.save(file_path)
+
+    lector.foto_url = f"static/uploads/{filename}"
+    db.session.commit()
+    
+    return jsonify({"msg": "Foto de lector actualizada", "url": lector.foto_url}), 200
+
+@api.route('/delete_foto_lector/<int:lector_id>', methods=['DELETE'])
+def delete_foto_lector(lector_id):
+    lector = Lector.query.get(lector_id)
+    if not lector or not lector.foto_url:
+        return jsonify({"msg": "No hay foto para borrar"}), 404
+
+    file_path = os.path.join(os.getcwd(), "src", lector.foto_url)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    lector.foto_url = None
+    db.session.commit()
+
+    return jsonify({"msg": "Foto de lector eliminada correctamente"}), 200
