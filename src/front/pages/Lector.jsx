@@ -38,14 +38,13 @@ const Lector = () => {
 
     }
 
-    
 
     return (
         <>
 
             <div className="container mt-5">
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h1>Lector</h1>
+                    <h1>Lectores</h1>
                     <Link to="/nuevo_lector" className="btn btn-primary">Nuevo Lector</Link>
                 </div>
 
@@ -53,7 +52,16 @@ const Lector = () => {
                     {lectores.map((lector) => (
                         <div className="col-md-4" key={lector.id}>
                             <div className="card p-3 shadow-sm">
-                                <h5 className="mb-3">{lector.nombre}</h5>
+                                <h5 className="mb-1">{lector.nombre} {lector.apellido}</h5>
+                                <div className="mb-2">
+                                <img
+                                    src={lector.foto_url}
+                                    alt={lector.nombre}
+                                    className="img-thumbnail"
+                                    style={{ width: "100px", height: "100px", objectFit: "cover" }}
+                                />
+                                </div>
+
                                 <div className="d-flex flex-wrap gap-2">
                                     <Link to={"/ver_lector/" + lector.id} className="btn btn-sm btn-outline-primary">Ver</Link>
                                     <Link to={"/editar_lector/" + lector.id} className="btn btn-sm btn-outline-primary">Editar</Link>

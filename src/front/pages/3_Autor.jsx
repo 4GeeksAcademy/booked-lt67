@@ -46,7 +46,7 @@ const Autor = () => {
         <>
             <div className="container mt-5">
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h1>autor</h1>
+                    <h1>Autores</h1>
                     <Link to="/nuevo_autor" className="btn btn-primary">Nuevo autor</Link>
                 </div>
 
@@ -54,13 +54,15 @@ const Autor = () => {
                     {autores.map((autor) => (
                         <div className="col-md-4" key={autor.id}>
                             <div className="card p-3 shadow-sm">
-                                <h5 className="mb-3">{autor.nombre} {autor.apellido}</h5>
+                                <h5 className="mb-1">{autor.nombre} {autor.apellido}</h5>
+                                <div className="mb-2">
                                 <img
                                     src={autor.foto}
                                     alt={autor.nombre}
                                     className="img-thumbnail"
                                     style={{ width: "100px", height: "100px", objectFit: "cover" }}
                                 />
+                                </div>
 
                                 <div className="d-flex flex-wrap gap-2">
                                     <Link to={"/ver_autor/" + autor.id} className="btn btn-sm btn-outline-primary">Ver</Link>

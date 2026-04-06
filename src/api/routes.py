@@ -1103,3 +1103,35 @@ def delete_foto_lector(lector_id):
     db.session.commit()
 
     return jsonify({"msg": "Foto de lector eliminada correctamente"}), 200
+
+@api.route('/update_foto_lector_cloudinary/<int:lector_id>', methods=['PUT'])
+def update_foto_lector_cloudinary(lector_id):
+    
+    data = request.get_json()
+    nueva_url = data.get("foto_url") 
+
+    if not nueva_url:
+        return jsonify({"msg": "Falta la URL de la foto en el cuerpo de la petición"}), 400
+        
+    lector = Lector.query.get(lector_id)
+    if not lector:
+        return jsonify({"msg": "Lector no encontrado"}), 404
+
+    lector.foto_url = nueva_url
+    db.session.commit()
+    
+    return jsonify({
+        "msg": "Foto de perfil (Cloudinary) vinculada con éxito", 
+        "url": lector.foto_url
+    }), 200
+
+@api.route('/delete_foto_lector_cloudinary/<int:lector_id>', methods=['DELETE'])
+def delete_foto_lector_cloudinary(lector_id):
+    lector = Lector.query.get(lector_id)
+    if not lector:
+        return jsonify({"msg": "Lector no encontrado"}), 404
+
+    lector.foto_url = None
+    db.session.commit()
+
+    return jsonify({"msg": "Vínculo de foto eliminado correctamente"}), 200

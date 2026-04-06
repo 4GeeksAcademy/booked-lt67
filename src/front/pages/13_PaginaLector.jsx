@@ -25,7 +25,7 @@ const TarjetaLibro = ({ libro, esFavorito, loEstaLeyendo, alHacerClic, lectorId 
 
 const PaginaLector = () => {
     const { store } = useGlobalReducer();
-    const [db, setDb] = useState({ usuario: null, favoritos: [], leyendo: [], todos: [], otros: [], autoresFav: [], todosAutores: [], loading: true});
+    const [db, setDb] = useState({ usuario: null, favoritos: [], leyendo: [], todos: [], otros: [], autoresFav: [], todosAutores: [], loading: true });
     const [idASeguir, setIdASeguir] = useState("");
     const [idAutorASeguir, setIdAutorASeguir] = useState("");
     const api = `${import.meta.env.VITE_BACKEND_URL}/api`;
@@ -41,43 +41,43 @@ const PaginaLector = () => {
     };
 
     const load = useCallback(async () => {
-    if (!store.lector_id) return;
-    
-    try {
-        // Ejecutamos todas las peticiones
-        const [u, f, l, t, all, af, ta] = await Promise.all([
-            request(`lector/${store.lector_id}`), 
-            request(`lector/${store.lector_id}/favoritos`),
-            request(`lector/${store.lector_id}/leyendo`), 
-            request(`libro`), 
-            request(`lector`),
-            request(`lector_autores_favoritos`), // <-- esto es 'af'
-            request(`autor`)                      // <-- esto es 'ta'
-        ]);
+        if (!store.lector_id) return;
 
-        const otros = all?.filter(o => o.id !== store.lector_id && !u?.siguiendo?.some(s => s.seguido_id === o.id)) || [];
+        try {
+            // Ejecutamos todas las peticiones
+            const [u, f, l, t, all, af, ta] = await Promise.all([
+                request(`lector/${store.lector_id}`),
+                request(`lector/${store.lector_id}/favoritos`),
+                request(`lector/${store.lector_id}/leyendo`),
+                request(`libro`),
+                request(`lector`),
+                request(`lector_autores_favoritos`), // <-- esto es 'af'
+                request(`autor`)                      // <-- esto es 'ta'
+            ]);
 
-        const misAutoresFav = af?.filter(item => Number(item.lector_id) === Number(store.lector_id)) || [];
-        
-        const autoresDisponibles = ta?.filter(a => 
-            !misAutoresFav.some(fav => Number(fav.autor_id) === Number(a.id))
-        ) || [];
+            const otros = all?.filter(o => o.id !== store.lector_id && !u?.siguiendo?.some(s => s.seguido_id === o.id)) || [];
 
-        setDb({ 
-            usuario: u, 
-            favoritos: f || [], 
-            leyendo: l || [], 
-            todos: t || [], 
-            otros, 
-            autoresFav: misAutoresFav, 
-            todosAutores: autoresDisponibles, 
-            loading: false 
-        });
-    } catch (error) {
-        console.error("Error cargando datos:", error);
-        setDb(prev => ({ ...prev, loading: false }));
-    }
-}, [store.lector_id]);
+            const misAutoresFav = af?.filter(item => Number(item.lector_id) === Number(store.lector_id)) || [];
+
+            const autoresDisponibles = ta?.filter(a =>
+                !misAutoresFav.some(fav => Number(fav.autor_id) === Number(a.id))
+            ) || [];
+
+            setDb({
+                usuario: u,
+                favoritos: f || [],
+                leyendo: l || [],
+                todos: t || [],
+                otros,
+                autoresFav: misAutoresFav,
+                todosAutores: autoresDisponibles,
+                loading: false
+            });
+        } catch (error) {
+            console.error("Error cargando datos:", error);
+            setDb(prev => ({ ...prev, loading: false }));
+        }
+    }, [store.lector_id]);
 
     useEffect(() => { if (store.auth_lector) load(); }, [store.auth_lector, load]);
 
@@ -86,9 +86,29 @@ const PaginaLector = () => {
     if (!store.auth_lector) return <Navigate to="/login_lector" />;
     if (db.loading) return <div className="text-center mt-5"><h3>Cargando...</h3></div>;
 
+    const usuario = db.usuario;
+    const nombre = usuario?.nombre || "Lector";
+    const apellido = usuario?.apellido || "";
+    const fotoUrl = usuario?.foto_url;
+
+    const imagenFinal = fotoUrl || `https://ui-avatars.com/api/?name=${nombre}+${apellido}&background=random`;
+
     return (
         <div className="container mt-4">
+            <div className="text-center mb-3">
+                <img
+                    src={imagenFinal}
+                    className="rounded-circle shadow-sm border"
+                    style={{ width: "150px", height: "150px", objectFit: "cover" }}
+                    alt="Perfil"
+                />
+            </div>
             <h1 className="text-center border-bottom pb-2 h4">Panel de {db.usuario?.nombre}</h1>
+            <div>
+                <Link to={`/actualizar_lector/${store.lector_id}`} className="btn btn-sm btn-outline-warning mt-2">
+                    Editar Perfil
+                </Link>
+            </div>
             <div className="row mt-3">
                 <div className="col-md-4">
                     <div className="card p-3 mb-3 border-0 bg-warning bg-opacity-10 shadow-sm">
@@ -101,13 +121,13 @@ const PaginaLector = () => {
                         ))}
                     </div>
 
-                    <form className="card p-3 mb-3 border-0 shadow-sm bg-success bg-opacity-10" 
-                        onSubmit={async (e) => { 
-                            e.preventDefault(); 
-                            if(!idAutorASeguir) return; 
-                            await request(`lector_autores_favoritos`, "POST", { lector_id: store.lector_id, autor_id: parseInt(idAutorASeguir) }); 
-                            setIdAutorASeguir(""); 
-                            load(); 
+                    <form className="card p-3 mb-3 border-0 shadow-sm bg-success bg-opacity-10"
+                        onSubmit={async (e) => {
+                            e.preventDefault();
+                            if (!idAutorASeguir) return;
+                            await request(`lector_autores_favoritos`, "POST", { lector_id: store.lector_id, autor_id: parseInt(idAutorASeguir) });
+                            setIdAutorASeguir("");
+                            load();
                         }}>
                         <h6 className="fw-bold small">Seguir Autor</h6>
                         <div className="d-flex gap-2">
@@ -125,8 +145,8 @@ const PaginaLector = () => {
                             <div key={af.id} className="d-flex justify-content-between small border-bottom py-1">
                                 {/* Usamos nombre_autor que es lo que viene en tu JSON de respuesta */}
                                 <span className="text-truncate">{af.nombre_autor || "Autor desconocido"}</span>
-                                <button 
-                                    className="btn btn-sm text-danger p-0 border-0" 
+                                <button
+                                    className="btn btn-sm text-danger p-0 border-0"
                                     onClick={() => exec(`lector_autores_favoritos/${af.id}`, "DELETE")}
                                 >
                                     Quitar de favoritos
@@ -177,7 +197,7 @@ const PaginaLector = () => {
                         {db.todos.map(l => (
                             <TarjetaLibro key={l.id} libro={l} lectorId={store.lector_id} alHacerClic={exec}
                                 esFavorito={db.favoritos.some(f => (f.libro?.id || f.libro_id) === l.id)}
-                                loEstaLeyendo={db.leyendo.some(ley => (ley.libro?.id || ley.libro_id) === l.id)} 
+                                loEstaLeyendo={db.leyendo.some(ley => (ley.libro?.id || ley.libro_id) === l.id)}
                             />
                         ))}
                     </div>
