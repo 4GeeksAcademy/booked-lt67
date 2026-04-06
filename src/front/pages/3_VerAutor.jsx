@@ -6,8 +6,10 @@ const VerAutor = () => {
     const { theId } = useParams();
     const [autor, setautor] = useState(null);
     const { store, dispatch } = useGlobalReducer()
-        
-    
+
+    if (!store.auth_admin) {
+        return <Navigate to="/login_admin" />;
+    }
 
     useEffect(() => {
         fetch(import.meta.env.VITE_BACKEND_URL + "api/autor/" + theId)

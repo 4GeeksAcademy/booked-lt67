@@ -56,7 +56,8 @@ class Lector(db.Model):
             "apellido": self.apellido,
             "pais_donde_reside": self.pais_donde_reside,
             "siguiendo": [s.serialize_as_siguiendo() for s in self.siguiendo],
-            "seguidores": [f.serialize_as_seguidor() for f in self.seguidores]
+            "seguidores": [f.serialize_as_seguidor() for f in self.seguidores],
+            "foto_url": self.foto_url
             # do not serialize the password, its a security breach
         }
 

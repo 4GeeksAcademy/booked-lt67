@@ -19,12 +19,12 @@ const Reviews = () => {
     
 
     useEffect(() => {
-        console.log("se cargaron las autores")
+        console.log("se cargaron las reviews")
         getReviews()
     }, [])
 
     function deleteReviews(idToDelete) {
-        console.log("se va a eliminar la autor" + idToDelete)
+        console.log("se va a eliminar la review" + idToDelete)
         const requestOptions = {
             method: "DELETE",
             redirect: "follow"
@@ -44,7 +44,7 @@ const Reviews = () => {
             <div className="container mt-5">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <h1>Reviews</h1>
-                    <Link to="/nueva_review" className="btn btn-primary">Nuevo lector_autores_favoritos</Link>
+                    <Link to="/nueva_review" className="btn btn-primary">Hacer una Nueva Review</Link>
                 </div>
 
                 <div className="row g-4">

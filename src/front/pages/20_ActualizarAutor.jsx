@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const ActualizarAutor = () => {
     const { theId } = useParams();
@@ -13,6 +14,11 @@ const ActualizarAutor = () => {
     const [fotoUrl, setFotoUrl] = useState(null)
 
     const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+    const { store, dispatch } = useGlobalReducer()
+
+    if (!store.auth_autor) {
+        return <Navigate to="/login_autor" />;
+    }
 
     const cargarAutor = () => {
         fetch(`${baseUrl}/api/autor/${theId}`)
