@@ -1,46 +1,61 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, Navigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
+import SelectorUbicacion from "./24_Georreferenciacion"; 
 
 const ActualizarLector = () => {
     const { theId } = useParams();
     const navigate = useNavigate();
-    const { store, dispatch } = useGlobalReducer()
+    const { store } = useGlobalReducer();
 
-
+    if (!store.auth_lector) { return <Navigate to="/login_lector" />; }
 
     const [email, setEmail] = useState("");
     const [username, setUsername] = useState("");
     const [nombre, setNombre] = useState("");
     const [apellido, setApellido] = useState("");
     const [paisdondereside, setPaisDondeReside] = useState("");
-    const [fotoUrl, setFotoUrl] = useState(null)
+    const [fotoUrl, setFotoUrl] = useState(null);
+    
+    // ESTADOS PARA EL MAPA
+    const [ubicacion, setUbicacion] = useState(null);
+    const [cargando, setCargando] = useState(true);
 
     const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-    if (!store.auth_lector) { return <Navigate to="/login_lector" />; }
-
 
     const cargarLector = () => {
         fetch(`${baseUrl}/api/lector/${theId}`)
-            .then(response => {
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
                 const lector = data.lector || data;
                 setEmail(lector.email || "");
+                setUsername(lector.username || ""); // Corregido: antes no se llenaba en el GET
                 setNombre(lector.nombre || "");
                 setApellido(lector.apellido || "");
-                setPaisDondeReside(lector.paisdondereside || "");
+                setPaisDondeReside(lector.pais_donde_reside || lector.paisdondereside || "");
                 setFotoUrl(lector.foto_url || null);
+                
+                // Cargamos las coordenadas actuales del usuario para el mapa
+                if (lector.latitud && lector.longitud) {
+                    setUbicacion({ lat: lector.latitud, lng: lector.longitud });
+                } else {
+                    setUbicacion({ lat: -33.4489, lng: -70.6693 }); // Santiago por defecto
+                }
+                
+                setCargando(false);
             })
+            .catch(err => {
+                console.error("Error al cargar lector:", err);
+                setCargando(false);
+            });
     }
-
 
     useEffect(() => {
         cargarLector();
     }, [theId]);
 
+    // ---- LÓGICA DE CLOUDINARY (SIN CAMBIOS) ----
     const handleOpenCloudinary = () => {
         if (!window.cloudinary) {
             alert("Error: No se pudo cargar el script de Cloudinary.");
@@ -68,30 +83,15 @@ const ActualizarLector = () => {
     };
 
     const actualizarFotoEnDB = async (urlCloudinary) => {
-    const res = await fetch(`${baseUrl}/api/update_foto_lector_cloudinary/${theId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ foto_url: urlCloudinary }), 
-    });
-
-    if (res.ok) {
-        alert("Foto actualizada con Cloudinary");
-        cargarLector(); 
-    }
-};
-
-    const handleUpdateFoto = async (nuevaFoto) => {
-        const formData = new FormData();
-        formData.append("foto", nuevaFoto);
-
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/update_foto_lector/${theId}`, {
+        const res = await fetch(`${baseUrl}/api/update_foto_lector_cloudinary/${theId}`, {
             method: "PUT",
-            body: formData,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ foto_url: urlCloudinary }), 
         });
 
-        if (response.ok) {
-            alert("Foto actualizada");
-            cargarLector();
+        if (res.ok) {
+            alert("Foto actualizada con Cloudinary");
+            cargarLector(); 
         }
     };
 
@@ -105,20 +105,7 @@ const ActualizarLector = () => {
             cargarLector();
         }
     };
-
-    const handleDeleteFotoDB = async () => {
-        if (!confirm("¿Estás seguro?")) return;
-
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/delete_foto_lector/${theId}`, {
-            method: "DELETE",
-        });
-
-        if (response.ok) {
-            alert("Foto eliminada");
-            setFotoUrl(null);
-        }
-    };
-
+    // ---------------------------------------------
 
     const updateData = (e) => {
         e.preventDefault();
@@ -127,40 +114,44 @@ const ActualizarLector = () => {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                "email": email,
+                // NO enviamos email para que no se sobreescriba accidentalmente
                 "username": username,
                 "nombre": nombre,
                 "apellido": apellido,
                 "pais donde reside": paisdondereside,
-
+                // ENVIAMOS LAS COORDENADAS DEL MAPA
+                "latitud": ubicacion.lat,
+                "longitud": ubicacion.lng
             })
         };
 
         fetch(import.meta.env.VITE_BACKEND_URL + "api/lector/" + theId, requestOptions)
             .then(response => {
                 if (response.status === 409) {
-                    throw new Error("Ese username o email ya está en uso por otra lector");
+                    throw new Error("Ese username ya está en uso por otro lector");
                 }
                 if (response.ok) {
                     alert("¡Lector actualizado con éxito!");
                     navigate("/pagina_lector");
                 }
-            });
-
-
+            })
+            .catch(err => alert(err.message));
     };
 
     const imagenFinal = fotoUrl || `https://ui-avatars.com/api/?name=${nombre}+${apellido}&background=random`;
 
+    if (cargando) return <div className="container mt-5 text-center">Cargando datos del lector...</div>;
 
     return (
-        <div className="container mt-5">
-            <h2>Editar Lector {nombre} {apellido}</h2>
-            <div className="card mb-4 p-3 text-center">
+        <div className="container mt-5 mb-5">
+            <h2 className="text-center mb-4">Editar Perfil de {nombre} {apellido}</h2>
+            
+            {/* SECCIÓN DE FOTO DE PERFIL */}
+            <div className="col-md-8 mx-auto card mb-4 p-4 text-center shadow-sm border-0 bg-light">
                 <img
                     src={imagenFinal}
-                    className="rounded-circle mb-3 mx-auto"
-                    style={{ width: "150px", height: "150px", objectFit: "cover" }}
+                    className="rounded-circle mb-3 mx-auto shadow"
+                    style={{ width: "150px", height: "150px", objectFit: "cover", border: "4px solid white" }}
                 />
                 <div className="d-flex justify-content-center gap-2">
                     <button
@@ -168,6 +159,7 @@ const ActualizarLector = () => {
                         className="btn btn-sm btn-outline-primary"
                         onClick={handleOpenCloudinary}
                     >
+                        <i className="fas fa-camera me-1"></i>
                         {fotoUrl ? "Cambiar Foto" : "Agregar Foto"}
                     </button>
 
@@ -177,52 +169,58 @@ const ActualizarLector = () => {
                             className="btn btn-sm btn-outline-danger"
                             onClick={handleDeleteFoto}
                         >
-                            Eliminar Foto
+                            <i className="fas fa-trash me-1"></i> Eliminar Foto
                         </button>
                     )}
                 </div>
-
-                {/* <div className="d-flex justify-content-center gap-2 m-3">
-                    <label className="btn btn-sm btn-outline-primary">
-                        Cambiar Foto
-                        <input type="file" hidden onChange={(e) => handleUpdateFoto(e.target.files[0])} />
-                    </label>
-                    {fotoUrl && (
-                        <button className="btn btn-sm btn-outline-danger" onClick={handleDeleteFoto}>
-                            Borrar Foto
-                        </button>
-                    )}
-                </div> */}
             </div>
 
-
-            <form onSubmit={updateData} className="col-md-6 border p-4 shadow-sm">
+            {/* FORMULARIO DE DATOS Y MAPA */}
+            <form onSubmit={updateData} className="col-md-8 mx-auto border p-4 shadow-sm bg-white rounded">
+                
                 <div className="mb-3">
-                    <label className="form-label">Email</label>
-                    <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label">Username</label>
-                    <input type="text" className="form-control" value={username} onChange={(e) => setUsername(e.target.value)} />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label">Nombre</label>
-                    <input type="text" className="form-control" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label">Apellido</label>
-                    <input type="text" className="form-control" value={apellido} onChange={(e) => setApellido(e.target.value)} />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label">País donde reside</label>
-                    <input type="text" className="form-control" value={paisdondereside} onChange={(e) => setPaisDondeReside(e.target.value)} />
+                    <label className="form-label text-muted small fw-bold text-uppercase">Email</label>
+                    {/* INPUT DE EMAIL BLOQUEADO */}
+                    <input type="email" className="form-control bg-light" value={email} disabled title="No puedes cambiar tu correo electrónico"/>
                 </div>
 
-                <button type="submit" className="btn btn-success me-2">Actualizar Lector</button>
+                <div className="mb-3">
+                    <label className="form-label text-muted small fw-bold text-uppercase">Username</label>
+                    <input type="text" className="form-control" value={username} onChange={(e) => setUsername(e.target.value)} required/>
+                </div>
+
+                <div className="row">
+                    <div className="col-md-6 mb-3">
+                        <label className="form-label text-muted small fw-bold text-uppercase">Nombre</label>
+                        <input type="text" className="form-control" value={nombre} onChange={(e) => setNombre(e.target.value)} required/>
+                    </div>
+                    <div className="col-md-6 mb-3">
+                        <label className="form-label text-muted small fw-bold text-uppercase">Apellido</label>
+                        <input type="text" className="form-control" value={apellido} onChange={(e) => setApellido(e.target.value)} required/>
+                    </div>
+                </div>
+
+                <div className="mb-4">
+                    <label className="form-label text-muted small fw-bold text-uppercase">País donde reside</label>
+                    <input type="text" className="form-control" value={paisdondereside} onChange={(e) => setPaisDondeReside(e.target.value)} required/>
+                </div>
+
+                {/* INTEGRACIÓN DEL MAPA */}
+                {ubicacion && (
+                    <div className="mb-4">
+                        <label className="form-label text-muted small fw-bold text-uppercase">Mi Ubicación</label>
+                        <SelectorUbicacion 
+                            ubicacionInicial={ubicacion} 
+                            onLocationSelect={setUbicacion} 
+                        />
+                    </div>
+                )}
+
+                <div className="d-flex justify-content-between align-items-center mt-4">
+                    <Link to={"/pagina_lector/"} className="btn btn-secondary">Cancelar</Link>
+                    <button type="submit" className="btn btn-success">Actualizar Mis Datos</button>
+                </div>
             </form>
-            <div className="d-flex justify-content-center">
-                <Link to={"/pagina_lector/"} className="m-3 btn btn-sm btn-outline-primary">Volver al Dashboard</Link>
-            </div>
         </div>
     );
 };

@@ -1,225 +1,139 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, Navigate, useParams, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
+
+// IMPORTAMOS EL MAPA (Ajusta la ruta según dónde esté guardado)
+import SelectorUbicacion from "./24_Georreferenciacion"; 
 
 const EditarLector = () => {
     const { theId } = useParams();
     const navigate = useNavigate();
-    const { store } = useGlobalReducer();
-
-    // Estados individuales para el formulario
-    const [nombre, setNombre] = useState("");
-    const [apellido, setApellido] = useState("");
-    const [email, setEmail] = useState("");
-    const [username, setUsername] = useState("");
-    const [paisdondereside, setPaisDondeReside] = useState("");
-    const [fotoUrl, setFotoUrl] = useState(null);
-
-    // Protección de ruta para Admin
+    const { store, dispatch } = useGlobalReducer();
+    
     if (!store.auth_admin) {
         return <Navigate to="/login_admin" />;
     }
 
-    const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-
-    // Cargar datos del lector
-    const cargarLector = useCallback(() => {
-        fetch(`${baseUrl}/api/lector/${theId}`)
-            .then(res => res.json())
-            .then(data => {
-                const lector = data.lector || data;
-                setEmail(lector.email || "");
-                setUsername(lector.username || "");
-                setNombre(lector.nombre || "");
-                setApellido(lector.apellido || "");
-                // Manejamos las dos posibles variantes del nombre del campo en el JSON
-                setPaisDondeReside(lector.pais_donde_reside || lector["pais donde reside"] || "");
-                setFotoUrl(lector.foto_url || null);
-            })
-            .catch(err => console.error("Error cargando lector:", err));
-    }, [theId, baseUrl]);
+    const [email, setEmail] = useState("");
+    const [username, setUsername] = useState("");
+    const [nombre, setNombre] = useState("");
+    const [apellido, setApellido] = useState("");
+    const [paisdondereside, setPaisDondeReside] = useState("");
+    
+    // NUEVOS ESTADOS PARA EL MAPA
+    const [ubicacion, setUbicacion] = useState(null);
+    const [cargando, setCargando] = useState(true);
 
     useEffect(() => {
-        cargarLector();
-    }, [cargarLector]);
-
-    // Lógica de Cloudinary (Widget)
-    const handleOpenCloudinary = () => {
-        if (!window.cloudinary) {
-            alert("Error: No se pudo cargar el script de Cloudinary.");
-            return;
-        }
-
-        const myWidget = window.cloudinary.createUploadWidget(
-            {
-                cloudName: "dklriashm",
-                uploadPreset: "lectores_preset", // Preset específico para lectores
-                sources: ["local", "url", "camera"],
-                multiple: false,
-                cropping: true,
-                croppingAspectRatio: 1,
-                showSkipCropButton: false
-            },
-            (error, result) => {
-                if (!error && result && result.event === "success") {
-                    console.log("Imagen subida:", result.info.secure_url);
-                    actualizarFotoEnDB(result.info.secure_url);
+        fetch(import.meta.env.VITE_BACKEND_URL + "api/lector/" + theId)
+            .then(response => {
+                if (!response.ok) throw new Error("Error al cargar datos");
+                return response.json();
+            })
+            .then(data => {
+                setEmail(data.email || "");
+                setUsername(data.username || "");
+                setNombre(data.nombre || "");
+                setApellido(data.apellido || "");
+                setPaisDondeReside(data.pais_donde_reside || "");
+                
+                // Cargamos las coordenadas actuales del usuario para el mapa
+                if (data.latitud && data.longitud) {
+                    setUbicacion({ lat: data.latitud, lng: data.longitud });
+                } else {
+                    setUbicacion({ lat: -33.4489, lng: -70.6693 }); // Santiago por defecto
                 }
-            }
-        );
-        myWidget.open();
-    };
-
-    
-    const actualizarFotoEnDB = async (urlCloudinary) => {
-        const res = await fetch(`${baseUrl}/api/update_foto_lector_cloudinary/${theId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ foto_url: urlCloudinary }), // Usamos foto_url como espera el backend
-        });
-
-        if (res.ok) {
-            alert("Foto del lector actualizada con éxito");
-            cargarLector();
-        }
-    };
-
-    const handleUpdateFoto = async (nuevaFoto) => {
-        if (!nuevaFoto) return;
-        const formData = new FormData();
-        formData.append("foto", nuevaFoto);
-
-        const res = await fetch(`${baseUrl}/api/update_foto/${theId}`, {
-            method: "PUT",
-            body: formData,
-        });
-
-        if (res.ok) {
-            alert("Foto actualizada");
-            cargarLector();
-        }
-    };
-   
-    const handleDeleteFoto = async () => {
-        if (!confirm("¿Seguro que quieres quitar la foto de perfil?")) return;
-        const res = await fetch(`${baseUrl}/api/delete_foto_lector_cloudinary/${theId}`, {
-            method: "DELETE"
-        });
-        if (res.ok) {
-            setFotoUrl(null);
-            cargarLector();
-        }
-    };
-
-    const handleDeleteFotoDB = async () => {
-        if (!confirm("¿Borrar foto?")) return;
-        const res = await fetch(`${baseUrl}/api/delete_foto/${theId}`, { method: "DELETE" });
-        if (res.ok) {
-            alert("Foto borrada");
-            setFotoUrl(null);
-        }
-    };
-
+                
+                setCargando(false);
+            })
+            .catch(err => {
+                console.error(err);
+                setCargando(false);
+            });
+    }, [theId]);
 
     const updateData = (e) => {
         e.preventDefault();
+        
         const requestOptions = {
-            method: 'PUT',
+            method: 'PUT', 
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                email, 
-                username, 
-                nombre, 
-                apellido, 
-                "pais donde reside": paisdondereside 
+            body: JSON.stringify({
+                "email": email,
+                "username": username,
+                "nombre": nombre,
+                "apellido": apellido,
+                "pais donde reside": paisdondereside,
+                // ENVIAMOS LAS COORDENADAS
+                "latitud": ubicacion.lat,
+                "longitud": ubicacion.lng
             })
         };
 
-        fetch(`${baseUrl}/api/lector/${theId}`, requestOptions)
+        fetch(import.meta.env.VITE_BACKEND_URL + "api/lector/" + theId, requestOptions)
             .then(response => {
-                if (response.ok) {
-                    alert("¡Lector actualizado!");
-                    navigate("/lector");
+                if (response.status === 409) {
+                    throw new Error("Ese username o email ya está en uso por otro lector");
                 }
-            });
+                if (response.ok) {
+                    alert("¡Lector actualizado con éxito!");
+                    navigate("/lector"); 
+                } else {
+                    throw new Error("Ocurrió un error al actualizar");
+                }
+            })
+            .catch(err => alert(err.message));
     };
-    /* const imagenSrc = fotoUrl 
-        ? (fotoUrl.startsWith("http") ? fotoUrl : `${baseUrl}${fotoUrl.startsWith('/') ? '' : '/'}${fotoUrl}`)
-        : `https://ui-avatars.com/api/?name=${nombre}+${apellido}`; */
 
-    const imagenFinal = fotoUrl || `https://ui-avatars.com/api/?name=${nombre}+${apellido}&background=random`;
+    if (cargando) return <div className="container mt-5 text-center">Cargando datos del lector...</div>;
 
     return (
-        <div className="container mt-5">
-            <h2>Editar lector: {nombre} {apellido}</h2>
-            
-            
-            <div className="card mb-4 p-3 text-center border-0 shadow-sm">
-                <img
-                    src={imagenFinal}
-                    className="rounded-circle mb-3 mx-auto border"
-                    style={{ width: "180px", height: "180px", objectFit: "cover" }}
-                    alt="Perfil Lector"
-                />
-                <div className="d-flex justify-content-center gap-2">
-                    <button
-                        type="button"
-                        className="btn btn-sm btn-outline-primary"
-                        onClick={handleOpenCloudinary}
-                    >
-                        {fotoUrl ? "Cambiar Foto" : "Agregar Foto"} 
-                    </button>
+        <div className="container mt-5 mb-5">
+            <h2 className="mb-4">Editar Lector #{theId}</h2>
+            <form onSubmit={updateData} className="col-md-8 border p-4 shadow-sm bg-white rounded">
+                
+                <div className="row">
+                    <div className="col-md-6 mb-3">
+                        <label className="form-label">Email</label>
+                        {/* El admin SÍ puede editar este campo */}
+                        <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                    </div>
+                    <div className="col-md-6 mb-3">
+                        <label className="form-label">Username</label>
+                        <input type="text" className="form-control" value={username} onChange={(e) => setUsername(e.target.value)} required />
+                    </div>
+                </div>
 
-                    {fotoUrl && (
-                        <button
-                            type="button"
-                            className="btn btn-sm btn-outline-danger"
-                            onClick={handleDeleteFoto}
-                        >
-                            Eliminar Foto
-                        </button>
-                    )}
-                </div>
-            {/* <div className="d-flex justify-content-center gap-2 m-2">
-                    <label className="btn btn-sm btn-outline-primary">
-                        Cambiar Foto
-                        <input type="file" hidden onChange={(e) => handleUpdateFoto(e.target.files[0])} />
-                    </label>
-                    {fotoUrl && (
-                        <button className="btn btn-sm btn-outline-danger" onClick={handleDeleteFotoDB}>
-                            Borrar Foto
-                        </button>
-                    )}
-                </div> */}
-
-            </div>
-
-            {/* Formulario de Datos */}
-            <form onSubmit={updateData} className="col-md-6 border p-4 shadow-sm bg-white rounded">
-                <div className="mb-3">
-                    <label className="form-label fw-bold small">Email</label>
-                    <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label fw-bold small">Username</label>
-                    <input type="text" className="form-control" value={username} onChange={(e) => setUsername(e.target.value)} />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label fw-bold small">Nombre</label>
-                    <input type="text" className="form-control" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label fw-bold small">Apellido</label>
-                    <input type="text" className="form-control" value={apellido} onChange={(e) => setApellido(e.target.value)} />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label fw-bold small">País donde reside</label>
-                    <input type="text" className="form-control" value={paisdondereside} onChange={(e) => setPaisDondeReside(e.target.value)} />
+                <div className="row">
+                    <div className="col-md-6 mb-3">
+                        <label className="form-label">Nombre</label>
+                        <input type="text" className="form-control" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+                    </div>
+                    <div className="col-md-6 mb-3">
+                        <label className="form-label">Apellido</label>
+                        <input type="text" className="form-control" value={apellido} onChange={(e) => setApellido(e.target.value)} required />
+                    </div>
                 </div>
                 
-                <div className="d-flex gap-2">
-                    <button type="submit" className="btn btn-success flex-grow-1">Actualizar Lector</button>
-                    <button type="button" className="btn btn-light border" onClick={() => navigate("/lector")}>Cancelar</button>
+                <div className="mb-4">
+                    <label className="form-label">País donde reside</label>
+                    <input type="text" className="form-control" value={paisdondereside} onChange={(e) => setPaisDondeReside(e.target.value)} required />
+                </div>
+
+                {/* INTEGRACIÓN DEL MAPA */}
+                {ubicacion && (
+                    <div className="mb-4">
+                        <label className="form-label fw-bold">Ubicación del Lector</label>
+                        <SelectorUbicacion 
+                            ubicacionInicial={ubicacion} 
+                            onLocationSelect={setUbicacion} 
+                        />
+                    </div>
+                )}
+
+                <div className="d-flex justify-content-end">
+                    <Link to="/lector" className="btn btn-secondary me-2">Cancelar</Link>
+                    <button type="submit" className="btn btn-success">Actualizar Lector</button>
                 </div>
             </form>
         </div>
