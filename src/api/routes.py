@@ -106,8 +106,10 @@ def add_lectores():
         username=body["username"], 
         nombre=body["nombre"],
         apellido=body["apellido"],
-        pais_donde_reside=body["pais donde reside"],
-        password=body["password"], 
+        pais_donde_reside=body.get("pais", "No especificado"),
+        password=body["password"],
+        latitud=body.get("latitud"),
+        longitud=body.get("longitud"),
         is_active=True
         )
     
@@ -132,7 +134,10 @@ def update_lector(lector_id):
     lector.username = body.get("username", lector.username)
     lector.nombre = body.get("nombre", lector.nombre)
     lector.apellido = body.get("apellido", lector.apellido)
-    lector.pais_donde_reside = body.get("pais donde reside", lector.pais_donde_reside)
+    lector.pais_donde_reside = body.get("pais", lector.pais_donde_reside)
+
+    lector.latitud = body.get("latitud", lector.latitud)
+    lector.longitud = body.get("longitud", lector.longitud)
     
     db.session.commit()
     
@@ -746,24 +751,34 @@ def signup_editorial():
     password = body.get("password")
     nombre = body.get("nombre")
     pais = body.get("pais")
+    image_url = body.get("image_url") # Captura la URL de Cloudinary
 
     if not all([email, password, nombre, pais]):
         return jsonify({"msg": "Faltan datos obligatorios"}), 400
 
-    editorial = Editorial.query.filter_by(email=email).first()
-    if editorial:
+    editorial_existente = Editorial.query.filter_by(email=email).first()
+    if editorial_existente:
         return jsonify({"msg": "Ya se encuentra un usuario creado con ese correo"}), 401
-    
-    editorial = Editorial(email=email, password=password, nombre=nombre, pais=pais)
 
-    db.session.add(editorial)
+    nueva_editorial = Editorial(
+        email=email, 
+        password=password, 
+        nombre=nombre, 
+        pais=pais, 
+        image_url=image_url # <--- ¡LISTO!
+    )
+
+    db.session.add(nueva_editorial)
     db.session.commit()
 
     access_token = create_access_token(identity=email)
 
+    # --- MEJORA: Enviamos el ID y Nombre para que el Frontend no falle ---
     response_body = {
         "msg": "Editorial creada",
-        "access_token":access_token
+        "access_token": access_token,
+        "id": nueva_editorial.id,      # Lo necesita tu localStorage.setItem("editorial_id")
+        "nombre": nueva_editorial.nombre # Lo necesita tu dispatch
     }
     return jsonify(response_body), 201
 
@@ -1030,108 +1045,8 @@ def delete_foto_cloudinary(autor_id):
     if not autor:
         return jsonify({"msg": "Autor no encontrado"}), 404
 
+    # Solo limpiamos el registro en la base de datos
     autor.foto_url = None
     db.session.commit()
 
     return jsonify({"msg": "Referencia de foto eliminada"}), 200
-
-@api.route('/upload_foto_lector/<int:lector_id>', methods=['POST'])
-def upload_foto_lector(lector_id):
-    if 'foto' not in request.files:
-        return jsonify({"msg": "No hay archivo en la petición"}), 400
-        
-    file = request.files['foto']
-    if file.filename == '':
-        return jsonify({"msg": "No se seleccionó ningún archivo"}), 400
-
-    filename = secure_filename(file.filename)
-    
-    upload_folder = os.path.join(os.getcwd(), "src", "static", "uploads")
-    
-    if not os.path.exists(upload_folder):
-        os.makedirs(upload_folder)
-   
-    file_path = os.path.join(upload_folder, filename)
-    file.save(file_path)
-    
-    lector = Lector.query.get(lector_id)
-    if not lector:
-        return jsonify({"msg": "Lector no encontrado"}), 404
-
-    lector.foto_url = f"static/uploads/{filename}"
-    db.session.commit()
-    
-    return jsonify({"msg": "Foto de lector subida con éxito", "url": lector.foto_url}), 200
-
-@api.route('/update_foto_lector/<int:lector_id>', methods=['PUT'])
-def update_foto_lector(lector_id):
-    if 'foto' not in request.files:
-        return jsonify({"msg": "No hay archivo"}), 400
-    
-    lector = Lector.query.get(lector_id)
-    if not lector:
-        return jsonify({"msg": "Lector no encontrado"}), 404
-
-    if lector.foto_url:
-        old_path = os.path.join(os.getcwd(), "src", lector.foto_url)
-        if os.path.exists(old_path):
-            os.remove(old_path)
-
-    file = request.files['foto']
-    filename = secure_filename(file.filename)
-    upload_folder = os.path.join(os.getcwd(), "src", "static", "uploads")
-    
-    file_path = os.path.join(upload_folder, filename)
-    file.save(file_path)
-
-    lector.foto_url = f"static/uploads/{filename}"
-    db.session.commit()
-    
-    return jsonify({"msg": "Foto de lector actualizada", "url": lector.foto_url}), 200
-
-@api.route('/delete_foto_lector/<int:lector_id>', methods=['DELETE'])
-def delete_foto_lector(lector_id):
-    lector = Lector.query.get(lector_id)
-    if not lector or not lector.foto_url:
-        return jsonify({"msg": "No hay foto para borrar"}), 404
-
-    file_path = os.path.join(os.getcwd(), "src", lector.foto_url)
-    if os.path.exists(file_path):
-        os.remove(file_path)
-
-    lector.foto_url = None
-    db.session.commit()
-
-    return jsonify({"msg": "Foto de lector eliminada correctamente"}), 200
-
-@api.route('/update_foto_lector_cloudinary/<int:lector_id>', methods=['PUT'])
-def update_foto_lector_cloudinary(lector_id):
-    
-    data = request.get_json()
-    nueva_url = data.get("foto_url") 
-
-    if not nueva_url:
-        return jsonify({"msg": "Falta la URL de la foto en el cuerpo de la petición"}), 400
-        
-    lector = Lector.query.get(lector_id)
-    if not lector:
-        return jsonify({"msg": "Lector no encontrado"}), 404
-
-    lector.foto_url = nueva_url
-    db.session.commit()
-    
-    return jsonify({
-        "msg": "Foto de perfil (Cloudinary) vinculada con éxito", 
-        "url": lector.foto_url
-    }), 200
-
-@api.route('/delete_foto_lector_cloudinary/<int:lector_id>', methods=['DELETE'])
-def delete_foto_lector_cloudinary(lector_id):
-    lector = Lector.query.get(lector_id)
-    if not lector:
-        return jsonify({"msg": "Lector no encontrado"}), 404
-
-    lector.foto_url = None
-    db.session.commit()
-
-    return jsonify({"msg": "Vínculo de foto eliminado correctamente"}), 200

@@ -31,8 +31,10 @@ class Lector(db.Model):
     nombre: Mapped[str] = mapped_column(String(120),  nullable=False)
     apellido: Mapped[str] = mapped_column(String(120), nullable=False)
     pais_donde_reside: Mapped[str] = mapped_column(String(120), nullable=False)
-    foto_url = db.Column(db.String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
+
+    latitud: Mapped[float] = mapped_column(db.Float, nullable=True)
+    longitud: Mapped[float] = mapped_column(db.Float, nullable=True)
 
     libros_fav: Mapped[List["LibrosFavoritos"]] = relationship(back_populates="lector")
 
@@ -55,9 +57,12 @@ class Lector(db.Model):
             "nombre": self.nombre,
             "apellido": self.apellido,
             "pais_donde_reside": self.pais_donde_reside,
+
+            "latitud": self.latitud,
+            "longitud": self.longitud,
+            
             "siguiendo": [s.serialize_as_siguiendo() for s in self.siguiendo],
-            "seguidores": [f.serialize_as_seguidor() for f in self.seguidores],
-            "foto_url": self.foto_url
+            "seguidores": [f.serialize_as_seguidor() for f in self.seguidores]
             # do not serialize the password, its a security breach
         }
 

@@ -66,6 +66,7 @@ import VerAutorFree from "./pages/18_VerAutor_Free";
 import VerEditorialFree from "./pages/18_VerEditorialFree";
 import ActualizarAutor from "./pages/20_ActualizarAutor";
 import ActualizarLector from "./pages/21_ActualizarLector";
+import SelectorUbicacion from "./pages/24_Georreferenciacion";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -160,6 +161,8 @@ export const router = createBrowserRouter(
       <Route path="/actualizar_autor/:theId" element={<ActualizarAutor />} />
       
       <Route path="/actualizar_lector/:theId" element={<ActualizarLector />} />
+
+      <Route path="/test-mapa" element={<SelectorUbicacion />} />
 
       </Route>
     )
