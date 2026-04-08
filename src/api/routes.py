@@ -6,6 +6,11 @@ from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavorito
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
+import os
+import json
+import requests
+import google.generativeai as genai
+
 from flask_jwt_extended import create_access_token
 
 import cloudinary
@@ -20,10 +25,12 @@ api = Blueprint('api', __name__)
 # Allow CORS requests to this API
 CORS(api)
 
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
 cloudinary.config(
-    cloud_name="dhdpvuldj",
-    api_key="568969989281436",
-    api_secret="JzQfNk5FVz1LUQiMqaFbGJ5xWI0",
+    cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME2'),
+    api_key = os.getenv('CLOUDINARY_API_KEY2'),
+    api_secret = os.getenv('CLOUDINARY_API_SECRET2'),
     secure=True
 )
 
@@ -1326,3 +1333,67 @@ def add_libro_google():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+@api.route('/reconocer_portada', methods=['POST'])
+def reconocer_portada():
+    if 'portada' not in request.files:
+        return jsonify({"message": "No se envió ninguna imagen"}), 400
+
+    file = request.files['portada']
+    
+    try:
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        # Preparamos la imagen para la IA
+        image_data = [{"mime_type": file.mimetype, "data": file.read()}]
+        
+        # 2. Le damos instrucciones estrictas a la IA
+        prompt = """
+        Eres un experto bibliotecario. Mira la imagen de esta portada.
+        Devuelve ÚNICAMENTE un objeto JSON válido con las claves 'titulo' y 'autor'.
+        Si no reconoces un libro en la imagen, devuelve {"titulo": "Error", "autor": "No detectado"}.
+        No escribas formato markdown, solo el JSON puro.
+        """
+        
+        response = model.generate_content([prompt, image_data[0]])
+        
+        # Parseamos la respuesta de la IA (convertimos el string a diccionario Python)
+        ia_data = json.loads(response.text.strip())
+        
+        if ia_data.get("titulo") == "Error":
+            return jsonify({"message": "No se pudo reconocer un libro en la imagen."}), 404
+
+        titulo = ia_data.get("titulo")
+        autor = ia_data.get("autor")
+
+        # 3. BUSCAMOS LOS DATOS REALES EN GOOGLE BOOKS
+        # La IA es buena leyendo, pero Google Books tiene los datos exactos (páginas, editorial, sinopsis)
+        google_books_url = f"https://www.googleapis.com/books/v1/volumes?q=intitle:{titulo}+inauthor:{autor}&maxResults=1"
+        res_books = requests.get(google_books_url).json()
+
+        if "items" not in res_books:
+            return jsonify({
+                "message": "Libro reconocido, pero no encontrado en la base de datos.",
+                "titulo_detectado": titulo,
+                "autor_detectado": autor
+            }), 404
+
+        info = res_books["items"][0]["volumeInfo"]
+
+        # 4. Empaquetamos todo bonito para React
+        libro_encontrado = {
+            "titulo": info.get("title", titulo),
+            "autor": info.get("authors", [autor])[0],
+            "editorial": info.get("publisher", "Editorial desconocida"),
+            "fecha_publicacion": info.get("publishedDate", "N/A"),
+            "paginas": info.get("pageCount", "N/A"),
+            "descripcion": info.get("description", "Sin descripción disponible."),
+            "portada_url": info.get("imageLinks", {}).get("thumbnail", ""),
+            "categoria": info.get("categories", ["General"])[0]
+        }
+
+        return jsonify({"message": "¡Libro encontrado!", "libro": libro_encontrado}), 200
+
+    except Exception as e:
+        print("Error analizando imagen:", e)
+        return jsonify({"message": "Ocurrió un error procesando la imagen."}), 500
