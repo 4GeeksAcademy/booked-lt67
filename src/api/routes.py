@@ -111,8 +111,10 @@ def add_lectores():
         username=body["username"],
         nombre=body["nombre"],
         apellido=body["apellido"],
-        pais_donde_reside=body["pais donde reside"],
+        pais_donde_reside=body.get("pais", "No especificado"),
         password=body["password"],
+        latitud=body.get("latitud"),
+        longitud=body.get("longitud"),
         is_active=True
     )
 
@@ -138,9 +140,11 @@ def update_lector(lector_id):
     lector.username = body.get("username", lector.username)
     lector.nombre = body.get("nombre", lector.nombre)
     lector.apellido = body.get("apellido", lector.apellido)
-    lector.pais_donde_reside = body.get(
-        "pais donde reside", lector.pais_donde_reside)
+    lector.pais_donde_reside = body.get("pais", lector.pais_donde_reside)
 
+    lector.latitud = body.get("latitud", lector.latitud)
+    lector.longitud = body.get("longitud", lector.longitud)
+    
     db.session.commit()
 
     response_body = {
@@ -828,25 +832,34 @@ def signup_editorial():
     password = body.get("password")
     nombre = body.get("nombre")
     pais = body.get("pais")
+    image_url = body.get("image_url") # Captura la URL de Cloudinary
 
     if not all([email, password, nombre, pais]):
         return jsonify({"msg": "Faltan datos obligatorios"}), 400
 
-    editorial = Editorial.query.filter_by(email=email).first()
-    if editorial:
+    editorial_existente = Editorial.query.filter_by(email=email).first()
+    if editorial_existente:
         return jsonify({"msg": "Ya se encuentra un usuario creado con ese correo"}), 401
 
-    editorial = Editorial(email=email, password=password,
-                          nombre=nombre, pais=pais)
+    nueva_editorial = Editorial(
+        email=email, 
+        password=password, 
+        nombre=nombre, 
+        pais=pais, 
+        image_url=image_url # <--- ¡LISTO!
+    )
 
-    db.session.add(editorial)
+    db.session.add(nueva_editorial)
     db.session.commit()
 
     access_token = create_access_token(identity=email)
 
+    # --- MEJORA: Enviamos el ID y Nombre para que el Frontend no falle ---
     response_body = {
         "msg": "Editorial creada",
-        "access_token": access_token
+        "access_token": access_token,
+        "id": nueva_editorial.id,      # Lo necesita tu localStorage.setItem("editorial_id")
+        "nombre": nueva_editorial.nombre # Lo necesita tu dispatch
     }
     return jsonify(response_body), 201
 
@@ -1139,6 +1152,7 @@ def delete_foto_cloudinary(autor_id):
     if not autor:
         return jsonify({"msg": "Autor no encontrado"}), 404
 
+    # Solo limpiamos el registro en la base de datos
     autor.foto_url = None
     db.session.commit()
 
