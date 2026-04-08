@@ -28,7 +28,7 @@ const PaginaLector = () => {
     const [db, setDb] = useState({ usuario: null, favoritos: [], leyendo: [], todos: [], otros: [], autoresFav: [], todosAutores: [], loading: true });
     const [idASeguir, setIdASeguir] = useState("");
     const [idAutorASeguir, setIdAutorASeguir] = useState("");
-    const api = `${import.meta.env.VITE_BACKEND_URL}/api`;
+    const api = `${import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "")}/api`;
 
     const request = async (url, m = "GET", b = null) => {
         try {
