@@ -1,25 +1,41 @@
+const esSesionValida = (tipo) => {
+    const TIEMPO_EXPIRACION = 60 * 60 * 1000; // 1 hora
+    const horaLogin = localStorage.getItem(`horaLogin${tipo}`);
+    const token = localStorage.getItem(`token_${tipo}`);
+    
+    if (!token || !horaLogin) return !!token; 
+
+    const ahora = new Date().getTime();
+    const transcurrido = ahora - parseInt(horaLogin);
+
+    if (transcurrido > TIEMPO_EXPIRACION) {
+        
+        localStorage.removeItem(`token_${tipo}`);
+        localStorage.removeItem(`horaLogin${tipo}`);
+        localStorage.removeItem(`${tipo}_id`); 
+        localStorage.removeItem(`nombre_${tipo}`);
+        return false;
+    }
+    return true; 
+};
+
+
 export const initialStore = () => {
     return {
         message: null,
         todos: [
-            {
-                id: 1,
-                title: "Make the bed",
-                background: null,
-            },
-            {
-                id: 2,
-                title: "Do my homework",
-                background: null,
-            }
+            { id: 1, title: "Make the bed", background: null },
+            { id: 2, title: "Do my homework", background: null }
         ],
-        auth_autor: !!localStorage.getItem("token_autor"),
+        
+        auth_autor: esSesionValida("autor"),
+        auth_admin: esSesionValida("admin"),
+        auth_editorial: esSesionValida("editorial"),
+        auth_lector: esSesionValida("lector"),
+
         autor_id: localStorage.getItem("autor_id") || null,
-        auth_admin: !!localStorage.getItem("token_admin"),
-        auth_editorial: !!localStorage.getItem("token_editorial"),
         editorial_id: localStorage.getItem("editorial_id") || null,
         nombre_editorial: localStorage.getItem("nombre_editorial") || null,
-        auth_lector: !!localStorage.getItem("token_lector"),
         lector_id: localStorage.getItem("lector_id") || null,
         nombre_lector: localStorage.getItem("nombre_lector") || null
     };

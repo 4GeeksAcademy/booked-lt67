@@ -39,6 +39,7 @@ const LogInEditorial = () => {
 
         localStorage.setItem("token_editorial", data.access_token);
         localStorage.setItem("editorial_id", data.editorial_id);
+        localStorage.setItem("horaLoginEditorial", new Date().getTime());
 
           dispatch({
             type: "set_auth_editorial",

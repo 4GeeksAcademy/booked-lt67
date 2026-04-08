@@ -37,6 +37,7 @@ const SignUpAdmin = () => {
       })
       .then(data => {
         localStorage.setItem("token_admin", data.access_token);
+        localStorage.setItem("horaLoginAdmin", new Date().getTime());
         dispatch({ type: "set_auth_admin", payload: true });
 
         alert("Admin creado con éxito");

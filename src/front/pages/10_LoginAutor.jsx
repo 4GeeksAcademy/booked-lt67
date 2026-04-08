@@ -44,6 +44,7 @@ const LogInAutor = () => {
         localStorage.setItem("autor_id", data.autor_id);
         localStorage.setItem("token_autor", data.access_token);
         localStorage.setItem("nombre_autor", data.nombre);
+        localStorage.setItem("horaLoginAutor", new Date().getTime());
         navigate("/pagina_autor")
       })
       .catch(error => {

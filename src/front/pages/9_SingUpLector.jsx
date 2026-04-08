@@ -52,6 +52,7 @@ const SignUpLector = () => {
                 localStorage.setItem("token_lector", data.access_token);
                 localStorage.setItem("lector_id", data.lector_id);
                 localStorage.setItem("nombre_lector", data.nombre);
+                localStorage.setItem("horaLoginLector", new Date().getTime());
 
                 dispatch({
                     type: "set_auth_lector",

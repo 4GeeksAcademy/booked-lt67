@@ -7,7 +7,7 @@ const SignUpEditorial = () => {
     const [password, setPassword] = useState('');
     const [nombre, setNombre] = useState('');
     const [pais, setPais] = useState('');
-    const [imageUrl, setImageUrl] = useState(""); 
+    const [imageUrl, setImageUrl] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { store, dispatch } = useGlobalReducer();
@@ -37,10 +37,10 @@ const SignUpEditorial = () => {
                 uploadSignature: data.signature,
                 folder: "libros_portadas", // Mantener consistencia con tus otros componentes
                 cropping: true,
-                multiple: false 
+                multiple: false
             }, (error, result) => {
                 if (!error && result && result.event === "success") {
-                    setImageUrl(result.info.secure_url); 
+                    setImageUrl(result.info.secure_url);
                 }
             });
             widget.open();
@@ -61,7 +61,7 @@ const SignUpEditorial = () => {
                 "password": password,
                 "nombre": nombre,
                 "pais": pais,
-                "image_url": imageUrl 
+                "image_url": imageUrl
             })
         };
 
@@ -73,17 +73,18 @@ const SignUpEditorial = () => {
 
             const targetId = data.editorial_id || data.id;
 
-            // --- LLAVES ESPECÍFICAS PARA EDITORIAL ---
-            localStorage.setItem("token_editorial", data.access_token);
-            localStorage.setItem("editorial_id", targetId);
 
-            dispatch({ 
-                type: "set_auth_editorial", 
-                payload: { 
-                    auth: true, 
+            localStorage.setItem("token_editorial", data.access_token);
+            localStorage.setItem("editorial_id", data.editorial_id);
+            localStorage.setItem("horaLoginEditorial", new Date().getTime());
+
+            dispatch({
+                type: "set_auth_editorial",
+                payload: {
+                    auth: true,
                     id: targetId, // El reducer lo guarda en store.editorial_id
                     nombre: data.nombre
-                } 
+                }
             });
 
             alert("¡Cuenta creada exitosamente!");
@@ -103,11 +104,11 @@ const SignUpEditorial = () => {
             <div className="card shadow mx-auto" style={{ maxWidth: "500px" }}>
                 <div className="card-body p-4">
                     <h2 className="text-center mb-4">Registro de Editorial</h2>
-                    
+
                     <form onSubmit={sendData}>
                         <div className="mb-4 text-center">
-                            <div className="mx-auto mb-2 shadow-sm border d-flex align-items-center justify-content-center" 
-                                 style={{ width: "120px", height: "120px", borderRadius: "50%", overflow: "hidden", backgroundColor: "#f8f9fa" }}>
+                            <div className="mx-auto mb-2 shadow-sm border d-flex align-items-center justify-content-center"
+                                style={{ width: "120px", height: "120px", borderRadius: "50%", overflow: "hidden", backgroundColor: "#f8f9fa" }}>
                                 {imageUrl ? (
                                     <img src={imageUrl} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                 ) : (

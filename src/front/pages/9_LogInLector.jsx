@@ -30,18 +30,19 @@ const LogInLector = () => {
     fetch(import.meta.env.VITE_BACKEND_URL + 'api/login_lector', requestOptions)
     .then(response => {
         if (!response.ok) {
-            // Manejar error de credenciales
+            
             alert("Email o contraseña incorrectos");
             throw new Error("Login failed");
         }
         return response.json();
     })
     .then(data => {
-        // Guardar en localStorage
+        
         localStorage.setItem("token_lector", data.access_token);
         localStorage.setItem("lector_id", data.lector_id);
+        localStorage.setItem("horaLoginLector", new Date().getTime());
         
-        // Despachar al reducer
+        
         dispatch({
             type: "set_auth_lector",
             payload: {

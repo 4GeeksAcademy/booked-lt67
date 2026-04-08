@@ -90,8 +90,9 @@ const ActualizarLector = () => {
         });
 
         if (res.ok) {
-            alert("Foto actualizada con Cloudinary");
-            cargarLector(); 
+            setFotoUrl(urlCloudinary); 
+            alert("Foto actualizada con éxito");
+            cargarLector();
         }
     };
 
