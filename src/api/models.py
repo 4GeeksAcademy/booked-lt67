@@ -64,10 +64,11 @@ class Lector(db.Model):
 
 class Editorial(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
-    nombre: Mapped[str] = mapped_column(String(120), nullable=False)
+    nombre = db.Column(db.String(120), unique=True, nullable=False)
     pais: Mapped[str] = mapped_column(String(120), nullable=False)
-    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(String(255), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=True)
+    password = db.Column(db.String(80), unique=False, nullable=True)
+    is_active = db.Column(db.Boolean(), default=True)
 
     image_url = mapped_column(String(255), nullable=True)
 
@@ -91,9 +92,10 @@ class Autor(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(String(120), nullable=False)
     apellido: Mapped[str] = mapped_column(String(120), nullable=False)
-    pais: Mapped[str] = mapped_column(String(120), nullable=False)
-    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(String(255), nullable=False)
+    pais: Mapped[str] = mapped_column(String(120), nullable=True)
+    email = db.Column(db.String(120), unique=True, nullable=True) # Permitir nulo
+    password = db.Column(db.String(80), unique=False, nullable=True) # Permitir nulo
+    is_verified = db.Column(db.Boolean(), default=False) # Para saber si es reclamado
     foto_url = db.Column(db.String(500), nullable=True)
 
     libros: Mapped[List["Libro"]] = relationship(back_populates="autor")
@@ -126,13 +128,16 @@ class Autor(db.Model):
 
 class Libro(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
-    nombre: Mapped[str] = mapped_column(String(120), nullable=False)
+    nombre: Mapped[str] = mapped_column(String(500), nullable=False)
     genero: Mapped[str] = mapped_column(String(120), nullable=False)
+    google_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=True) 
+    isbn_13: Mapped[str] = mapped_column(String(100), unique=True, nullable=True)
+    descripcion: Mapped[str] = mapped_column(db.Text, nullable=True)
 
     editorial_id: Mapped[int] = mapped_column(ForeignKey("editorial.id"), nullable=False)
     editorial: Mapped["Editorial"] = relationship(back_populates="libros")
 
-    image_url = mapped_column(String(255), nullable=True)
+    image_url = mapped_column(String(500), nullable=True)
 
     autor_id: Mapped[int] = mapped_column(
     ForeignKey("autor.id"), nullable=False)
@@ -150,6 +155,9 @@ class Libro(db.Model):
             "id": self.id,
             "nombre": self.nombre,
             "genero": self.genero,
+            "google_id": self.google_id,
+            "isbn_13": self.isbn_13,
+            "descripcion": self.descripcion,
             "autor_id": self.autor_id,
             "editorial_id": self.editorial_id,
             "nombre_autor": f"{self.autor.nombre} {self.autor.apellido}" if self.autor else "Sin autor",
@@ -319,3 +327,4 @@ class PostAutor(db.Model):
             "texto": self.texto,
             "fecha": self.fecha.strftime("%d-%m-%Y %H:%M")
         }
+    

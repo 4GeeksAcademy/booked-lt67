@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Link, Navigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
+import BuscadorGoogleBooks from "../components/23_BuscadorGoogleBooks";
 
 const TarjetaLibro = ({ libro, esFavorito, loEstaLeyendo, alHacerClic, lectorId }) => (
     <div className="col-6 mb-3">
@@ -28,7 +29,7 @@ const PaginaLector = () => {
     const [db, setDb] = useState({ usuario: null, favoritos: [], leyendo: [], todos: [], otros: [], autoresFav: [], todosAutores: [], loading: true });
     const [idASeguir, setIdASeguir] = useState("");
     const [idAutorASeguir, setIdAutorASeguir] = useState("");
-    const api = `${import.meta.env.VITE_BACKEND_URL}/api`;
+    const api = `${import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "")}/api`;
 
     const request = async (url, m = "GET", b = null) => {
         try {
@@ -191,8 +192,36 @@ const PaginaLector = () => {
                             </div>
                         ))}
                     </div>
+                    <div className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                        <h6 className="fw-bold mb-0">Explorar Biblioteca</h6>
+                        <div className="w-50">
+                            {/* Aquí insertamos el buscador que hicimos antes */}
+                            <BuscadorGoogleBooks onLibroAgregado={load} />
+                        </div>
+                    </div>
 
-                    <h6 className="fw-bold border-bottom pb-2">Biblioteca</h6>
+                    <div className="row">
+                        <h6 className="fw-bold border-bottom pb-2">Biblioteca</h6>
+                        {db.todos.length > 0 ? (
+                            db.todos.map(l => (
+                                <TarjetaLibro
+                                    key={l.id}
+                                    libro={l}
+                                    lectorId={store.lector_id}
+                                    alHacerClic={exec}
+                                    esFavorito={db.favoritos.some(f => (f.libro?.id || f.libro_id) === l.id)}
+                                    loEstaLeyendo={db.leyendo.some(ley => (ley.libro?.id || ley.libro_id) === l.id)}
+                                />
+                            ))
+                        ) : (
+                            <div className="text-center p-5 text-muted">
+                                <p>Aún no hay libros en Booked.</p>
+                                <p className="small">¡Usa el buscador de arriba para añadir el primero!</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* <h6 className="fw-bold border-bottom pb-2">Biblioteca</h6>
                     <div className="row">
                         {db.todos.map(l => (
                             <TarjetaLibro key={l.id} libro={l} lectorId={store.lector_id} alHacerClic={exec}
@@ -200,7 +229,7 @@ const PaginaLector = () => {
                                 loEstaLeyendo={db.leyendo.some(ley => (ley.libro?.id || ley.libro_id) === l.id)}
                             />
                         ))}
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </div>

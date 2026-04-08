@@ -63,6 +63,7 @@ const VerLibro = () => {
                                     <p><strong>Nombre:</strong> {libro.nombre}</p>
                                     <p><strong>Género:</strong> {libro.genero}</p>
                                     <p><strong>Autor:</strong> {libro.nombre_autor}</p>
+                                    <p><strong>Sinopsis:</strong> {libro.descripcion}</p>
                                 </div>
                                 <div className="col-md-6">
                                     <p><strong>Editorial:</strong> {libro.nombre_editorial}</p>
