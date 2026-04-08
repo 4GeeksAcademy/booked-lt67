@@ -21,11 +21,12 @@ api = Blueprint('api', __name__)
 CORS(api)
 
 cloudinary.config(
-    cloud_name = "dhdpvuldj",
-    api_key = "568969989281436",
-    api_secret = "JzQfNk5FVz1LUQiMqaFbGJ5xWI0",
-    secure = True
+    cloud_name="dhdpvuldj",
+    api_key="568969989281436",
+    api_secret="JzQfNk5FVz1LUQiMqaFbGJ5xWI0",
+    secure=True
 )
+
 
 @api.route('/upload_image', methods=['GET'])
 def upload_image():
@@ -36,7 +37,7 @@ def upload_image():
         "folder": "libros_portadas"
     }
     signature = cloudinary.utils.api_sign_request(
-        params_to_sign, 
+        params_to_sign,
         cloudinary.config().api_secret
     )
     return jsonify({
@@ -45,6 +46,7 @@ def upload_image():
         "apiKey": cloudinary.config().api_key,
         "cloudName": cloudinary.config().cloud_name
     }), 200
+
 
 @api.route('/hello', methods=['POST', 'GET'])
 def handle_hello():
@@ -55,14 +57,15 @@ def handle_hello():
 
     return jsonify(response_body), 200
 
- 
+
 @api.route('/lector', methods=['GET'])
 def get_lectores():
 
     all_lectores = Lector.query.all()
     print(all_lectores)
-    results = list( map(lambda lector: lector.serialize(),all_lectores) )
+    results = list(map(lambda lector: lector.serialize(), all_lectores))
     return jsonify(results), 200
+
 
 @api.route('/lector/<int:lector_id>', methods=['GET'])
 def get_lector(lector_id):
@@ -70,6 +73,7 @@ def get_lector(lector_id):
     lector = Lector.query.filter_by(id=lector_id).first()
     print(lector.serialize)
     return jsonify(lector.serialize()), 200
+
 
 @api.route('/lector/<int:lector_id>', methods=['DELETE'])
 def delete_lector(lector_id):
@@ -83,10 +87,11 @@ def delete_lector(lector_id):
     db.session.delete(lector)
     db.session.commit()
     response_body = {
-        "message": "Se elimino el lector: " + lector.username 
+        "message": "Se elimino el lector: " + lector.username
     }
 
     return jsonify(response_body), 200
+
 
 @api.route('/lector', methods=['POST'])
 def add_lectores():
@@ -95,15 +100,15 @@ def add_lectores():
     email_existente = Lector.query.filter_by(email=body["email"]).first()
     if email_existente:
         return jsonify({"message": "El correo electrónico ya está registrado"}), 400
-    
-    username_existente = Lector.query.filter_by(username=body["username"]).first()
+
+    username_existente = Lector.query.filter_by(
+        username=body["username"]).first()
     if username_existente:
         return jsonify({"message": "El username ya existe, prueba otro"}), 400
 
-    
     lector = Lector(
-        email=body["email"], 
-        username=body["username"], 
+        email=body["email"],
+        username=body["username"],
         nombre=body["nombre"],
         apellido=body["apellido"],
         pais_donde_reside=body.get("pais", "No especificado"),
@@ -111,11 +116,11 @@ def add_lectores():
         latitud=body.get("latitud"),
         longitud=body.get("longitud"),
         is_active=True
-        )
-    
+    )
+
     db.session.add(lector)
     db.session.commit()
-    
+
     response_body = {
         "message": "Se creo el lector",
         "lector": lector.serialize()
@@ -123,9 +128,10 @@ def add_lectores():
 
     return jsonify(response_body), 200
 
+
 @api.route('/lector/<int:lector_id>', methods=['PUT'])
 def update_lector(lector_id):
-    
+
     lector = Lector.query.filter_by(id=lector_id).first()
 
     body = request.get_json()
@@ -140,23 +146,23 @@ def update_lector(lector_id):
     lector.longitud = body.get("longitud", lector.longitud)
     
     db.session.commit()
-    
+
     response_body = {
         "message": "se actualizo la informacion del lector",
         "lector": lector.serialize()
     }
-    
 
     return jsonify(response_body), 200
 
- 
+
 @api.route('/autor', methods=['GET'])
 def get_autores():
 
     all_autores = Autor.query.all()
     print(all_autores)
-    results = list( map(lambda autor: autor.serialize(),all_autores) )
+    results = list(map(lambda autor: autor.serialize(), all_autores))
     return jsonify(results), 200
+
 
 @api.route('/autor/<int:autor_id>', methods=['GET'])
 def get_autor(autor_id):
@@ -165,13 +171,14 @@ def get_autor(autor_id):
     print(autor.serialize)
     return jsonify(autor.serialize()), 200
 
+
 @api.route('/autor', methods=['POST'])
 def create_autor():
     body = request.get_json()
 
     if not body or "nombre" not in body or "apellido" not in body or "pais" not in body or "email" not in body or "password" not in body:
         return jsonify({"msg": "Todos los campos son obligatorios"}), 400
-    
+
     new_autor = Autor(
         nombre=body.get("nombre"),
         apellido=body.get("apellido"),
@@ -179,10 +186,11 @@ def create_autor():
         email=body.get("email"),
         password=body.get("password")
     )
-    
+
     db.session.add(new_autor)
     db.session.commit()
     return jsonify({"msg": "Autor creadao", "autor": new_autor.serialize()}), 201
+
 
 @api.route('/autor/<int:autor_id>', methods=['DELETE'])
 def delete_autor(autor_id):
@@ -196,9 +204,10 @@ def delete_autor(autor_id):
     db.session.commit()
     return jsonify({"msg": "Autor eliminada con éxito"}), 200
 
+
 @api.route('/autor/<int:autor_id>', methods=['PUT'])
 def update_autor(autor_id):
-    
+
     autor = Autor.query.filter_by(id=autor_id).first()
 
     body = request.get_json()
@@ -207,10 +216,10 @@ def update_autor(autor_id):
     autor.password = body.get("password", autor.password)
     autor.nombre = body.get("nombre", autor.nombre)
     autor.apellido = body.get("apellido", autor.apellido)
-    autor.pais= body.get("pais donde reside", autor.pais)
-    
+    autor.pais = body.get("pais donde reside", autor.pais)
+
     db.session.commit()
-    
+
     response_body = {
         "message": "se actualizo la informacion del autor",
         "autor": autor.serialize()
@@ -218,13 +227,16 @@ def update_autor(autor_id):
 
     return jsonify(response_body), 200
 
+
 @api.route('/editorial', methods=['GET'])
 def get_editoriales():
 
     all_editoriales = Editorial.query.all()
     print(all_editoriales)
-    results = list( map(lambda editorial: editorial.serialize(),all_editoriales) )
+    results = list(
+        map(lambda editorial: editorial.serialize(), all_editoriales))
     return jsonify(results), 200
+
 
 @api.route('/editorial/<int:editorial_id>', methods=['GET'])
 def get_editorial(editorial_id):
@@ -232,6 +244,7 @@ def get_editorial(editorial_id):
     editorial = Editorial.query.filter_by(id=editorial_id).first()
     print(editorial.serialize)
     return jsonify(editorial.serialize()), 200
+
 
 @api.route('/editorial', methods=['POST'])
 def create_editorial():
@@ -247,10 +260,11 @@ def create_editorial():
         password=body.get("password"),
         image_url=body.get('image_url')
     )
-    
+
     db.session.add(new_editorial)
     db.session.commit()
     return jsonify({"msg": "Editorial creada", "editorial": new_editorial.serialize()}), 201
+
 
 @api.route('/editorial/<int:editorial_id>', methods=['DELETE'])
 def delete_editorial(editorial_id):
@@ -264,9 +278,10 @@ def delete_editorial(editorial_id):
     db.session.commit()
     return jsonify({"msg": "Editorial eliminada con éxito"}), 200
 
+
 @api.route('/editorial/<int:editorial_id>', methods=['PUT'])
 def update_editorial(editorial_id):
-    
+
     editorial = Editorial.query.filter_by(id=editorial_id).first()
 
     body = request.get_json()
@@ -274,12 +289,12 @@ def update_editorial(editorial_id):
     editorial.email = body.get("email", editorial.email)
     editorial.password = body.get("password", editorial.password)
     editorial.nombre = body.get("nombre", editorial.nombre)
-    editorial.pais= body.get("pais donde reside", editorial.pais)
+    editorial.pais = body.get("pais donde reside", editorial.pais)
 
-    editorial.image_url= body.get("image_url", editorial.image_url)
-    
+    editorial.image_url = body.get("image_url", editorial.image_url)
+
     db.session.commit()
-    
+
     response_body = {
         "message": "se actualizo la informacion del editorial",
         "editorial": editorial.serialize()
@@ -287,13 +302,15 @@ def update_editorial(editorial_id):
 
     return jsonify(response_body), 200
 
+
 @api.route('/libro', methods=['GET'])
 def get_libros():
 
     all_libros = Libro.query.all()
     print(all_libros)
-    results = list( map(lambda libro: libro.serialize(),all_libros) )
+    results = list(map(lambda libro: libro.serialize(), all_libros))
     return jsonify(results), 200
+
 
 @api.route('/libro/<int:libro_id>', methods=['GET'])
 def get_libro(libro_id):
@@ -301,34 +318,70 @@ def get_libro(libro_id):
     libro = Libro.query.get(libro_id)
     if libro is None:
         return jsonify({"msg": "Libro no encontrado"}), 404
-    
-    print(libro.serialize()) 
+
+    print(libro.serialize())
     return jsonify(libro.serialize()), 200
+
 
 @api.route('/libro/editorial/<int:ed_id>', methods=['GET'])
 def get_libros_por_editorial(ed_id):
-    
+
     libros = Libro.query.filter_by(editorial_id=ed_id).all()
     return jsonify([l.serialize() for l in libros]), 200
+
 
 @api.route('/libro', methods=['POST'])
 def create_libro():
     body = request.get_json()
 
-    if not body.get("autor_id") or not body.get("editorial_id"):
-        return jsonify({"msg": "Debes seleccionar un Autor y una Editorial válidos"}), 400
+    autor_id = body.get("autor_id")
+    nombre_autor_google = body.get("nombre_autor_google")
+    editorial_id = body.get("editorial_id")
 
+    if not (autor_id or nombre_autor_google) or not editorial_id:
+        return jsonify({"msg": "Faltan datos del Autor o la Editorial"}), 400
+
+    
+    if not autor_id and nombre_autor_google:
+
+        partes = nombre_autor_google.split(" ", 1)
+        nombre_a = partes[0]
+        apellido_a = partes[1] if len(partes) > 1 else ""
+
+        autor_existente = Autor.query.filter_by(nombre=nombre_a, apellido=apellido_a).first()
+        
+        if autor_existente:
+            autor_id = autor_existente.id
+        else:
+            nuevo_autor = Autor(
+                nombre=nombre_a,
+                apellido=apellido_a,
+                is_verified=False 
+            )
+            db.session.add(nuevo_autor)
+            db.session.commit() 
+            autor_id = nuevo_autor.id
+
+    
     new_libro = Libro(
         nombre=body.get("nombre"),
         genero=body.get("genero"),
-        autor_id=body.get("autor_id"),
-        editorial_id=body.get("editorial_id"),
+        autor_id=autor_id, 
+        editorial_id=editorial_id,
+        google_id=body.get("google_id"), 
+        isbn_13=body.get("isbn_13"),
+        descripcion=body.get("descripcion"),
         image_url=body.get("image_url")
     )
-    
-    db.session.add(new_libro)
-    db.session.commit()
-    return jsonify({"msg": "Libro creado", "libro": new_libro.serialize()}), 201
+
+    try:
+        db.session.add(new_libro)
+        db.session.commit()
+        return jsonify({"msg": "Libro creado con éxito", "libro": new_libro.serialize()}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Error al guardar el libro: " + str(e)}), 500
+
 
 @api.route('/libro/<int:libro_id>', methods=['DELETE'])
 def delete_libro(libro_id):
@@ -342,9 +395,10 @@ def delete_libro(libro_id):
     db.session.commit()
     return jsonify({"msg": "Libro eliminado con éxito"}), 200
 
+
 @api.route('/libro/<int:libro_id>', methods=['PUT'])
 def update_libros(libro_id):
-    
+
     libro = Libro.query.filter_by(id=libro_id).first()
 
     body = request.get_json()
@@ -356,9 +410,9 @@ def update_libros(libro_id):
     if body.get("editorial_id"):
         libro.editorial_id = int(body["editorial_id"])
     libro.image_url = body.get("image_url", libro.image_url)
-    
+
     db.session.commit()
-    
+
     response_body = {
         "message": "se actualizo la informacion del libro",
         "libro": libro.serialize()
@@ -366,22 +420,24 @@ def update_libros(libro_id):
 
     return jsonify(response_body), 200
 
+
 @api.route('/lector/<int:lector_id>/favoritos', methods=['GET'])
 def get_favoritos_por_lector(lector_id):
     favoritos = LibrosFavoritos.query.filter_by(lector_id=lector_id).all()
     if not favoritos:
         return jsonify([]), 200
-    
+
     results = [fav.serialize() for fav in favoritos]
-    
+
     return jsonify(results), 200
+
 
 @api.route('/favoritos/libros', methods=['POST'])
 def add_libro_favorito():
     body = request.get_json()
 
     existe = LibrosFavoritos.query.filter_by(
-        lector_id=body["lector_id"], 
+        lector_id=body["lector_id"],
         libro_id=body["libro_id"]
     ).first()
 
@@ -391,38 +447,40 @@ def add_libro_favorito():
     libro = Libro.query.get(body["libro_id"])
     if libro is None:
         return jsonify({"msg": "El Libro que intentas agregar no existe"}), 404
-    
-    new_fav = LibrosFavoritos (
-        lector_id = body["lector_id"],
-        libro_id = body["libro_id"]
+
+    new_fav = LibrosFavoritos(
+        lector_id=body["lector_id"],
+        libro_id=body["libro_id"]
     )
     db.session.add(new_fav)
     db.session.commit()
 
     return jsonify(new_fav.serialize()), 200
 
+
 @api.route('/favoritos/libros/<int:lector_id>/<int:libro_id>', methods=['DELETE'])
 def delete_libro_favorito(lector_id, libro_id):
 
     fav_to_delete = LibrosFavoritos.query.filter_by(
-        lector_id=lector_id, 
+        lector_id=lector_id,
         libro_id=libro_id
     ).first()
 
     if fav_to_delete is None:
         return jsonify({"msg": "No se encontró el favorito para eliminar"}), 404
-    
+
     db.session.delete(fav_to_delete)
     db.session.commit()
     return jsonify({"msg": "Libro eliminado de la lista"}), 200
 
+
 @api.route('/favoritos/libros/<int:fav_id>', methods=['PUT'])
 def update_libro_favorito(fav_id):
-    
-    favorito = LibrosFavoritos.query.filter_by(id=fav_id).first()       
+
+    favorito = LibrosFavoritos.query.filter_by(id=fav_id).first()
 
     if favorito is None:
-        return jsonify({"msg": "Ese registro de favorito no existe"}), 404 
+        return jsonify({"msg": "Ese registro de favorito no existe"}), 404
 
     body = request.get_json()
 
@@ -433,23 +491,27 @@ def update_libro_favorito(fav_id):
 
     db.session.commit()
     return jsonify({
-            "msg": "Favorito actualizado con éxito",
-            "result": favorito.serialize()
-        }), 200
-    
+        "msg": "Favorito actualizado con éxito",
+        "result": favorito.serialize()
+    }), 200
+
+
 @api.route('/lector_autores_favoritos', methods=['GET'])
 def get_lector_autores_favoritos():
 
     all_lector_autores_favoritos = Lector_Autores_Favoritos.query.all()
     print(all_lector_autores_favoritos)
-    results = list( map(lambda lector_autores_favoritos: lector_autores_favoritos.serialize(),all_lector_autores_favoritos) )
+    results = list(map(lambda lector_autores_favoritos: lector_autores_favoritos.serialize(
+    ), all_lector_autores_favoritos))
     return jsonify(results), 200
+
 
 @api.route('/lector_autores_favoritos/<int:fav_id>', methods=['GET'])
 def get_lector_autor_favorito(fav_id):
 
     item = Lector_Autores_Favoritos.query.filter_by(id=fav_id).first()
     return jsonify(item.serialize()), 200
+
 
 @api.route('/lector_autores_favoritos', methods=['POST'])
 def create_lector_autor_favorito():
@@ -466,6 +528,7 @@ def create_lector_autor_favorito():
 
     return jsonify(nuevo.serialize()), 201
 
+
 @api.route('/lector_autores_favoritos/<int:fav_id>', methods=['PUT'])
 def update_lector_autores_favoritos(fav_id):
 
@@ -480,6 +543,7 @@ def update_lector_autores_favoritos(fav_id):
 
     return jsonify(fav.serialize()), 200
 
+
 @api.route('/lector_autores_favoritos/<int:fav_id>', methods=['DELETE'])
 def delete_lector_autor_favorito(fav_id):
 
@@ -490,36 +554,40 @@ def delete_lector_autor_favorito(fav_id):
 
     return jsonify({"msg": "Eliminado con éxito"}), 200
 
+
 @api.route('/lector/<int:id>/seguidores', methods=['GET'])
 def get_seguidores(id):
     lector = Lector.query.get(id)
-    if not lector: return jsonify({"msg": "No existe"}), 404
-    
+    if not lector:
+        return jsonify({"msg": "No existe"}), 404
+
     lista = [{
-        "relacion_id": s.id,        
+        "relacion_id": s.id,
         "lector_que_me_sigue_id": s.lector_id,
         "username": s.lector_que_sigue.username
     } for s in lector.seguidores]
 
     return jsonify(lista), 200
 
+
 @api.route('/lector/<int:id>/siguiendo', methods=['GET'])
 def get_siguiendo(id):
     lector = Lector.query.get(id)
-    if not lector: return jsonify({"msg": "No existe"}), 404
-    
-    
+    if not lector:
+        return jsonify({"msg": "No existe"}), 404
+
     lista = [{
-        "relacion_id": s.id,       
+        "relacion_id": s.id,
         "lector_seguido_id": s.seguido_id,
-        "username": s.lector_seguido.username 
+        "username": s.lector_seguido.username
     } for s in lector.siguiendo]
 
     return jsonify(lista), 200
 
+
 @api.route('/follow', methods=['POST'])
 def add_seguidor():
-    
+
     body = request.get_json()
 
     check = Seguidor.query.filter_by(
@@ -529,7 +597,7 @@ def add_seguidor():
 
     if check:
         return jsonify({"msg": "Ya sigues a este lector"}), 400
-    
+
     nueva_relacion = Seguidor(
         lector_id=body["seguidor_id"],
         seguido_id=body["seguido_id"]
@@ -537,13 +605,13 @@ def add_seguidor():
 
     db.session.add(nueva_relacion)
     db.session.commit()
-    
+
     return jsonify(nueva_relacion.serialize()), 201
 
 
 @api.route('/unfollow/<int:id_relacion>', methods=['DELETE'])
 def delete_seguido(id_relacion):
-    
+
     relacion = Seguidor.query.get(id_relacion)
 
     if relacion is None:
@@ -553,14 +621,15 @@ def delete_seguido(id_relacion):
     db.session.commit()
     return jsonify({"msg": "Has dejado de seguir a este usuario correctamente"}), 200
 
+
 @api.route('/seguidores/<int:id_relacion>', methods=['PUT'])
 def update_seguidor(id_relacion):
-    
+
     relacion = Seguidor.query.get(id_relacion)
 
     if relacion is None:
-        return jsonify({"msg": "Ese registro de seguimiento no existe"}), 404 
-    
+        return jsonify({"msg": "Ese registro de seguimiento no existe"}), 404
+
     body = request.get_json()
     nuevo_seguido_id = body.get("nuevo_seguido_id")
 
@@ -575,19 +644,22 @@ def update_seguidor(id_relacion):
         "resultado": relacion.serialize()
     }), 200
 
+
 @api.route('/reviews', methods=['GET'])
 def get_reviews():
 
     all_reviews = Reviews.query.all()
     print(all_reviews)
-    results = list( map(lambda reviews: reviews.serialize(),all_reviews) )
+    results = list(map(lambda reviews: reviews.serialize(), all_reviews))
     return jsonify(results), 200
+
 
 @api.route('/reviews/<int:review_id>', methods=['GET'])
 def get_review(review_id):
 
     item = Reviews.query.filter_by(id=review_id).first()
     return jsonify(item.serialize()), 200
+
 
 @api.route('/reviews', methods=['POST'])
 def create_review():
@@ -606,6 +678,7 @@ def create_review():
 
     return jsonify(nuevo.serialize()), 201
 
+
 @api.route('/reviews/<int:review_id>', methods=['PUT'])
 def update_review(review_id):
 
@@ -622,6 +695,7 @@ def update_review(review_id):
 
     return jsonify(rev.serialize()), 200
 
+
 @api.route('/reviews/<int:review_id>', methods=['DELETE'])
 def delete_review(review_id):
 
@@ -631,6 +705,7 @@ def delete_review(review_id):
     db.session.commit()
 
     return jsonify({"msg": "Eliminado con éxito"}), 200
+
 
 @api.route("/login_autor", methods=["POST"])
 def login_autor():
@@ -649,6 +724,7 @@ def login_autor():
         "nombre": autor.nombre
     }), 200
 
+
 @api.route("/signup_autor", methods=["POST"])
 def signup_autor():
     body = request.get_json()
@@ -665,8 +741,9 @@ def signup_autor():
     autor = Autor.query.filter_by(email=email).first()
     if autor:
         return jsonify({"msg": "Ya se encuentra un usuario creado con ese correo"}), 401
-    
-    autor = Autor(email=email, password=password, nombre=nombre, apellido=apellido, pais=pais)
+
+    autor = Autor(email=email, password=password,
+                  nombre=nombre, apellido=apellido, pais=pais)
 
     db.session.add(autor)
     db.session.commit()
@@ -675,9 +752,10 @@ def signup_autor():
 
     response_body = {
         "msg": "Autor creado",
-        "access_token":access_token
+        "access_token": access_token
     }
     return jsonify(response_body), 201
+
 
 @api.route("/login_lector", methods=["POST"])
 def login_lector():
@@ -687,7 +765,7 @@ def login_lector():
     if lector is None:
         return jsonify({"msg": "Bad username or password"}), 401
     if password != lector.password:
-            return jsonify({"msg": "Bad username or password"}), 401
+        return jsonify({"msg": "Bad username or password"}), 401
 
     access_token = create_access_token(identity=email)
     return jsonify({
@@ -695,6 +773,7 @@ def login_lector():
         "lector_id": lector.id,
         "nombre": lector.nombre
     }), 200
+
 
 @api.route("/login_editorial", methods=["POST"])
 def login_editorial():
@@ -713,6 +792,7 @@ def login_editorial():
         "nombre": editorial.nombre
     }), 200
 
+
 @api.route("/signup_lector", methods=["POST"])
 def signup_lector():
     body = request.get_json()
@@ -720,13 +800,13 @@ def signup_lector():
     nuevo_lector = Lector(
         email=body["email"],
         username=body["username"],
-        password=body["password"], 
+        password=body["password"],
         nombre=body["nombre"],
         apellido=body["apellido"],
         pais_donde_reside=body["pais"],
-        is_active=True 
+        is_active=True
     )
-    
+
     try:
         db.session.add(nuevo_lector)
         db.session.commit()
@@ -735,13 +815,14 @@ def signup_lector():
         return jsonify({"msg": "Error de integridad o datos duplicados", "error": str(e)}), 400
 
     access_token = create_access_token(identity=nuevo_lector.email)
-    
+
     return jsonify({
         "msg": "Lector creado",
         "access_token": access_token,
         "lector_id": nuevo_lector.id,
         "nombre": nuevo_lector.nombre
     }), 201
+
 
 @api.route("/signup_editorial", methods=["POST"])
 def signup_editorial():
@@ -782,6 +863,7 @@ def signup_editorial():
     }
     return jsonify(response_body), 201
 
+
 @api.route("/login_admin", methods=["POST"])
 def login_admin():
     email = request.json.get("email", None)
@@ -795,13 +877,13 @@ def login_admin():
     access_token = create_access_token(identity=email)
     return jsonify(access_token=access_token)
 
+
 @api.route("/signup_admin", methods=["POST"])
 def signup_admin():
     body = request.get_json()
 
     email = body.get("email")
     password = body.get("password")
-    
 
     if not all([email, password]):
         return jsonify({"msg": "Faltan datos obligatorios"}), 400
@@ -809,7 +891,7 @@ def signup_admin():
     admin = Editorial.query.filter_by(email=email).first()
     if admin:
         return jsonify({"msg": "Ya se encuentra un admin creado con ese correo"}), 401
-    
+
     admin = Admin(email=email, password=password)
 
     db.session.add(admin)
@@ -819,43 +901,54 @@ def signup_admin():
 
     response_body = {
         "msg": "Admin creado",
-        "access_token":access_token
+        "access_token": access_token
     }
     return jsonify(response_body), 201
+
+
 @api.route('/lector/<int:lector_id>/leyendo', methods=['GET'])
 def get_lectura_actual(lector_id):
     # Buscamos todos los registros de lectura actual para ese lector
     lecturas = LecturaActual.query.filter_by(lector_id=lector_id).all()
     return jsonify([l.serialize() for l in lecturas]), 200
 
+
 @api.route('/leyendo/libros', methods=['POST'])
 def add_lectura_actual():
     body = request.get_json()
     # Evitar duplicados
-    existe = LecturaActual.query.filter_by(lector_id=body["lector_id"], libro_id=body["libro_id"]).first()
-    if existe: return jsonify({"msg": "Ya lo estás leyendo"}), 400
+    existe = LecturaActual.query.filter_by(
+        lector_id=body["lector_id"], libro_id=body["libro_id"]).first()
+    if existe:
+        return jsonify({"msg": "Ya lo estás leyendo"}), 400
 
-    nueva_lectura = LecturaActual(lector_id=body["lector_id"], libro_id=body["libro_id"])
+    nueva_lectura = LecturaActual(
+        lector_id=body["lector_id"], libro_id=body["libro_id"])
     db.session.add(nueva_lectura)
     db.session.commit()
     return jsonify(nueva_lectura.serialize()), 200
 
+
 @api.route('/leyendo/libros/<int:lector_id>/<int:libro_id>', methods=['DELETE'])
 def delete_lectura_actual(lector_id, libro_id):
-    registro = LecturaActual.query.filter_by(lector_id=lector_id, libro_id=libro_id).first()
-    if not registro: return jsonify({"msg": "No encontrado"}), 404
-    
+    registro = LecturaActual.query.filter_by(
+        lector_id=lector_id, libro_id=libro_id).first()
+    if not registro:
+        return jsonify({"msg": "No encontrado"}), 404
+
     db.session.delete(registro)
     db.session.commit()
     return jsonify({"msg": "Lectura eliminada"}), 200
+
 
 @api.route('/posteditorial', methods=['GET'])
 def get_post_editorial():
 
     all_posts = PostEditorial.query.all()
     print(all_posts)
-    results = list( map(lambda posts: posts.serialize(),all_posts) )
+    results = list(map(lambda posts: posts.serialize(), all_posts))
     return jsonify(results), 200
+
 
 @api.route('/posteditorial/<int:post_editorial_id>', methods=['GET'])
 def get_post_editorial_by_id(post_editorial_id):
@@ -863,11 +956,13 @@ def get_post_editorial_by_id(post_editorial_id):
     item = PostEditorial.query.get_or_404(post_editorial_id)
     return jsonify(item.serialize()), 200
 
+
 @api.route('/posteditorial/editorial/<int:ed_id>', methods=['GET'])
 def get_muro_editorial(ed_id):
-    
+
     posts = PostEditorial.query.filter_by(editorial_id=ed_id).all()
     return jsonify([p.serialize() for p in posts]), 200
+
 
 @api.route('/posteditorial', methods=['POST'])
 def create_post_editorial():
@@ -884,6 +979,7 @@ def create_post_editorial():
 
     return jsonify(nuevo.serialize()), 201
 
+
 @api.route('/posteditorial/<int:post_editorial_id>', methods=['PUT'])
 def update_post_editorial(post_editorial_id):
 
@@ -892,10 +988,11 @@ def update_post_editorial(post_editorial_id):
     body = request.get_json()
 
     repos.texto = body["texto"]
-    
+
     db.session.commit()
 
     return jsonify(repos.serialize()), 200
+
 
 @api.route('/posteditorial/<int:post_editorial_id>', methods=['DELETE'])
 def delete_post_editorial(post_editorial_id):
@@ -907,16 +1004,20 @@ def delete_post_editorial(post_editorial_id):
 
     return jsonify({"msg": "Eliminado con éxito"}), 200
 
+
 @api.route('/postautor', methods=['GET'])
 def get_all_posts_autor():
     all_posts = PostAutor.query.order_by(PostAutor.fecha.desc()).all()
     results = [post.serialize() for post in all_posts]
     return jsonify(results), 200
 
+
 @api.route('/postautor/autor/<int:aut_id>', methods=['GET'])
 def get_muro_autor(aut_id):
-    posts = PostAutor.query.filter_by(autor_id=aut_id).order_by(PostAutor.fecha.desc()).all()
+    posts = PostAutor.query.filter_by(
+        autor_id=aut_id).order_by(PostAutor.fecha.desc()).all()
     return jsonify([p.serialize() for p in posts]), 200
+
 
 @api.route('/postautor', methods=['POST'])
 def create_post_autor():
@@ -934,15 +1035,17 @@ def create_post_autor():
 
     return jsonify(nuevo_post.serialize()), 201
 
+
 @api.route('/postautor/<int:post_id>', methods=['DELETE'])
 def delete_post_autor(post_id):
     post = PostAutor.query.get(post_id)
     if not post:
         return jsonify({"msg": "Post no encontrado"}), 404
-    
+
     db.session.delete(post)
     db.session.commit()
     return jsonify({"msg": "Post de autor eliminado"}), 200
+
 
 @api.route('/postautor/<int:post_id>', methods=['PUT'])
 def update_post_autor(post_id):
@@ -952,38 +1055,40 @@ def update_post_autor(post_id):
     body = request.get_json()
     if "texto" in body:
         post.texto = body["texto"]
-    
+
     db.session.commit()
 
     return jsonify(post.serialize()), 200
+
 
 @api.route('/upload_foto/<int:autor_id>', methods=['POST'])
 def upload_foto(autor_id):
     if 'foto' not in request.files:
         return jsonify({"msg": "No hay archivo"}), 400
-        
+
     file = request.files['foto']
     filename = secure_filename(file.filename)
-    
+
     upload_folder = os.path.join(os.getcwd(), "src", "static", "uploads")
-    
+
     if not os.path.exists(upload_folder):
         os.makedirs(upload_folder)
-   
+
     file_path = os.path.join(upload_folder, filename)
     file.save(file_path)
-    
+
     autor = Autor.query.get(autor_id)
     autor.foto_url = f"static/uploads/{filename}"
     db.session.commit()
-    
+
     return jsonify({"msg": "Foto subida con éxito", "url": autor.foto_url}), 200
+
 
 @api.route('/update_foto/<int:autor_id>', methods=['PUT'])
 def update_foto(autor_id):
     if 'foto' not in request.files:
         return jsonify({"msg": "No hay archivo"}), 400
-    
+
     autor = Autor.query.get(autor_id)
     if not autor:
         return jsonify({"msg": "Autor no encontrado"}), 404
@@ -996,14 +1101,15 @@ def update_foto(autor_id):
     file = request.files['foto']
     filename = secure_filename(file.filename)
     upload_folder = os.path.join(os.getcwd(), "src", "static", "uploads")
-    
+
     file_path = os.path.join(upload_folder, filename)
     file.save(file_path)
 
     autor.foto_url = f"static/uploads/{filename}"
     db.session.commit()
-    
+
     return jsonify({"msg": "Foto actualizada", "url": autor.foto_url}), 200
+
 
 @api.route('/delete_foto/<int:autor_id>', methods=['DELETE'])
 def delete_foto(autor_id):
@@ -1020,24 +1126,25 @@ def delete_foto(autor_id):
 
     return jsonify({"msg": "Foto eliminada correctamente"}), 200
 
+
 @api.route('/update_foto_cloudinary/<int:autor_id>', methods=['PUT'])
 def update_foto_cloudinary(autor_id):
-    
+
     data = request.json
-    nueva_url = data.get("foto") 
+    nueva_url = data.get("foto")
 
     if not nueva_url:
         return jsonify({"msg": "Falta la URL de la foto"}), 400
-        
+
     autor = Autor.query.get(autor_id)
     if not autor:
         return jsonify({"msg": "Autor no encontrado"}), 404
 
-    
     autor.foto_url = nueva_url
     db.session.commit()
-    
+
     return jsonify({"msg": "Foto de Cloudinary vinculada", "url": autor.foto_url}), 200
+
 
 @api.route('/delete_foto_cloudinary/<int:autor_id>', methods=['DELETE'])
 def delete_foto_cloudinary(autor_id):
@@ -1050,3 +1157,172 @@ def delete_foto_cloudinary(autor_id):
     db.session.commit()
 
     return jsonify({"msg": "Referencia de foto eliminada"}), 200
+
+
+@api.route('/upload_foto_lector/<int:lector_id>', methods=['POST'])
+def upload_foto_lector(lector_id):
+    if 'foto' not in request.files:
+        return jsonify({"msg": "No hay archivo en la petición"}), 400
+
+    file = request.files['foto']
+    if file.filename == '':
+        return jsonify({"msg": "No se seleccionó ningún archivo"}), 400
+
+    filename = secure_filename(file.filename)
+
+    upload_folder = os.path.join(os.getcwd(), "src", "static", "uploads")
+
+    if not os.path.exists(upload_folder):
+        os.makedirs(upload_folder)
+
+    file_path = os.path.join(upload_folder, filename)
+    file.save(file_path)
+
+    lector = Lector.query.get(lector_id)
+    if not lector:
+        return jsonify({"msg": "Lector no encontrado"}), 404
+
+    lector.foto_url = f"static/uploads/{filename}"
+    db.session.commit()
+
+    return jsonify({"msg": "Foto de lector subida con éxito", "url": lector.foto_url}), 200
+
+
+@api.route('/update_foto_lector/<int:lector_id>', methods=['PUT'])
+def update_foto_lector(lector_id):
+    if 'foto' not in request.files:
+        return jsonify({"msg": "No hay archivo"}), 400
+
+    lector = Lector.query.get(lector_id)
+    if not lector:
+        return jsonify({"msg": "Lector no encontrado"}), 404
+
+    if lector.foto_url:
+        old_path = os.path.join(os.getcwd(), "src", lector.foto_url)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    file = request.files['foto']
+    filename = secure_filename(file.filename)
+    upload_folder = os.path.join(os.getcwd(), "src", "static", "uploads")
+
+    file_path = os.path.join(upload_folder, filename)
+    file.save(file_path)
+
+    lector.foto_url = f"static/uploads/{filename}"
+    db.session.commit()
+
+    return jsonify({"msg": "Foto de lector actualizada", "url": lector.foto_url}), 200
+
+
+@api.route('/delete_foto_lector/<int:lector_id>', methods=['DELETE'])
+def delete_foto_lector(lector_id):
+    lector = Lector.query.get(lector_id)
+    if not lector or not lector.foto_url:
+        return jsonify({"msg": "No hay foto para borrar"}), 404
+
+    file_path = os.path.join(os.getcwd(), "src", lector.foto_url)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    lector.foto_url = None
+    db.session.commit()
+
+    return jsonify({"msg": "Foto de lector eliminada correctamente"}), 200
+
+
+@api.route('/update_foto_lector_cloudinary/<int:lector_id>', methods=['PUT'])
+def update_foto_lector_cloudinary(lector_id):
+
+    data = request.get_json()
+    nueva_url = data.get("foto_url")
+
+    if not nueva_url:
+        return jsonify({"msg": "Falta la URL de la foto en el cuerpo de la petición"}), 400
+
+    lector = Lector.query.get(lector_id)
+    if not lector:
+        return jsonify({"msg": "Lector no encontrado"}), 404
+
+    lector.foto_url = nueva_url
+    db.session.commit()
+
+    return jsonify({
+        "msg": "Foto de perfil (Cloudinary) vinculada con éxito",
+        "url": lector.foto_url
+    }), 200
+
+
+@api.route('/delete_foto_lector_cloudinary/<int:lector_id>', methods=['DELETE'])
+def delete_foto_lector_cloudinary(lector_id):
+    lector = Lector.query.get(lector_id)
+    if not lector:
+        return jsonify({"msg": "Lector no encontrado"}), 404
+
+    lector.foto_url = None
+    db.session.commit()
+
+    return jsonify({"msg": "Vínculo de foto eliminado correctamente"}), 200
+
+
+@api.route('/libro_google', methods=['POST'])
+def add_libro_google():
+    body = request.get_json()
+
+    google_id = body.get("google_id")
+
+    existing_libro = Libro.query.filter_by(google_id=google_id).first()
+    if existing_libro:
+        return jsonify({
+            "id": existing_libro.id, 
+            "message": "Este libro ya existe"
+        }), 200
+
+    autores_lista = body.get("autores", ["Autor Desconocido"])
+    nombre_completo = autores_lista[0]
+    partes = nombre_completo.split(" ", 1)
+    nombre_a = partes[0]
+    apellido_a = partes[1] if len(partes) > 1 else ""
+
+    autor = Autor.query.filter_by(nombre=nombre_a, apellido=apellido_a).first()
+    if not autor:
+        autor = Autor(
+            nombre=nombre_a,
+            apellido=apellido_a,
+        )
+        db.session.add(autor)
+        db.session.commit()
+
+    nombre_ed = body.get("nombre_editorial", "Editorial Genérica")
+    editorial = Editorial.query.filter_by(nombre=nombre_ed).first()
+    if not editorial:
+        editorial = Editorial(
+            nombre=nombre_ed,
+            pais="Desconocido",  # <--- Agrégale esto temporalmente
+            is_active=True
+
+        )
+        db.session.add(editorial)
+        db.session.commit()
+
+    nuevo_libro = Libro(
+        nombre=body.get("nombre"),
+        genero=body.get("genero", "General"),
+        google_id=google_id,
+        isbn_13=body.get("isbn_13"),
+        descripcion=body.get("descripcion"),
+        image_url=body.get("image_url"),
+        autor_id=autor.id,
+        editorial_id=editorial.id
+    )
+
+    try:
+        db.session.add(nuevo_libro)
+        db.session.commit()
+        return jsonify({
+            "id": nuevo_libro.id, 
+            "msg": "Libro creado con éxito"
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500

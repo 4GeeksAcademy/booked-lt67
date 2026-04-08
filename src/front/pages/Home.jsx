@@ -2,10 +2,12 @@ import React, { useEffect } from "react"
 import rigoImageUrl from "../assets/img/rigo-baby.jpg";
 import logoBookedUrl from "../assets/img/logo_booked.png";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import BuscadorGoogleBooks from "../components/23_BuscadorGoogleBooks";
 
 export const Home = () => {
 
+	const navigate = useNavigate();
 	const { store, dispatch } = useGlobalReducer()
 
 	const loadMessage = async () => {
@@ -30,6 +32,13 @@ export const Home = () => {
 
 	}
 
+	const irAlLibro = (libroId) => {
+        if (libroId) {
+            navigate(`/ver_libro/${libroId}`); 
+        }
+    };
+
+	
 	useEffect(() => {
 		loadMessage()
 	}, [])
@@ -42,6 +51,15 @@ export const Home = () => {
 				{/* <img src={rigoImageUrl} className="img-fluid rounded-circle mb-3" alt="Rigo Baby" /> */}
 				<img src={logoBookedUrl} style={{ width: "500px", height: "auto" }} className="img-fluid rounded-circle mb-3" alt="Logo Booked" />
 			</p>
+
+			<div className="align-items-center border-bottom pb-2 m-3">
+				<div className="w-50 container">
+					{/* Aquí insertamos el buscador que hicimos antes */}
+					<BuscadorGoogleBooks onLibroAgregado={irAlLibro} />
+				</div>
+				<h6 className="fw-bold m-1">Busca un Libro en la Biblioteca</h6>
+				
+			</div>
 			{/* <Link className="btn btn-primary" to="/lector">Ver Lectores</Link>
 
 			<Link className="btn btn-primary" to="/editorial">Ver Editoriales</Link>
@@ -55,13 +73,15 @@ export const Home = () => {
 			<Link className="btn btn-primary" to="/ver_seguidores">Ver Seguidores</Link>
 
 			<Link className="btn btn-primary" to="/review">Ver Reviews</Link> */}
-			
+			<div className="m-2">
 			<Link className="btn btn-primary" to="/post_free">Ver Publicaciones y Noticias</Link>
 
 			<Link className="btn btn-primary" to="/ver_autor_editorial">Ver Autores y Editoriales</Link>
+			</div>
+			
 
 
-			<div className="alert alert-info">
+			{/* <div className="alert alert-info">
 				{store.message ? (
 					<span>{store.message}</span>
 				) : (
@@ -69,7 +89,7 @@ export const Home = () => {
 						Loading message from the backend (make sure your python 🐍 backend is running)...
 					</span>
 				)}
-			</div>
+			</div> */}
 		</div>
 	);
 }; 
