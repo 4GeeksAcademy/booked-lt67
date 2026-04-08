@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 
-const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyDaX3PUNyVdgWjw5b6YrR_aj9HA-iRafrs";
-const MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_ID || "f40e70ae77b0a8b0f9542d30";
+const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+const MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_ID;
 
 if (typeof window !== "undefined" && !window.__googleMapsOptionsSet) {
     setOptions({ key: API_KEY, v: "weekly" });
