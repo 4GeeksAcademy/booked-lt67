@@ -14,7 +14,6 @@ const SelectorUbicacion = ({ onLocationSelect, ubicacionInicial }) => {
     const mapRef = useRef(null);
     const inputRef = useRef(null);
     
-    // 2. USAMOS LA UBICACIÓN INICIAL DEL BACKEND (o Santiago por defecto)
     const [coordenadas, setCoordenadas] = useState(
         ubicacionInicial || { lat: -33.4489, lng: -70.6693 }
     );
