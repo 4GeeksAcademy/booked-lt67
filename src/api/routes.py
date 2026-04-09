@@ -519,6 +519,15 @@ def get_lector_autor_favorito(fav_id):
     item = Lector_Autores_Favoritos.query.filter_by(id=fav_id).first()
     return jsonify(item.serialize()), 200
 
+@api.route('/lectores_por_autor/<int:id_del_autor>', methods=['GET'])
+def get_lectores_por_autor(id_del_autor):
+    items = Lector_Autores_Favoritos.query.filter_by(autor_id=id_del_autor).all() 
+    if not items:
+        return jsonify({"message": "Nadie tiene a este autor como favorito aún"}), 404
+    results = [item.lector.serialize() for item in items]
+    
+    return jsonify(results), 200
+
 
 @api.route('/lector_autores_favoritos', methods=['POST'])
 def create_lector_autor_favorito():
@@ -1434,3 +1443,33 @@ def reconocer_portada():
             return jsonify({"message": "Límite de la IA agotado por hoy. Inténtalo de nuevo en un momento o mañana."}), 429
             
         return jsonify({"message": "Error interno al procesar la imagen."}), 500
+
+# =======================================================
+# --- RUTAS NUEVAS PARA MAPAS DE AUTOR Y EDITORIAL ---
+# =======================================================
+
+@api.route('/lectores_fav_libros_autor/<int:autor_id>', methods=['GET'])
+def lectores_fav_libros_autor(autor_id):
+    # Lectores que marcaron libros de ESTE autor como favoritos
+    lectores = Lector.query.join(LibrosFavoritos).join(Libro).filter(Libro.autor_id == autor_id).all()
+    # Usamos set() para no enviar coordenadas duplicadas si un lector tiene 2 libros del mismo autor
+    return jsonify([l.serialize() for l in set(lectores)]), 200
+
+@api.route('/lectores_leyendo_autor/<int:autor_id>', methods=['GET'])
+def lectores_leyendo_autor(autor_id):
+    # Lectores que están leyendo libros de ESTE autor
+    lectores = Lector.query.join(LecturaActual).join(Libro).filter(Libro.autor_id == autor_id).all()
+    return jsonify([l.serialize() for l in set(lectores)]), 200
+
+
+@api.route('/lectores_fav_libros_editorial/<int:editorial_id>', methods=['GET'])
+def lectores_fav_libros_editorial(editorial_id):
+    # Lectores que marcaron libros de ESTA editorial como favoritos
+    lectores = Lector.query.join(LibrosFavoritos).join(Libro).filter(Libro.editorial_id == editorial_id).all()
+    return jsonify([l.serialize() for l in set(lectores)]), 200
+
+@api.route('/lectores_leyendo_editorial/<int:editorial_id>', methods=['GET'])
+def lectores_leyendo_editorial(editorial_id):
+    # Lectores que están leyendo libros de ESTA editorial
+    lectores = Lector.query.join(LecturaActual).join(Libro).filter(Libro.editorial_id == editorial_id).all()
+    return jsonify([l.serialize() for l in set(lectores)]), 200

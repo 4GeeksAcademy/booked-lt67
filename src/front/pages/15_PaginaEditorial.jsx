@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
+// 1. IMPORTAMOS EL COMPONENTE DEL MAPA
+import LectoresUbi from "../components/25_LectoresUbi"; 
+
 const PaginaEditorial = () => {
     const { store } = useGlobalReducer();
 
@@ -13,7 +16,15 @@ const PaginaEditorial = () => {
 
     const [posts, setPosts] = useState([]);
     const [datosEditorial, setDatosEditorial] = useState(null);
-    const [libros, setLibros] = useState([])
+    const [libros, setLibros] = useState([]);
+
+    // --- NUEVO: ESTADOS PARA EL MAPA ---
+    const [mapaViews, setMapaViews] = useState({
+        favLibros: [],
+        leyendo: []
+    });
+    const [vistaMapaActual, setVistaMapaActual] = useState('favLibros');
+    // -----------------------------------
 
     if (!store.auth_editorial) {
         return <Navigate to="/login_editorial" />;
@@ -33,6 +44,16 @@ const PaginaEditorial = () => {
                 const dataLibros = await respLibros.json();
                 setLibros(dataLibros);
             }
+
+            // --- NUEVO: FETCH PARA EL MAPA ---
+            const respFavLibros = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/lectores_fav_libros_editorial/${editorialId}`);
+            const respLeyendo = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/lectores_leyendo_editorial/${editorialId}`);
+
+            setMapaViews({
+                favLibros: respFavLibros.ok ? await respFavLibros.json() : [],
+                leyendo: respLeyendo.ok ? await respLeyendo.json() : []
+            });
+            // ---------------------------------
 
         } catch (error) {
             console.error("Error cargando el panel:", error);
@@ -162,6 +183,25 @@ const PaginaEditorial = () => {
                             </div>
                         ))
                     )}
+
+                    {/* --- NUEVO: COMPONENTE DEL MAPA CON SWITCH --- */}
+                    <div className="mt-5 mb-4">
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                            <h3 className="mb-0">Ubicación de los Lectores</h3>
+                            <div className="btn-group shadow-sm" role="group">
+                                <button 
+                                    className={`btn btn-sm ${vistaMapaActual === 'favLibros' ? 'btn-primary' : 'btn-outline-primary'}`} 
+                                    onClick={() => setVistaMapaActual('favLibros')}>Fans de nuestros libros</button>
+                                <button 
+                                    className={`btn btn-sm ${vistaMapaActual === 'leyendo' ? 'btn-primary' : 'btn-outline-primary'}`} 
+                                    onClick={() => setVistaMapaActual('leyendo')}>Leyendo Ahora</button>
+                            </div>
+                        </div>
+                        <div className="card shadow-sm border-0 p-2">
+                            <LectoresUbi lectores={mapaViews[vistaMapaActual]} />
+                        </div>
+                    </div>
+                    {/* --------------------------------------------- */}
 
                 </div>
             </div>

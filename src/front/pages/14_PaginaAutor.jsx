@@ -12,9 +12,18 @@ const PaginaAutor = () => {
         misLibros: [], 
         misSeguidores: [], 
         noticias: [], 
-        todosLosLectores: [], // Estado para el mapa
         loading: true 
     });
+    
+    // --- NUEVO: ESTADOS PARA EL MAPA ---
+    const [mapaViews, setMapaViews] = useState({
+        fansAutor: [],
+        favLibros: [],
+        leyendo: []
+    });
+    const [vistaMapaActual, setVistaMapaActual] = useState('fansAutor');
+    // -----------------------------------
+
     const [editando, setEditando] = useState(null);
     const [nuevoTexto, setNuevoTexto] = useState("");
 
@@ -35,12 +44,16 @@ const PaginaAutor = () => {
 
     const loadData = useCallback(async () => {
         if (!autorId) return;
-        const [perfil, libros, favs, posts, lectores] = await Promise.all([
+        
+        // --- NUEVO: FETCH PARA EL MAPA ---
+        const [perfil, libros, favs, posts, lectoresFans, lectoresFavLibros, lectoresLeyendo] = await Promise.all([
             request(`autor/${autorId}`),
             request(`libro`),
             request(`lector_autores_favoritos`),
             request(`postautor/autor/${autorId}`),
-            request(`lector`) // Traemos a todos los lectores para el mapa
+            request(`lectores_por_autor/${autorId}`),
+            request(`lectores_fav_libros_autor/${autorId}`),
+            request(`lectores_leyendo_autor/${autorId}`)
         ]);
 
         const datosLimpios = perfil?.autor || perfil;
@@ -52,9 +65,16 @@ const PaginaAutor = () => {
                 misLibros: libros?.filter(l => Number(l.autor_id) === id) || [],
                 misSeguidores: favs?.filter(f => Number(f.autor_id) === id) || [],
                 noticias: posts || [],
-                todosLosLectores: lectores || [], // Guardamos los lectores aquí
                 loading: false
             });
+
+            // --- NUEVO: GUARDAR DATOS DEL MAPA ---
+            setMapaViews({
+                fansAutor: lectoresFans || [],
+                favLibros: lectoresFavLibros || [],
+                leyendo: lectoresLeyendo || []
+            });
+            // -------------------------------------
         } else {
             setDb(prev => ({ ...prev, loading: false }));
         }
@@ -134,13 +154,27 @@ const PaginaAutor = () => {
                         </div>
                     ))}
 
-                    {/* --- COMPONENTE DEL MAPA INSERTADO AQUÍ --- */}
+                    {/* --- NUEVO: COMPONENTE DEL MAPA CON SWITCH --- */}
                     <div className="mt-5 mb-4">
-                        <h5 className="mb-3">Ubicación de mis Lectores</h5>
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                            <h5 className="mb-0">Ubicación de mis Lectores</h5>
+                            <div className="btn-group shadow-sm" role="group">
+                                <button 
+                                    className={`btn btn-sm ${vistaMapaActual === 'fansAutor' ? 'btn-primary' : 'btn-outline-primary'}`} 
+                                    onClick={() => setVistaMapaActual('fansAutor')}>Fans Míos</button>
+                                <button 
+                                    className={`btn btn-sm ${vistaMapaActual === 'favLibros' ? 'btn-primary' : 'btn-outline-primary'}`} 
+                                    onClick={() => setVistaMapaActual('favLibros')}>Fans de mis Libros</button>
+                                <button 
+                                    className={`btn btn-sm ${vistaMapaActual === 'leyendo' ? 'btn-primary' : 'btn-outline-primary'}`} 
+                                    onClick={() => setVistaMapaActual('leyendo')}>Leyendo Ahora</button>
+                            </div>
+                        </div>
                         <div className="card shadow-sm border-0 p-2">
-                            <LectoresUbi lectores={db.todosLosLectores} />
+                            <LectoresUbi lectores={mapaViews[vistaMapaActual]} />
                         </div>
                     </div>
+                    {/* --------------------------------------------- */}
                 </div>
 
                 <div className="col-md-4">
