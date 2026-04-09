@@ -30,6 +30,8 @@ const EscanerLibro = () => {
             if (!response.ok) {
                 throw new Error(data.message || "Error en el servidor");
             }
+            
+            console.log("Respuesta del servidor completa:", data);
 
             if (data.libro) {
                 if (data.libro.portada_url) {
@@ -111,6 +113,8 @@ const EscanerLibro = () => {
                                 <div className="d-flex flex-wrap gap-1 mb-2">
                                     <span className="badge bg-secondary small">{resultado.editorial}</span>
                                     <span className="badge bg-info text-dark small">{resultado.paginas} págs</span>
+                                    {/* NUEVA CATEGORÍA */}
+                                    <span className="badge bg-warning text-dark small">{resultado.categoria}</span>
                                 </div>
 
                                 <p className="card-text small mb-3" style={{
