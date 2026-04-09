@@ -2,9 +2,19 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Navigate, Link } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
+// 1. IMPORTAMOS EL COMPONENTE DEL MAPA
+import LectoresUbi from "../components/25_LectoresUbi"; 
+
 const PaginaAutor = () => {
     const { store } = useGlobalReducer();
-    const [db, setDb] = useState({ perfil: null, misLibros: [], misSeguidores: [], noticias: [], loading: true });
+    const [db, setDb] = useState({ 
+        perfil: null, 
+        misLibros: [], 
+        misSeguidores: [], 
+        noticias: [], 
+        todosLosLectores: [], // Estado para el mapa
+        loading: true 
+    });
     const [editando, setEditando] = useState(null);
     const [nuevoTexto, setNuevoTexto] = useState("");
 
@@ -25,15 +35,13 @@ const PaginaAutor = () => {
 
     const loadData = useCallback(async () => {
         if (!autorId) return;
-        const [perfil, libros, favs, posts] = await Promise.all([
+        const [perfil, libros, favs, posts, lectores] = await Promise.all([
             request(`autor/${autorId}`),
             request(`libro`),
             request(`lector_autores_favoritos`),
-            request(`postautor/autor/${autorId}`)
+            request(`postautor/autor/${autorId}`),
+            request(`lector`) // Traemos a todos los lectores para el mapa
         ]);
-
-        // MIRA LA CONSOLA (F12) PARA VER ESTO:
-        console.log("¿Qué trae perfil?", perfil);
 
         const datosLimpios = perfil?.autor || perfil;
 
@@ -41,10 +49,10 @@ const PaginaAutor = () => {
             const id = parseInt(autorId);
             setDb({
                 perfil: datosLimpios,
-                // Aseguramos que la comparación de IDs sea siempre numérica
                 misLibros: libros?.filter(l => Number(l.autor_id) === id) || [],
                 misSeguidores: favs?.filter(f => Number(f.autor_id) === id) || [],
                 noticias: posts || [],
+                todosLosLectores: lectores || [], // Guardamos los lectores aquí
                 loading: false
             });
         } else {
@@ -98,7 +106,6 @@ const PaginaAutor = () => {
                 </div>
                 <div>
                     <Link to="/crear_post_autor" className="btn btn-sm btn-primary me-2">Nueva Noticia</Link>
-                    {/* <button className="btn btn-sm btn-outline-secondary" onClick={loadData}>Actualizar</button> */}
                 </div>
             </div>
 
@@ -126,10 +133,17 @@ const PaginaAutor = () => {
                             )}
                         </div>
                     ))}
+
+                    {/* --- COMPONENTE DEL MAPA INSERTADO AQUÍ --- */}
+                    <div className="mt-5 mb-4">
+                        <h5 className="mb-3">Ubicación de mis Lectores</h5>
+                        <div className="card shadow-sm border-0 p-2">
+                            <LectoresUbi lectores={db.todosLosLectores} />
+                        </div>
+                    </div>
                 </div>
 
                 <div className="col-md-4">
-
                     <h5 className="mb-3">Mis Libros ({db.misLibros.length})</h5>
                     <div className="list-group mb-4">
                         {db.misLibros.map(l => (
