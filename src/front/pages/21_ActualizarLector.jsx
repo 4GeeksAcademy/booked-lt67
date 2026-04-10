@@ -207,10 +207,11 @@ const ActualizarLector = () => {
                 </div>
 
                 {/* INTEGRACIÓN DEL MAPA */}
-                {ubicacion && (
+                {!cargando && ubicacion && (
                     <div className="mb-4">
                         <label className="form-label text-muted small fw-bold text-uppercase">Mi Ubicación</label>
                         <SelectorUbicacion 
+                            key={`${ubicacion.lat}-${ubicacion.lng}`} // TRUCO CLAVE: Forzar re-renderizado si cambian las coordenadas base
                             ubicacionInicial={ubicacion} 
                             onLocationSelect={setUbicacion} 
                         />

@@ -2,12 +2,28 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Navigate, Link, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
+// 1. IMPORTAMOS EL COMPONENTE DEL MAPA
+import LectoresUbi from "../components/25_LectoresUbi"; 
+
 const PaginaAutor = () => {
     const { store } = useGlobalReducer();
-    const navigate = useNavigate();
+    const [db, setDb] = useState({ 
+        perfil: null, 
+        misLibros: [], 
+        misSeguidores: [], 
+        noticias: [], 
+        loading: true 
+    });
     
+    // --- NUEVO: ESTADOS PARA EL MAPA ---
+    const [mapaViews, setMapaViews] = useState({
+        fansAutor: [],
+        favLibros: [],
+        leyendo: []
+    });
+    const [vistaMapaActual, setVistaMapaActual] = useState('fansAutor');
+    // -----------------------------------
 
-    const [db, setDb] = useState({ perfil: null, misLibros: [], misSeguidores: [], noticias: [], loading: true });
     const [editando, setEditando] = useState(null);
     const [nuevoTexto, setNuevoTexto] = useState("");
 
@@ -28,15 +44,17 @@ const PaginaAutor = () => {
 
     const loadData = useCallback(async () => {
         if (!autorId) return;
-        const [perfil, libros, favs, posts] = await Promise.all([
+        
+        // --- NUEVO: FETCH PARA EL MAPA ---
+        const [perfil, libros, favs, posts, lectoresFans, lectoresFavLibros, lectoresLeyendo] = await Promise.all([
             request(`autor/${autorId}`),
             request(`libro`),
             request(`lector_autores_favoritos`),
-            request(`postautor/autor/${autorId}`)
+            request(`postautor/autor/${autorId}`),
+            request(`lectores_por_autor/${autorId}`),
+            request(`lectores_fav_libros_autor/${autorId}`),
+            request(`lectores_leyendo_autor/${autorId}`)
         ]);
-
-        // MIRA LA CONSOLA (F12) PARA VER ESTO:
-        console.log("¿Qué trae perfil?", perfil);
 
         const datosLimpios = perfil?.autor || perfil;
 
@@ -44,12 +62,19 @@ const PaginaAutor = () => {
             const id = parseInt(autorId);
             setDb({
                 perfil: datosLimpios,
-                // Aseguramos que la comparación de IDs sea siempre numérica
                 misLibros: libros?.filter(l => Number(l.autor_id) === id) || [],
                 misSeguidores: favs?.filter(f => Number(f.autor_id) === id) || [],
                 noticias: posts || [],
                 loading: false
             });
+
+            // --- NUEVO: GUARDAR DATOS DEL MAPA ---
+            setMapaViews({
+                fansAutor: lectoresFans || [],
+                favLibros: lectoresFavLibros || [],
+                leyendo: lectoresLeyendo || []
+            });
+            // -------------------------------------
         } else {
             setDb(prev => ({ ...prev, loading: false }));
         }
@@ -103,7 +128,6 @@ const PaginaAutor = () => {
                 </div>
                 <div>
                     <Link to="/crear_post_autor" className="btn btn-sm btn-primary me-2">Nueva Noticia</Link>
-                    {/* <button className="btn btn-sm btn-outline-secondary" onClick={loadData}>Actualizar</button> */}
                 </div>
             </div>
 
@@ -131,10 +155,31 @@ const PaginaAutor = () => {
                             )}
                         </div>
                     ))}
+
+                    {/* --- NUEVO: COMPONENTE DEL MAPA CON SWITCH --- */}
+                    <div className="mt-5 mb-4">
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                            <h5 className="mb-0">Ubicación de mis Lectores</h5>
+                            <div className="btn-group shadow-sm" role="group">
+                                <button 
+                                    className={`btn btn-sm ${vistaMapaActual === 'fansAutor' ? 'btn-primary' : 'btn-outline-primary'}`} 
+                                    onClick={() => setVistaMapaActual('fansAutor')}>Fans Míos</button>
+                                <button 
+                                    className={`btn btn-sm ${vistaMapaActual === 'favLibros' ? 'btn-primary' : 'btn-outline-primary'}`} 
+                                    onClick={() => setVistaMapaActual('favLibros')}>Fans de mis Libros</button>
+                                <button 
+                                    className={`btn btn-sm ${vistaMapaActual === 'leyendo' ? 'btn-primary' : 'btn-outline-primary'}`} 
+                                    onClick={() => setVistaMapaActual('leyendo')}>Leyendo Ahora</button>
+                            </div>
+                        </div>
+                        <div className="card shadow-sm border-0 p-2">
+                            <LectoresUbi lectores={mapaViews[vistaMapaActual]} />
+                        </div>
+                    </div>
+                    {/* --------------------------------------------- */}
                 </div>
 
                 <div className="col-md-4">
-
                     <h5 className="mb-3">Mis Libros ({db.misLibros.length})</h5>
                     <div className="list-group mb-4">
                         {db.misLibros.map(l => (
