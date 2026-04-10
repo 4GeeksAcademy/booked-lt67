@@ -737,8 +737,8 @@ def login_autor():
     autor = Autor.query.filter_by(email=email).first()
 
 
-    if autor is None:
-        return jsonify({"msg": "Bad username or password"}), 401
+    #if autor is None:
+    #    return jsonify({"msg": "Bad username or password"}), 401
     
     if check_password_hash(autor.password, password):
         access_token = create_access_token(identity=str(autor.id))
@@ -822,8 +822,8 @@ def login_lector():
     lector = Lector.query.filter_by(email=email).first()
 
 
-    if lector is None or not check_password_hash(lector.password, password):
-        return jsonify({"msg": "Email o contraseña incorrectos"}), 401
+    #if lector is None or not check_password_hash(lector.password, password):
+    #    return jsonify({"msg": "Email o contraseña incorrectos"}), 401
 
     access_token = create_access_token(identity=str(lector.id))
 
