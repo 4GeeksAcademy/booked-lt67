@@ -7,21 +7,35 @@ const TarjetaLibro = ({ libro, esFavorito, loEstaLeyendo, alHacerClic, lectorId 
     <div className="col-6 mb-3">
         <div className="card p-2 shadow-sm border-0 h-100">
             <h6 className="small fw-bold text-truncate mb-2">{libro.nombre}</h6>
-            <div className="d-flex flex-column gap-1 mt-auto">
-                <Link to={`/pagina_lector/${libro.id}/reviews`} className="btn btn-sm btn-outline-primary py-0">Ver reseñas</Link>
-                <div className="d-flex gap-1">
-                    <button className={`btn btn-sm py-0 flex-grow-1 ${loEstaLeyendo ? 'btn-warning' : 'btn-outline-warning'}`}
-                        onClick={() => alHacerClic(loEstaLeyendo ? `leyendo/libros/${lectorId}/${libro.id}` : `leyendo/libros`, loEstaLeyendo ? "DELETE" : "POST", loEstaLeyendo ? null : { lector_id: lectorId, libro_id: libro.id })}>
-                        {loEstaLeyendo ? "Leyendo" : "¿Leyendo?"}
-                    </button>
-                    <button className={`btn btn-sm py-0 flex-grow-1 ${esFavorito ? 'btn-danger' : 'btn-outline-danger'}`}
-                        onClick={() => alHacerClic(esFavorito ? `favoritos/libros/${lectorId}/${libro.id}` : `favoritos/libros`, esFavorito ? "DELETE" : "POST", esFavorito ? null : { lector_id: lectorId, libro_id: libro.id })}>
-                        {esFavorito ? "Quitar" : "Favorito"}
-                    </button>
-                </div>
+            <div className="d-flex gap-1 mb-1">
+                <Link
+                    to={`/ver_libro/${libro.id}`}
+                    className="btn btn-sm btn-success py-0 flex-grow-1"
+                    style={{ fontSize: '0.75rem' }}
+                >
+                    <i className="fas fa-eye me-1"></i>Ver Libro
+                </Link>
+                <Link
+                    to={`/pagina_lector/${libro.id}/reviews`}
+                    className="btn btn-sm btn-outline-primary py-0 flex-grow-1"
+                    style={{ fontSize: '0.75rem' }}
+                >
+                    Reseñas
+                </Link>
+            </div>
+            <div className="d-flex gap-1">
+                <button className={`btn btn-sm py-0 flex-grow-1 ${loEstaLeyendo ? 'btn-warning' : 'btn-outline-warning'}`}
+                    onClick={() => alHacerClic(loEstaLeyendo ? `leyendo/libros/${lectorId}/${libro.id}` : `leyendo/libros`, loEstaLeyendo ? "DELETE" : "POST", loEstaLeyendo ? null : { lector_id: lectorId, libro_id: libro.id })}>
+                    {loEstaLeyendo ? "Leyendo" : "¿Leyendo?"}
+                </button>
+                <button className={`btn btn-sm py-0 flex-grow-1 ${esFavorito ? 'btn-danger' : 'btn-outline-danger'}`}
+                    onClick={() => alHacerClic(esFavorito ? `favoritos/libros/${lectorId}/${libro.id}` : `favoritos/libros`, esFavorito ? "DELETE" : "POST", esFavorito ? null : { lector_id: lectorId, libro_id: libro.id })}>
+                    {esFavorito ? "Quitar" : "Favorito"}
+                </button>
             </div>
         </div>
     </div>
+    
 );
 
 const PaginaLector = () => {

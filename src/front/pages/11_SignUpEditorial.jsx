@@ -9,6 +9,8 @@ const SignUpEditorial = () => {
     const [pais, setPais] = useState('');
     const [imageUrl, setImageUrl] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [sugerencia, setSugerencia] = useState(null);
+    const [reclamarId, setReclamarId] = useState(null);
 
     const { store, dispatch } = useGlobalReducer();
     const navigate = useNavigate();
@@ -49,6 +51,22 @@ const SignUpEditorial = () => {
         }
     };
 
+    const buscarEditorialExistente = async (valor) => {
+        if (valor.length < 3) {
+            setSugerencia(null);
+            return;
+        }
+        try {
+            const resp = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/buscar_editorial?nombre=${valor}`);
+            const data = await resp.json();
+            if (resp.ok && data.id && !data.is_verified) {
+                setSugerencia(data);
+            } else {
+                setSugerencia(null);
+            }
+        } catch (err) { console.error(err); }
+    };
+
     const sendData = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -61,7 +79,8 @@ const SignUpEditorial = () => {
                 "password": password,
                 "nombre": nombre,
                 "pais": pais,
-                "image_url": imageUrl
+                "image_url": imageUrl,
+                "reclamar_id": reclamarId
             })
         };
 
@@ -122,8 +141,30 @@ const SignUpEditorial = () => {
 
                         <div className="mb-3">
                             <label className="form-label fw-bold">Nombre</label>
-                            <input value={nombre} onChange={(e) => setNombre(e.target.value)} type="text" className="form-control" placeholder="Nombre de la editorial" required />
+                            <input
+                                value={nombre}
+                                onChange={(e) => {
+                                    setNombre(e.target.value);
+                                    buscarEditorialExistente(e.target.value);
+                                }} type="text" className="form-control" placeholder="Nombre de la editorial" required />
                         </div>
+
+                        {sugerencia && (
+                            <div className="alert alert-info mt-2 p-2" style={{ fontSize: "0.8rem" }}>
+                                <p className="mb-1">¿Eres <strong>{sugerencia.nombre}</strong>? Tenemos libros asociados a este nombre.</p>
+                                <button
+                                    type="button"
+                                    className="btn btn-sm btn-primary"
+                                    onClick={() => {
+                                        setNombre(sugerencia.nombre);
+                                        setSugerencia(null);
+                                        setReclamarId(sugerencia.id);
+                                    }}
+                                >
+                                    Sí, soy yo
+                                </button>
+                            </div>
+                        )}
 
                         <div className="mb-3">
                             <label className="form-label fw-bold">País</label>

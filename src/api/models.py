@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean, ForeignKey, Integer
+from sqlalchemy import String, Boolean, ForeignKey, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime, timezone
 from typing import List
@@ -84,18 +84,25 @@ class Lector(db.Model):
 
 
 class Editorial(db.Model):
+
     id: Mapped[int] = mapped_column(primary_key=True)
-    nombre = db.Column(db.String(120), unique=True, nullable=False)
+    nombre: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     pais: Mapped[str] = mapped_column(String(120), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=True)
-    password = db.Column(db.String(80), unique=False, nullable=True)
-    is_active = db.Column(db.Boolean(), default=True)
+    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=True)
+    password: Mapped[str] = mapped_column(String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    image_url: Mapped[str] = mapped_column(String(255), nullable=True)
 
-    image_url = mapped_column(String(255), nullable=True)
+    libros: Mapped[List["Libro"]] = relationship(
+        back_populates="editorial",
+        cascade="all, delete-orphan" 
+    )
 
-    libros: Mapped[List["Libro"]] = relationship(back_populates="editorial")
     posts: Mapped[List["PostEditorial"]] = relationship(
-        back_populates="editorial")
+        back_populates="editorial",
+        cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f'<Editorial: {self.nombre}>'
@@ -106,7 +113,8 @@ class Editorial(db.Model):
             "nombre": self.nombre,
             "pais": self.pais,
             "email": self.email,
-            "image_url": self.image_url
+            "image_url": self.image_url,
+            "is_verified": self.is_verified
         }
 
 
@@ -116,10 +124,10 @@ class Autor(db.Model):
     apellido: Mapped[str] = mapped_column(String(120), nullable=False)
     pais: Mapped[str] = mapped_column(String(120), nullable=True)
     email = db.Column(db.String(120), unique=True,
-                      nullable=True)  # Permitir nulo
-    password = db.Column(db.String(80), unique=False,
-                         nullable=True)  # Permitir nulo
-    # Para saber si es reclamado
+                      nullable=True)  
+    password = db.Column(db.String(250), unique=False,
+                         nullable=True) 
+    
     is_verified = db.Column(db.Boolean(), default=False)
     foto_url = db.Column(db.String(500), nullable=True)
 
@@ -129,6 +137,17 @@ class Autor(db.Model):
                       ] = relationship(back_populates="autor")
 
     posts: Mapped[List["PostAutor"]] = relationship(back_populates="autor")
+    
+    libros: Mapped[List["Libro"]] = relationship(
+    back_populates="autor", 
+    cascade="all, delete-orphan")
+
+    posts: Mapped[List["PostAutor"]] = relationship(
+    back_populates="autor",
+    cascade="all, delete-orphan" )
+
+    
+    
 
     def __repr__(self):
         return f'<Autor: {self.nombre} {self.apellido}>'
@@ -148,7 +167,8 @@ class Autor(db.Model):
             "apellido": self.apellido,
             "pais": self.pais,
             "email": self.email,
-            "foto": foto_final
+            "foto": foto_final,
+            "is_verified": self.is_verified
         }
 
 
@@ -177,6 +197,8 @@ class Libro(db.Model):
 
     reviews: Mapped[List["Reviews"]] = relationship(back_populates="libro")
 
+    resumen_ia: Mapped[str] = mapped_column(Text, nullable=True)
+
     def __repr__(self):
         return f'<Libro: {self.nombre}>'
 
@@ -192,7 +214,8 @@ class Libro(db.Model):
             "editorial_id": self.editorial_id,
             "nombre_autor": f"{self.autor.nombre} {self.autor.apellido}" if self.autor else "Sin autor",
             "nombre_editorial": self.editorial.nombre if self.editorial else "Sin editorial",
-            "image_url": self.image_url
+            "image_url": self.image_url,
+            "resumen_ia": self.resumen_ia
         }
 
 
