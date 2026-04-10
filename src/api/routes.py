@@ -6,6 +6,13 @@ from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavorito
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
+from urllib.parse import quote
+
+import json
+import requests
+from google import genai
+from google.genai import types
+
 from flask_jwt_extended import create_access_token
 
 import cloudinary
@@ -20,10 +27,11 @@ api = Blueprint('api', __name__)
 # Allow CORS requests to this API
 CORS(api)
 
+
 cloudinary.config(
-    cloud_name="dhdpvuldj",
-    api_key="568969989281436",
-    api_secret="JzQfNk5FVz1LUQiMqaFbGJ5xWI0",
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME2'),
+    api_key=os.getenv('CLOUDINARY_API_KEY2'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET2'),
     secure=True
 )
 
@@ -144,7 +152,7 @@ def update_lector(lector_id):
 
     lector.latitud = body.get("latitud", lector.latitud)
     lector.longitud = body.get("longitud", lector.longitud)
-    
+
     db.session.commit()
 
     response_body = {
@@ -341,34 +349,33 @@ def create_libro():
     if not (autor_id or nombre_autor_google) or not editorial_id:
         return jsonify({"msg": "Faltan datos del Autor o la Editorial"}), 400
 
-    
     if not autor_id and nombre_autor_google:
 
         partes = nombre_autor_google.split(" ", 1)
         nombre_a = partes[0]
         apellido_a = partes[1] if len(partes) > 1 else ""
 
-        autor_existente = Autor.query.filter_by(nombre=nombre_a, apellido=apellido_a).first()
-        
+        autor_existente = Autor.query.filter_by(
+            nombre=nombre_a, apellido=apellido_a).first()
+
         if autor_existente:
             autor_id = autor_existente.id
         else:
             nuevo_autor = Autor(
                 nombre=nombre_a,
                 apellido=apellido_a,
-                is_verified=False 
+                is_verified=False
             )
             db.session.add(nuevo_autor)
-            db.session.commit() 
+            db.session.commit()
             autor_id = nuevo_autor.id
 
-    
     new_libro = Libro(
         nombre=body.get("nombre"),
         genero=body.get("genero"),
-        autor_id=autor_id, 
+        autor_id=autor_id,
         editorial_id=editorial_id,
-        google_id=body.get("google_id"), 
+        google_id=body.get("google_id"),
         isbn_13=body.get("isbn_13"),
         descripcion=body.get("descripcion"),
         image_url=body.get("image_url")
@@ -511,6 +518,17 @@ def get_lector_autor_favorito(fav_id):
 
     item = Lector_Autores_Favoritos.query.filter_by(id=fav_id).first()
     return jsonify(item.serialize()), 200
+
+
+@api.route('/lectores_por_autor/<int:id_del_autor>', methods=['GET'])
+def get_lectores_por_autor(id_del_autor):
+    items = Lector_Autores_Favoritos.query.filter_by(
+        autor_id=id_del_autor).all()
+    if not items:
+        return jsonify({"message": "Nadie tiene a este autor como favorito aún"}), 404
+    results = [item.lector.serialize() for item in items]
+
+    return jsonify(results), 200
 
 
 @api.route('/lector_autores_favoritos', methods=['POST'])
@@ -797,13 +815,18 @@ def login_editorial():
 def signup_lector():
     body = request.get_json()
 
+    # Usamos .get() en lugar de corchetes para evitar que el server de error
+    # si alguno de los campos opcionales viene vacío.
     nuevo_lector = Lector(
-        email=body["email"],
-        username=body["username"],
-        password=body["password"],
-        nombre=body["nombre"],
-        apellido=body["apellido"],
-        pais_donde_reside=body["pais"],
+        email=body.get("email"),
+        username=body.get("username"),
+        password=body.get("password"),
+        nombre=body.get("nombre"),
+        apellido=body.get("apellido"),
+        pais_donde_reside=body.get("pais"),
+        # CORRECCIÓN AQUÍ: Usar corchetes body["latitud"] o mejor body.get("latitud")
+        latitud=body.get("latitud"),
+        longitud=body.get("longitud"),
         is_active=True
     )
 
@@ -812,9 +835,12 @@ def signup_lector():
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        return jsonify({"msg": "Error de integridad o datos duplicados", "error": str(e)}), 400
+        # Imprime el error en la consola de Python para que puedas verlo mientras desarrollas
+        print(f"Error en signup: {e}")
+        return jsonify({"msg": "Error al crear el usuario", "error": str(e)}), 400
 
-    access_token = create_access_token(identity=nuevo_lector.email)
+    # Cambiamos identity a string (versiones recientes de Flask-JWT-Extended lo requieren)
+    access_token = create_access_token(identity=str(nuevo_lector.email))
 
     return jsonify({
         "msg": "Lector creado",
@@ -832,7 +858,7 @@ def signup_editorial():
     password = body.get("password")
     nombre = body.get("nombre")
     pais = body.get("pais")
-    image_url = body.get("image_url") # Captura la URL de Cloudinary
+    image_url = body.get("image_url")  # Captura la URL de Cloudinary
 
     if not all([email, password, nombre, pais]):
         return jsonify({"msg": "Faltan datos obligatorios"}), 400
@@ -842,11 +868,11 @@ def signup_editorial():
         return jsonify({"msg": "Ya se encuentra un usuario creado con ese correo"}), 401
 
     nueva_editorial = Editorial(
-        email=email, 
-        password=password, 
-        nombre=nombre, 
-        pais=pais, 
-        image_url=image_url # <--- ¡LISTO!
+        email=email,
+        password=password,
+        nombre=nombre,
+        pais=pais,
+        image_url=image_url  # <--- ¡LISTO!
     )
 
     db.session.add(nueva_editorial)
@@ -858,8 +884,9 @@ def signup_editorial():
     response_body = {
         "msg": "Editorial creada",
         "access_token": access_token,
-        "id": nueva_editorial.id,      # Lo necesita tu localStorage.setItem("editorial_id")
-        "nombre": nueva_editorial.nombre # Lo necesita tu dispatch
+        # Lo necesita tu localStorage.setItem("editorial_id")
+        "id": nueva_editorial.id,
+        "nombre": nueva_editorial.nombre  # Lo necesita tu dispatch
     }
     return jsonify(response_body), 201
 
@@ -1274,7 +1301,7 @@ def add_libro_google():
     existing_libro = Libro.query.filter_by(google_id=google_id).first()
     if existing_libro:
         return jsonify({
-            "id": existing_libro.id, 
+            "id": existing_libro.id,
             "message": "Este libro ya existe"
         }), 200
 
@@ -1320,9 +1347,156 @@ def add_libro_google():
         db.session.add(nuevo_libro)
         db.session.commit()
         return jsonify({
-            "id": nuevo_libro.id, 
+            "id": nuevo_libro.id,
             "msg": "Libro creado con éxito"
         }), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+
+@api.route('/reconocer_portada', methods=['POST'])
+def reconocer_portada():
+    if 'portada' not in request.files:
+        return jsonify({"message": "No se envió ninguna imagen"}), 400
+
+    file = request.files['portada']
+    image_data = file.read()
+
+    try:
+        # 1. Cargamos AMBAS llaves desde el .env
+        api_key_gemini = os.getenv("GEMINI_API_KEY")
+        api_key_books = os.getenv("GOOGLE_BOOKS_API_KEY")
+
+        # Le pasamos la llave de Gemini a la IA
+        ai_client = genai.Client(api_key=api_key_gemini)
+
+        prompt = """
+        Mira la imagen de esta portada de libro. Extrae la información y devuelve un JSON.
+        Si conoces el libro, completa los datos con tu conocimiento de experto bibliotecario.
+        
+        Campos requeridos en el JSON:
+        'titulo', 'autor', 'editorial', 'descripcion', 'paginas', 'categoria'
+        
+        Si no reconoces el libro, devuelve {"titulo": "Error", "autor": "No detectado"}.
+        """
+
+        # Forzamos a la IA a responder en JSON puro
+        response = ai_client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[
+                prompt,
+                types.Part.from_bytes(data=image_data, mime_type=file.mimetype)
+            ],
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json"
+            )
+        )
+
+        # Ahora ia_data ya viene como un diccionario gracias al response_mime_type
+        ia_data = json.loads(response.text)
+
+        if ia_data.get("titulo") == "Error":
+            return jsonify({"message": "No se pudo identificar el libro"}), 200
+
+        # 1. Búsqueda MEJORADA en Google Books usando intitle e inauthor + API KEY de Books
+        titulo_limpio = ia_data.get('titulo', '').replace(' ', '+')
+        autor_limpio = ia_data.get('autor', '').replace(' ', '+')
+
+        # Formato exacto que le gusta a Google: intitle:Cien+Años+de+Soledad+inauthor:Gabriel+García
+        query = f"intitle:{titulo_limpio}+inauthor:{autor_limpio}"
+
+        # 👇 AQUÍ USAMOS LA NUEVA LLAVE DE BOOKS 👇
+        google_books_url = f"https://www.googleapis.com/books/v1/volumes?q={query}&maxResults=5&key={api_key_books}"
+
+        # ESTO IMPRIMIRÁ LA URL EN TU TERMINAL DE FLASK
+        print(f"--- URL DE GOOGLE BOOKS: {google_books_url} ---")
+
+        res_books = requests.get(google_books_url).json()
+
+        # ESTO IMPRIMIRÁ SI GOOGLE BOOKS DA UN ERROR
+        if "error" in res_books:
+            print(f"--- ERROR DE GOOGLE BOOKS: {res_books['error']} ---")
+
+        portada_url = "https://placehold.co/400x600/e2e8f0/475569.png?text=Sin+Portada"
+
+        if "items" in res_books:
+            # Buscar la primera imagen disponible
+            for item in res_books["items"]:
+                info = item.get("volumeInfo", {})
+                if "imageLinks" in info and "thumbnail" in info["imageLinks"]:
+                    portada_url = info["imageLinks"]["thumbnail"].replace(
+                        "http://", "https://")
+                    break
+
+            # Rellenar textos
+            info_principal = res_books["items"][0]["volumeInfo"]
+            ia_data["editorial"] = ia_data.get(
+                "editorial") or info_principal.get("publisher", "Desconocida")
+            ia_data["descripcion"] = ia_data.get("descripcion") or info_principal.get(
+                "description", "Sin descripción.")
+            ia_data["paginas"] = ia_data.get(
+                "paginas") or info_principal.get("pageCount", "N/A")
+            ia_data["categoria"] = info_principal.get(
+                "categories", ["General"])[0]
+        else:
+            print("--- GOOGLE BOOKS NO DEVOLVIÓ NINGÚN LIBRO ('items' no encontrado) ---")
+
+        ia_data["portada_url"] = portada_url
+
+        # ESTO IMPRIMIRÁ EL JSON FINAL QUE SE ENVÍA A REACT
+        print(f"--- JSON ENVIADO AL FRONTEND: {ia_data} ---")
+
+        return jsonify({"message": "¡Éxito!", "libro": ia_data}), 200
+
+    except Exception as e:
+        error_msg = str(e)
+        print(f"--- ERROR CRÍTICO --- \n{error_msg}")
+        
+        # Si los servidores de Gemini están saturados
+        if "503" in error_msg or "high demand" in error_msg:
+            return jsonify({"message": "La Inteligencia Artificial está muy solicitada en este momento. ¡Por favor, intenta escanear de nuevo en unos minutos!"}), 503
+            
+        # Si te pasaste del límite de uso
+        elif "429" in error_msg:
+            return jsonify({"message": "Límite de uso de la IA agotado. Inténtalo un poco más tarde."}), 429
+            
+        # Para cualquier otro error general
+        return jsonify({"message": "Error interno al procesar la imagen."}), 500
+
+# =======================================================
+# --- RUTAS NUEVAS PARA MAPAS DE AUTOR Y EDITORIAL ---
+# =======================================================
+
+
+@api.route('/lectores_fav_libros_autor/<int:autor_id>', methods=['GET'])
+def lectores_fav_libros_autor(autor_id):
+    # Lectores que marcaron libros de ESTE autor como favoritos
+    lectores = Lector.query.join(LibrosFavoritos).join(
+        Libro).filter(Libro.autor_id == autor_id).all()
+    # Usamos set() para no enviar coordenadas duplicadas si un lector tiene 2 libros del mismo autor
+    return jsonify([l.serialize() for l in set(lectores)]), 200
+
+
+@api.route('/lectores_leyendo_autor/<int:autor_id>', methods=['GET'])
+def lectores_leyendo_autor(autor_id):
+    # Lectores que están leyendo libros de ESTE autor
+    lectores = Lector.query.join(LecturaActual).join(
+        Libro).filter(Libro.autor_id == autor_id).all()
+    return jsonify([l.serialize() for l in set(lectores)]), 200
+
+
+@api.route('/lectores_fav_libros_editorial/<int:editorial_id>', methods=['GET'])
+def lectores_fav_libros_editorial(editorial_id):
+    # Lectores que marcaron libros de ESTA editorial como favoritos
+    lectores = Lector.query.join(LibrosFavoritos).join(
+        Libro).filter(Libro.editorial_id == editorial_id).all()
+    return jsonify([l.serialize() for l in set(lectores)]), 200
+
+
+@api.route('/lectores_leyendo_editorial/<int:editorial_id>', methods=['GET'])
+def lectores_leyendo_editorial(editorial_id):
+    # Lectores que están leyendo libros de ESTA editorial
+    lectores = Lector.query.join(LecturaActual).join(
+        Libro).filter(Libro.editorial_id == editorial_id).all()
+    return jsonify([l.serialize() for l in set(lectores)]), 200

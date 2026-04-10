@@ -67,6 +67,7 @@ import VerEditorialFree from "./pages/18_VerEditorialFree";
 import ActualizarAutor from "./pages/20_ActualizarAutor";
 import ActualizarLector from "./pages/21_ActualizarLector";
 import SelectorUbicacion from "./pages/24_Georreferenciacion";
+import EscanerLibro from "./components/25_BuscarLibroIA";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -163,6 +164,8 @@ export const router = createBrowserRouter(
       <Route path="/actualizar_lector/:theId" element={<ActualizarLector />} />
 
       <Route path="/test-mapa" element={<SelectorUbicacion />} />
+
+      <Route path="/test-imagen-ia" element={<EscanerLibro />} />
 
       </Route>
     )
