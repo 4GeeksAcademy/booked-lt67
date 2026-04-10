@@ -1,9 +1,12 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const PaginaAutor = () => {
     const { store } = useGlobalReducer();
+    const navigate = useNavigate();
+    
+
     const [db, setDb] = useState({ perfil: null, misLibros: [], misSeguidores: [], noticias: [], loading: true });
     const [editando, setEditando] = useState(null);
     const [nuevoTexto, setNuevoTexto] = useState("");
@@ -68,7 +71,9 @@ const PaginaAutor = () => {
         }
     };
 
-    if (!store.auth_autor && !localStorage.getItem("token_autor")) return <Navigate to="/login_autor" />;
+    if (!store.auth_autor && !localStorage.getItem("token_autor")) {
+        return <Navigate to="/login_autor" />;
+    }
     if (db.loading) return <div className="text-center mt-5">Cargando...</div>;
 
     return (

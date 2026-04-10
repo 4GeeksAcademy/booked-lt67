@@ -5,14 +5,19 @@ from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor, Reviews, Admin, PostEditorial, LecturaActual, PostAutor
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import func
 
-from flask_jwt_extended import create_access_token
+
+
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
 import cloudinary
 import cloudinary.utils
 import time
-
 import os
+import requests
+
 from werkzeug.utils import secure_filename
 
 api = Blueprint('api', __name__)
@@ -144,7 +149,7 @@ def update_lector(lector_id):
 
     lector.latitud = body.get("latitud", lector.latitud)
     lector.longitud = body.get("longitud", lector.longitud)
-    
+
     db.session.commit()
 
     response_body = {
@@ -341,34 +346,33 @@ def create_libro():
     if not (autor_id or nombre_autor_google) or not editorial_id:
         return jsonify({"msg": "Faltan datos del Autor o la Editorial"}), 400
 
-    
     if not autor_id and nombre_autor_google:
 
         partes = nombre_autor_google.split(" ", 1)
         nombre_a = partes[0]
         apellido_a = partes[1] if len(partes) > 1 else ""
 
-        autor_existente = Autor.query.filter_by(nombre=nombre_a, apellido=apellido_a).first()
-        
+        autor_existente = Autor.query.filter_by(
+            nombre=nombre_a, apellido=apellido_a).first()
+
         if autor_existente:
             autor_id = autor_existente.id
         else:
             nuevo_autor = Autor(
                 nombre=nombre_a,
                 apellido=apellido_a,
-                is_verified=False 
+                is_verified=False
             )
             db.session.add(nuevo_autor)
-            db.session.commit() 
+            db.session.commit()
             autor_id = nuevo_autor.id
 
-    
     new_libro = Libro(
         nombre=body.get("nombre"),
         genero=body.get("genero"),
-        autor_id=autor_id, 
+        autor_id=autor_id,
         editorial_id=editorial_id,
-        google_id=body.get("google_id"), 
+        google_id=body.get("google_id"),
         isbn_13=body.get("isbn_13"),
         descripcion=body.get("descripcion"),
         image_url=body.get("image_url")
@@ -709,20 +713,26 @@ def delete_review(review_id):
 
 @api.route("/login_autor", methods=["POST"])
 def login_autor():
-    email = request.json.get("email", None)
-    password = request.json.get("password", None)
+    body = request.get_json()
+    email = body.get("email")
+    password = body.get("password")
+
     autor = Autor.query.filter_by(email=email).first()
+
+
     if autor is None:
         return jsonify({"msg": "Bad username or password"}), 401
-    if password != autor.password:
-        return jsonify({"msg": "Bad username or password"}), 401
+    
+    if check_password_hash(autor.password, password):
+        access_token = create_access_token(identity=str(autor.id))
+        return jsonify({
+            "access_token": access_token,
+            "autor_id": autor.id,
+            "nombre": autor.nombre
+        }), 200
+    else:
+        return jsonify({"msg": "Contraseña incorrecta"}), 401
 
-    access_token = create_access_token(identity=email)
-    return jsonify({
-        "access_token": access_token,
-        "autor_id": autor.id,
-        "nombre": autor.nombre
-    }), 200
 
 
 @api.route("/signup_autor", methods=["POST"])
@@ -731,6 +741,7 @@ def signup_autor():
 
     email = body.get("email")
     password = body.get("password")
+    reclamar_id = body.get("reclamar_id")
     nombre = body.get("nombre")
     apellido = body.get("apellido")
     pais = body.get("pais")
@@ -738,23 +749,53 @@ def signup_autor():
     if not all([email, password, nombre, apellido, pais]):
         return jsonify({"msg": "Faltan datos obligatorios"}), 400
 
-    autor = Autor.query.filter_by(email=email).first()
-    if autor:
-        return jsonify({"msg": "Ya se encuentra un usuario creado con ese correo"}), 401
+    if reclamar_id:
+        autor = Autor.query.get(reclamar_id)
 
-    autor = Autor(email=email, password=password,
-                  nombre=nombre, apellido=apellido, pais=pais)
+        if not autor:
+            return jsonify({"msg": "El perfil que intentas reclamar no existe"}), 404
 
-    db.session.add(autor)
-    db.session.commit()
+        if autor.is_verified:
+            return jsonify({"msg": "Este perfil ya ha sido reclamado por otra persona"}), 403
 
-    access_token = create_access_token(identity=email)
+        autor.email = email
+        autor.password = generate_password_hash(password)
+        autor.nombre = body.get("nombre", autor.nombre)
+        autor.apellido = body.get("apellido", autor.apellido)
+        autor.pais = body.get("pais", autor.pais)
+        autor.is_verified = True
 
-    response_body = {
-        "msg": "Autor creado",
-        "access_token": access_token
-    }
-    return jsonify(response_body), 201
+        db.session.commit()
+        msg = "Perfil reclamado y activado con éxito"
+        autor_final = autor
+
+    else:
+        user_exists = Autor.query.filter_by(email=email).first()
+        if user_exists:
+            return jsonify({"msg": "El email ya está registrado"}), 400
+
+        nuevo_autor = Autor(
+            nombre=body.get("nombre"),
+            apellido=body.get("apellido"),
+            pais=body.get("pais"),
+            email=email,
+            password=generate_password_hash(password),
+            is_verified=True
+        )
+
+        db.session.add(nuevo_autor)
+        db.session.commit()
+        msg = "Usuario creado con éxito"
+        autor_final = nuevo_autor
+
+    access_token = create_access_token(identity=str(autor_final.id))
+
+    return jsonify({
+        "msg": msg,
+        "access_token": access_token,
+        "autor_id": autor_final.id,
+        "nombre": autor_final.nombre
+    }), 201
 
 
 @api.route("/login_lector", methods=["POST"])
@@ -762,17 +803,69 @@ def login_lector():
     email = request.json.get("email", None)
     password = request.json.get("password", None)
     lector = Lector.query.filter_by(email=email).first()
-    if lector is None:
-        return jsonify({"msg": "Bad username or password"}), 401
-    if password != lector.password:
-        return jsonify({"msg": "Bad username or password"}), 401
 
-    access_token = create_access_token(identity=email)
+
+    if lector is None or not check_password_hash(lector.password, password):
+        return jsonify({"msg": "Email o contraseña incorrectos"}), 401
+
+    access_token = create_access_token(identity=str(lector.id))
+
     return jsonify({
         "access_token": access_token,
         "lector_id": lector.id,
-        "nombre": lector.nombre
+        "nombre": lector.nombre,
+        "msg": "Login exitoso"
     }), 200
+
+@api.route('/signup_lector', methods=['POST'])
+def signup_lector():
+    body = request.get_json()
+    
+    
+    email = body.get("email")
+    password = body.get("password")
+    username = body.get("username")
+    
+    if not email or not password or not username:
+        return jsonify({"msg": "Email, password y username son obligatorios"}), 400
+
+    
+    if Lector.query.filter_by(email=email).first():
+        return jsonify({"msg": "El email ya está registrado"}), 400
+    if Lector.query.filter_by(username=username).first():
+        return jsonify({"msg": "El username ya está en uso"}), 400
+
+    try:
+        
+        new_lector = Lector(
+            email=email,
+            username=username,
+            password=generate_password_hash(password),
+            nombre=body.get("nombre"),
+            apellido=body.get("apellido"),
+            pais_donde_reside=body.get("pais"), 
+            latitud=body.get("latitud"),
+            longitud=body.get("longitud"),
+            is_active=True 
+        )
+
+        db.session.add(new_lector)
+        db.session.commit()
+
+        
+        access_token = create_access_token(identity=str(new_lector.id))
+
+        return jsonify({
+            "msg": "Lector creado con éxito",
+            "access_token": access_token,
+            "lector_id": new_lector.id,
+            "nombre": new_lector.nombre
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error en signup_lector: {str(e)}")
+        return jsonify({"msg": "Error interno del servidor"}), 500
 
 
 @api.route("/login_editorial", methods=["POST"])
@@ -793,75 +886,51 @@ def login_editorial():
     }), 200
 
 
-@api.route("/signup_lector", methods=["POST"])
-def signup_lector():
-    body = request.get_json()
-
-    nuevo_lector = Lector(
-        email=body["email"],
-        username=body["username"],
-        password=body["password"],
-        nombre=body["nombre"],
-        apellido=body["apellido"],
-        pais_donde_reside=body["pais"],
-        is_active=True
-    )
-
-    try:
-        db.session.add(nuevo_lector)
-        db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"msg": "Error de integridad o datos duplicados", "error": str(e)}), 400
-
-    access_token = create_access_token(identity=nuevo_lector.email)
-
-    return jsonify({
-        "msg": "Lector creado",
-        "access_token": access_token,
-        "lector_id": nuevo_lector.id,
-        "nombre": nuevo_lector.nombre
-    }), 201
-
-
-@api.route("/signup_editorial", methods=["POST"])
+@api.route('/signup_editorial', methods=['POST'])
 def signup_editorial():
-    body = request.get_json()
 
+    body = request.get_json()
+    nombre_ed = body.get("nombre")
     email = body.get("email")
     password = body.get("password")
-    nombre = body.get("nombre")
-    pais = body.get("pais")
-    image_url = body.get("image_url") # Captura la URL de Cloudinary
+    pais = body.get("pais", "Desconocido")
+    image_url = body.get("image_url")
 
-    if not all([email, password, nombre, pais]):
-        return jsonify({"msg": "Faltan datos obligatorios"}), 400
+    if not nombre_ed or not email or not password:
+        return jsonify({"msg": "Datos incompletos"}), 400
 
-    editorial_existente = Editorial.query.filter_by(email=email).first()
-    if editorial_existente:
-        return jsonify({"msg": "Ya se encuentra un usuario creado con ese correo"}), 401
+    
+    editorial = Editorial.query.filter(Editorial.nombre.ilike(f"%{nombre_ed}%")).first()
 
-    nueva_editorial = Editorial(
-        email=email, 
-        password=password, 
-        nombre=nombre, 
-        pais=pais, 
-        image_url=image_url # <--- ¡LISTO!
-    )
+    if editorial:
+        if editorial.is_verified:
+            return jsonify({"msg": "Esta editorial ya tiene un dueño"}), 400
+        
+        editorial.email = email
+        editorial.password = generate_password_hash(password)
+        editorial.pais = pais
+        editorial.image_url = image_url
+        editorial.is_verified = True
+        msg = "Has reclamado tu perfil editorial con éxito"
+    else:
 
-    db.session.add(nueva_editorial)
-    db.session.commit()
+        editorial = Editorial(
+            nombre=nombre_ed,
+            email=email,
+            password=generate_password_hash(password),
+            pais=pais,
+            image_url=image_url,
+            is_verified=True 
+        )
+        db.session.add(editorial)
+        msg = "Editorial registrada con éxito"
 
-    access_token = create_access_token(identity=email)
-
-    # --- MEJORA: Enviamos el ID y Nombre para que el Frontend no falle ---
-    response_body = {
-        "msg": "Editorial creada",
-        "access_token": access_token,
-        "id": nueva_editorial.id,      # Lo necesita tu localStorage.setItem("editorial_id")
-        "nombre": nueva_editorial.nombre # Lo necesita tu dispatch
-    }
-    return jsonify(response_body), 201
+    try:
+        db.session.commit()
+        return jsonify({"msg": msg, "editorial_id": editorial.id}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": "Error al registrar"}), 500
 
 
 @api.route("/login_admin", methods=["POST"])
@@ -1268,43 +1337,84 @@ def delete_foto_lector_cloudinary(lector_id):
 @api.route('/libro_google', methods=['POST'])
 def add_libro_google():
     body = request.get_json()
-
     google_id = body.get("google_id")
 
+    
     existing_libro = Libro.query.filter_by(google_id=google_id).first()
     if existing_libro:
         return jsonify({
-            "id": existing_libro.id, 
+            "id": existing_libro.id,
             "message": "Este libro ya existe"
         }), 200
 
+    
     autores_lista = body.get("autores", ["Autor Desconocido"])
-    nombre_completo = autores_lista[0]
-    partes = nombre_completo.split(" ", 1)
-    nombre_a = partes[0]
-    apellido_a = partes[1] if len(partes) > 1 else ""
+    nombre_google = autores_lista[0] 
 
-    autor = Autor.query.filter_by(nombre=nombre_a, apellido=apellido_a).first()
+    
+    nombre_google_clean = nombre_google.replace(" ", "").replace(".", "").lower()
+
+   
+    autor = Autor.query.filter(
+        func.lower(
+            func.replace(
+                func.replace(
+                    func.concat(Autor.nombre, Autor.apellido), 
+                    " ", ""
+                ), 
+                ".", ""
+            )
+        ) == nombre_google_clean
+    ).first()
+
     if not autor:
+        partes = nombre_google.split(" ", 1)
+        nombre_a = partes[0]
+        apellido_a = partes[1] if len(partes) > 1 else ""
+        
         autor = Autor(
             nombre=nombre_a,
             apellido=apellido_a,
+            is_verified=False,
+            email=None,
+            password=None
         )
         db.session.add(autor)
         db.session.commit()
 
-    nombre_ed = body.get("nombre_editorial", "Editorial Genérica")
-    editorial = Editorial.query.filter_by(nombre=nombre_ed).first()
-    if not editorial:
-        editorial = Editorial(
-            nombre=nombre_ed,
-            pais="Desconocido",  # <--- Agrégale esto temporalmente
-            is_active=True
+    
+    nombre_ed_google = body.get("nombre_editorial", "Editorial Genérica")
+    
+    
+    ed_clean_google = nombre_ed_google.lower().replace("editorial", "").replace("&", "").replace(" ", "").replace(".", "").strip()
 
+   
+    editorial = Editorial.query.filter(
+        func.lower(
+            func.replace(
+                func.replace(
+                    func.replace(Editorial.nombre, " ", ""), 
+                    "&", ""
+                ), 
+                ".", ""
+            )
+        ).ilike(f"%{ed_clean_google}%")
+    ).first()
+
+    if not editorial:
+        
+        editorial = Editorial(
+            nombre=nombre_ed_google,
+            pais="Desconocido",
+            is_active=True,
+            is_verified=False, 
+            email=None,
+            password=None
         )
         db.session.add(editorial)
         db.session.commit()
 
+    
     nuevo_libro = Libro(
         nombre=body.get("nombre"),
         genero=body.get("genero", "General"),
@@ -1320,9 +1430,75 @@ def add_libro_google():
         db.session.add(nuevo_libro)
         db.session.commit()
         return jsonify({
-            "id": nuevo_libro.id, 
+            "id": nuevo_libro.id,
             "msg": "Libro creado con éxito"
         }), 201
     except Exception as e:
         db.session.rollback()
+        print(f"Error al crear libro: {str(e)}") 
         return jsonify({"error": str(e)}), 500
+
+
+@api.route('/ai-summary', methods=['POST'])
+@jwt_required()
+def get_ai_summary():
+    body = request.get_json()
+    book_title = body.get("title")
+
+    # 1. Sacamos la Key de Groq del .env
+    api_key = os.getenv("GROQ_API_KEY")
+    url = "https://api.groq.com/openai/v1/chat/completions"
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    # 2. Configuramos la petición para el libro específico
+    payload = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [
+            {
+                "role": "user",
+                "content": f"Resume el libro '{book_title}' en 3 parrafos, narrando introduccion, desarrollo y desenlance, todo en español."
+            }
+        ]
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        data = response.json()
+
+        # 3. Extraemos la respuesta
+        summary = data['choices'][0]['message']['content']
+        return jsonify({"summary": summary}), 200
+
+    except Exception as e:
+        print(f"Error en IA: {e}")
+        return jsonify({"error": "No se pudo generar el resumen"}), 500
+
+@api.route('/autor', methods=['GET'])
+def get_autores_filtro():
+    
+    nombre = request.args.get("nombre")
+    apellido = request.args.get("apellido")
+
+    if not nombre or not apellido:
+        return jsonify({"msg": "Faltan parámetros de búsqueda"}), 400
+
+   
+    autores = Autor.query.filter(
+        Autor.nombre.ilike(f"%{nombre}%"),
+        Autor.apellido.ilike(f"%{apellido}%"),
+        Autor.is_verified == False
+    ).all()
+
+    return jsonify([a.serialize() for a in autores]), 200
+
+@api.route('/buscar_editorial', methods=['GET'])
+def buscar_editorial():
+    nombre = request.args.get("nombre")
+    editorial = Editorial.query.filter(Editorial.nombre.ilike(f"%{nombre}%")).first()
+    if editorial:
+        return jsonify(editorial.serialize()), 200 
+    return jsonify({"msg": "No encontrada"}), 404

@@ -8,7 +8,12 @@ export const Navbar = () => {
 
 	const navigate = useNavigate()
 
-	const isAuthorized = store.auth_autor || store.auth_editorial || store.auth_lector || store.auth_admin
+	const autorLogueado = store.auth_autor || !!localStorage.getItem("token_autor");
+    const lectorLogueado = store.auth_lector || !!localStorage.getItem("token_lector");
+    const editorialLogueada = store.auth_editorial || !!localStorage.getItem("token_editorial");
+    const adminLogueado = store.auth_admin || !!localStorage.getItem("token_admin");
+
+    const isAuthorized = autorLogueado || lectorLogueado || editorialLogueada || adminLogueado;
 
 	function logout_admin(){
 		localStorage.removeItem("token_admin")
@@ -36,33 +41,42 @@ export const Navbar = () => {
 
 	return (
 		<nav className="navbar navbar-light bg-light">
-			<div className="container">
+            <div className="container">
+                <Link to="/">
+                    <span className="navbar-brand mb-0 h1">Booked</span>
+                </Link>
 
-				<Link to="/">
-					<span className="navbar-brand mb-0 h1">React Boilerplate</span>
-				</Link>
-				
-			
-
-	
-				{!isAuthorized && (
-                    <>	
-						<Link className="btn btn-primary" to="/login_lector">Log In Lector</Link>
-                        <Link className="btn btn-primary" to="/login_autor">Log In Autor</Link>
-                        <Link className="btn btn-primary" to="/login_editorial">Log In Editorial</Link>
-						<Link className="btn btn-primary" to="/login_admin">Log In Admin</Link>
+                {!isAuthorized && (
+                    <>  
+                        <Link className="btn btn-outline-primary mx-1" to="/login_lector">Log In Lector</Link>
+                        <Link className="btn btn-outline-primary mx-1" to="/login_autor">Log In Autor</Link>
+                        <Link className="btn btn-outline-primary mx-1" to="/login_editorial">Log In Editorial</Link>
+						<Link className="btn btn-outline-primary mx-1" to="/login_admin">Log In Admin</Link>
                     </>
                 )}
-				{store.auth_lector? <button className="btn btn-primary" onClick={logout_lector}>LogOut</button>:null}
-				{store.auth_autor? <button className="btn btn-primary" onClick={logout_autor}>LogOut</button>:null}
-				{store.auth_editorial? <button className="btn btn-primary" onClick={logout_editorial}>LogOut</button>:null}
-				{store.auth_admin? <button className="btn btn-primary" onClick={logout_admin}>LogOut</button>:null}
-				
-				<div className="ml-auto">
+
+                {lectorLogueado && (<div className="ml-auto">
+										<Link to={"/pagina_lector"} className="m-3 btn btn-m btn-outline-primary">Volver al Dashboard</Link>
+										<button className="btn btn-danger" onClick={logout_lector}>Log Out</button>
+									</div>)}
+                {autorLogueado && (<div className="ml-auto">
+										<Link to={"/pagina_autor"} className="m-3 btn btn-m btn-outline-primary">Volver al Dashboard</Link>
+										<button className="btn btn-danger" onClick={logout_autor}>Log Out</button>
+									</div>)}
+                {editorialLogueada && (<div className="ml-auto">
+										<Link to={"/pagina_editorial"} className="m-3 btn btn-m btn-outline-primary">Volver al Dashboard</Link>
+										<button className="btn btn-danger" onClick={logout_editorial}>Log Out</button>
+									</div>)}
+                {adminLogueado &&	(<div className="ml-auto">
+										<Link to={"/admin_home/"} className="m-3 btn btn-m btn-outline-primary">Volver al Dashboard</Link>
+										<button className="btn btn-danger" onClick={logout_admin}>Log Out</button>
+									</div>)}
+
+				{/* <div className="ml-auto">
 					<Link to="/demo">
 						<button className="btn btn-primary">Check the Context in action</button>
 					</Link>
-				</div>
+				</div> */}
 			</div>
 		</nav>
 	);

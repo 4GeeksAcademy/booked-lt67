@@ -1,5 +1,5 @@
-import React, { useEffect, useState, } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import React, { useEffect, useState, useCallback } from "react";
+import { Link, Navigate, useParams, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const EditarAutor = () => {

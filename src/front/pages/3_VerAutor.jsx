@@ -1,11 +1,12 @@
 import React, { useEffect, useState, } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const VerAutor = () => {
     const { theId } = useParams();
     const [autor, setautor] = useState(null);
     const { store, dispatch } = useGlobalReducer()
+    const navigate = useNavigate();
 
     if (!store.auth_admin) {
         return <Navigate to="/login_admin" />;
