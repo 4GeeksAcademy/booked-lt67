@@ -93,6 +93,7 @@ class Editorial(db.Model):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     image_url: Mapped[str] = mapped_column(String(255), nullable=True)
+    verification_status = db.Column(db.String(50), default="pending")
 
     libros: Mapped[List["Libro"]] = relationship(
         back_populates="editorial",
@@ -114,7 +115,8 @@ class Editorial(db.Model):
             "pais": self.pais,
             "email": self.email,
             "image_url": self.image_url,
-            "is_verified": self.is_verified
+            "is_verified": self.is_verified,
+            "verification_status": self.verification_status
         }
 
 
@@ -130,14 +132,11 @@ class Autor(db.Model):
     
     is_verified = db.Column(db.Boolean(), default=False)
     foto_url = db.Column(db.String(500), nullable=True)
-
-    libros: Mapped[List["Libro"]] = relationship(back_populates="autor")
+    verification_status = db.Column(db.String(50), default="pending")
 
     favorited: Mapped[List["Lector_Autores_Favoritos"]
                       ] = relationship(back_populates="autor")
 
-    posts: Mapped[List["PostAutor"]] = relationship(back_populates="autor")
-    
     libros: Mapped[List["Libro"]] = relationship(
     back_populates="autor", 
     cascade="all, delete-orphan")
@@ -168,7 +167,8 @@ class Autor(db.Model):
             "pais": self.pais,
             "email": self.email,
             "foto": foto_final,
-            "is_verified": self.is_verified
+            "is_verified": self.is_verified,
+            "verification_status": self.verification_status
         }
 
 

@@ -3,6 +3,7 @@ import rigoImageUrl from "../assets/img/rigo-baby.jpg";
 import logoBookedUrl from "../assets/img/logo_booked.png";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import { useNavigate, Link, Navigate } from "react-router-dom";
+import AdminVerification from "../components/27_AdminVerification.jsx";
 
 const AdminHome = () => {
 
@@ -43,6 +44,7 @@ const AdminHome = () => {
         <div className="text-center mt-5">
 
             <h1 className="display-4">Hola Admin!</h1>
+            <AdminVerification />
             <p className="lead">
                 {/* <img src={rigoImageUrl} className="img-fluid rounded-circle mb-3" alt="Rigo Baby" /> */}
                 <img src={logoBookedUrl} style={{ width: "500px", height: "auto" }} className="img-fluid rounded-circle mb-3" alt="Logo Booked" />
