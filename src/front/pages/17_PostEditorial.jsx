@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import { Link } from "react-router-dom";
 
-const PostSinLogin = () => {
+const PostEditorial = () => {
     const { store, dispatch } = useGlobalReducer();
     const [postsEditorial, setPostsEditorial] = useState([]);
     const [postsAutor, setPostsAutor] = useState([]);
@@ -50,24 +50,23 @@ const PostSinLogin = () => {
         {/* Contenedor principal de las dos columnas */}
         <div className="row">
             
-
-            {/* --- COLUMNA DE AUTORES --- */}
-            <div className="col-md-12">
-                <h3 className="mb-4 text-secondary text-center">Autores</h3>
-                {postsAutor.length === 0 ? (
-                    <div className="alert alert-info">No hay publicaciones de autores.</div>
+            {/* --- COLUMNA DE EDITORIALES --- */}
+            <div className="col-md-12"> 
+                <h3 className="mb-4 text-secondary text-center">Editoriales</h3>
+                {postsEditorial.length === 0 ? (
+                    <div className="alert alert-info">No hay publicaciones de editoriales.</div>
                 ) : (
                     <div className="row">
-                        {postsAutor.map((post) => (
+                        {postsEditorial.map((post) => (
                             <div key={post.id} className="col-12 mb-3">
-                                <div className="card shadow-sm border-left-success">
+                                <div className="card shadow-sm border-left-primary">
                                     <div className="card-body">
                                         <h6 className="card-subtitle mb-2 text-muted">
                                             <i className="far fa-calendar-alt me-2"></i>
                                             {post.fecha}
                                         </h6>
                                         <p className="card-text mt-2">{post.texto}</p>
-                                        <small className="fw-bold text-success">Autor: {post.nombre_autor} {post.apellido_autor}</small>
+                                        <small className="fw-bold text-primary">Ed: {post.nombre_editorial}</small>
                                     </div>
                                 </div>
                             </div>
@@ -81,4 +80,4 @@ const PostSinLogin = () => {
 );
 };
 
-export default PostSinLogin;
+export default PostEditorial;

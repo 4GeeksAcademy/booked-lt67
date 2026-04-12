@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import { Link } from "react-router-dom";
 
-const VerPerfilAutorEditorial = () => {
+const VerPerfilEditorial = () => {
     const { store } = useGlobalReducer();
     const [editoriales, setEditoriales] = useState([]);
     const [autores, setAutores] = useState([]);
@@ -44,34 +44,33 @@ const VerPerfilAutorEditorial = () => {
     return (
         <div className="container mt-5">
             <div className="text-center mb-5">
-                <h1 className="fw-bold">Autores</h1>
+                <h1 className="fw-bold">Editoriales</h1>
                 <p className="text-muted">Encuentra tus sellos editoriales y autores favoritos</p>
             </div>
 
             <div>
-
-                {/* SECCIÓN AUTORES */}
+                {/* SECCIÓN EDITORIALES */}
                 <div className="col-md-12">
-                    <h3 className="mb-4 text-secondary text-center h4"><i className="fas fa-pen-nib me-2"></i>Autores</h3>
-                    {autores.length === 0 ? (
-                        <div className="alert alert-info">No hay autores registrados.</div>
+                    <h3 className="mb-4 text-secondary text-center h4"><i className="fas fa-building me-2"></i>Editoriales</h3>
+                    {editoriales.length === 0 ? (
+                        <div className="alert alert-info">No hay editoriales registradas.</div>
                     ) : (
                         <div className="row px-2">
-                            {autores.map((aut) => (
-                                <div key={aut.id} className="col-12 mb-3">
-                                    <div className="card shadow-sm hover-shadow transition-all border-0 border-start border-success border-4">
+                            {editoriales.map((ed) => (
+                                <div key={ed.id} className="col-12 mb-3">
+                                    <div className="card shadow-sm hover-shadow transition-all border-0 border-start border-primary border-4">
                                         <div className="card-body d-flex align-items-center justify-content-between">
                                             <div className="d-flex align-items-center gap-3">
-                                                {renderAvatar(aut.foto, `${aut.nombre} ${aut.apellido}`)}
+                                                {renderAvatar(ed.image_url, ed.nombre)}
                                                 <div>
                                                     <p className="fw-bold mb-0 d-flex align-items-center">
-                                                        {aut.nombre} {aut.apellido}
-                                                        {aut.is_verified && <i className="fas fa-check-circle text-primary ms-1 small" title="Verificado"></i>}
+                                                        {ed.nombre}
+                                                        {ed.is_verified && <i className="fas fa-check-circle text-primary ms-1 small" title="Verificado"></i>}
                                                     </p>
-                                                    <small className="text-muted"><i className="fas fa-globe me-1"></i>{aut.pais}</small>
+                                                    <small className="text-muted"><i className="fas fa-map-marker-alt me-1"></i>{ed.pais}</small>
                                                 </div>
                                             </div>
-                                            <Link to={"/ver_autor_free/" + aut.id} className="btn btn-sm btn-success rounded-pill px-3">Ver</Link>
+                                            <Link to={"/ver_editorial_free/" + ed.id} className="btn btn-sm btn-primary rounded-pill px-3">Ver</Link>
                                         </div>
                                     </div>
                                 </div>
@@ -79,9 +78,10 @@ const VerPerfilAutorEditorial = () => {
                         </div>
                     )}
                 </div>
+
             </div>
         </div>
     );
 };
 
-export default VerPerfilAutorEditorial;
+export default VerPerfilEditorial;
