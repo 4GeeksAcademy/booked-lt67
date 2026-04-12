@@ -68,6 +68,9 @@ import ActualizarAutor from "./pages/20_ActualizarAutor";
 import ActualizarLector from "./pages/21_ActualizarLector";
 import SelectorUbicacion from "./pages/24_Georreferenciacion";
 import EscanerLibro from "./components/25_BuscarLibroIA";
+import VerPerfilEditorial from "./pages/18_VerPerfilEditoriales";
+import PostEditorial from "./pages/17_PostEditorial";
+import Contact from "./pages/30_Contact";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -150,12 +153,15 @@ export const router = createBrowserRouter(
 
       <Route path="/admin_home" element={<AdminHome />} />
 
-      <Route path="/post_free" element={<PostSinLogin />} />
+      <Route path="/post_autores" element={<PostSinLogin />} />
+      <Route path="/post_editoriales" element={<PostEditorial />} />
 
       <Route path="/pagina_autor" element={<PaginaAutor />} />
       <Route path="/crear_post_autor" element={<CrearPostAutor />} />
 
-      <Route path="/ver_autor_editorial" element={<VerPerfilAutorEditorial />} />
+      <Route path="/ver_autores" element={<VerPerfilAutorEditorial />} />
+      <Route path="/ver_editoriales" element={<VerPerfilEditorial />} />
+
       <Route path="/ver_autor_free/:theId" element={<VerAutorFree />} />
       <Route path="/ver_editorial_free/:theId" element={<VerEditorialFree />} />
 
@@ -166,6 +172,8 @@ export const router = createBrowserRouter(
       <Route path="/test-mapa" element={<SelectorUbicacion />} />
 
       <Route path="/test-imagen-ia" element={<EscanerLibro />} />
+
+      <Route path="/contact" element={<Contact />} />
 
       </Route>
     )
