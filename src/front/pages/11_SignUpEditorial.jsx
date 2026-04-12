@@ -52,20 +52,29 @@ const SignUpEditorial = () => {
     };
 
     const buscarEditorialExistente = async (valor) => {
-        if (valor.length < 3) {
-            setSugerencia(null);
-            return;
-        }
-        try {
-            const resp = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/buscar_editorial?nombre=${valor}`);
-            const data = await resp.json();
-            if (resp.ok && data.id && !data.is_verified) {
-                setSugerencia(data);
+    if (valor.length < 3) {
+        setSugerencia(null);
+        return;
+    }
+    try {
+        const resp = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/buscar_editorial?nombre=${valor}`);
+        if (resp.ok) {
+            const data = await resp.json(); 
+            
+            
+            const huerfanas = data.filter(e => !e.is_verified && (e.email === null || e.email === ""));
+            
+            if (huerfanas.length > 0) {
+                
+                setSugerencia(huerfanas[0]);
             } else {
                 setSugerencia(null);
             }
-        } catch (err) { console.error(err); }
-    };
+        }
+    } catch (err) { 
+        console.error("Error buscando editorial:", err); 
+    }
+};
 
     const sendData = async (e) => {
         e.preventDefault();

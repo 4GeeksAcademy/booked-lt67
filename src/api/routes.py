@@ -6,7 +6,7 @@ from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavorito
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from urllib.parse import quote
 
@@ -780,7 +780,8 @@ def signup_autor():
         autor.nombre = body.get("nombre", autor.nombre)
         autor.apellido = body.get("apellido", autor.apellido)
         autor.pais = body.get("pais", autor.pais)
-        autor.is_verified = True
+        autor.is_verified = False
+        autor.verification_status = "pending"
 
         db.session.commit()
         msg = "Perfil reclamado y activado con éxito"
@@ -797,7 +798,8 @@ def signup_autor():
             pais=body.get("pais"),
             email=email,
             password=generate_password_hash(password),
-            is_verified=True
+            is_verified=False,
+            verification_status="pending"
         )
 
         db.session.add(nuevo_autor)
@@ -1466,7 +1468,7 @@ def get_ai_summary():
         "messages": [
             {
                 "role": "user",
-                "content": f"Resume el libro '{book_title}' en 3 parrafos, narrando introduccion, desarrollo y desenlance, todo en español."
+                "content": f"Has un resumen ejectuvio del libro '{book_title}' en 4 o 5 parrafos, que incluya datos de personajes, cosas importantes de la trama para que parezca que me lei el libro, todo en español."
             }
         ]
     }
@@ -1485,18 +1487,18 @@ def get_ai_summary():
 
 @api.route('/autor', methods=['GET'])
 def get_autores_filtro():
-    
     nombre = request.args.get("nombre")
     apellido = request.args.get("apellido")
 
     if not nombre or not apellido:
         return jsonify({"msg": "Faltan parámetros de búsqueda"}), 400
 
-   
+    
     autores = Autor.query.filter(
         Autor.nombre.ilike(f"%{nombre}%"),
         Autor.apellido.ilike(f"%{apellido}%"),
-        Autor.is_verified == False
+        Autor.email == None, 
+        Autor.is_verified == False 
     ).all()
 
     return jsonify([a.serialize() for a in autores]), 200
@@ -1504,10 +1506,18 @@ def get_autores_filtro():
 @api.route('/buscar_editorial', methods=['GET'])
 def buscar_editorial():
     nombre = request.args.get("nombre")
-    editorial = Editorial.query.filter(Editorial.nombre.ilike(f"%{nombre}%")).first()
-    if editorial:
-        return jsonify(editorial.serialize()), 200 
-    return jsonify({"msg": "No encontrada"}), 404
+    
+    if not nombre:
+        return jsonify({"msg": "Debes proporcionar un nombre"}), 400
+
+   
+    editoriales = Editorial.query.filter(
+        Editorial.nombre.ilike(f"%{nombre}%"),
+        Editorial.email == None,
+        Editorial.is_verified == False
+    ).all()
+
+    return jsonify([e.serialize() for e in editoriales]), 200
 
 @api.route('/reconocer_portada', methods=['POST'])
 def reconocer_portada():
@@ -1654,3 +1664,58 @@ def lectores_leyendo_editorial(editorial_id):
     lectores = Lector.query.join(LecturaActual).join(
         Libro).filter(Libro.editorial_id == editorial_id).all()
     return jsonify([l.serialize() for l in set(lectores)]), 200
+
+@api.route('/admin/pending', methods=['GET'])
+@jwt_required()
+def get_pending_verifications():
+    current_email = get_jwt_identity()
+    admin = Admin.query.filter_by(email=current_email).first()
+    
+    if not admin:
+        return jsonify({"msg": "Acceso denegado"}), 403
+
+    
+    autores_pendientes = Autor.query.filter(
+        Autor.verification_status == 'pending',
+        Autor.email.isnot(None) 
+    ).all()
+
+    editoriales_pendientes = Editorial.query.filter(
+        Editorial.verification_status == 'pending',
+        Editorial.email.isnot(None)
+    ).all()
+    
+    return jsonify({
+        "autores": [a.serialize() for a in autores_pendientes],
+        "editoriales": [e.serialize() for e in editoriales_pendientes]
+    }), 200
+
+
+@api.route('/admin/verify_account', methods=['PUT'])
+@jwt_required()
+def verify_account():
+    current_user_email = get_jwt_identity()
+    admin = Admin.query.filter_by(email=current_user_email).first()
+    
+    if not admin: 
+        return jsonify({"msg": "No autorizado"}), 403
+
+    data = request.json
+    target_id = data.get("id")
+    target_type = data.get("type") # "autor" o "editorial"
+    action = data.get("action")   # "verify" o "reject"
+
+    target = Autor.query.get(target_id) if target_type == "autor" else Editorial.query.get(target_id)
+
+    if not target: 
+        return jsonify({"msg": "Perfil no encontrado"}), 404
+
+    if action == "verify":
+        target.verification_status = "verified"
+        target.is_verified = True
+    else:
+        target.verification_status = "rejected"
+        target.is_verified = False
+
+    db.session.commit()
+    return jsonify({"msg": f"Perfil {action} con éxito"}), 200

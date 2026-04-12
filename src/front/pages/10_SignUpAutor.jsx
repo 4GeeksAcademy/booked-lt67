@@ -21,16 +21,18 @@ const SignUpAutor = () => {
     }
 
     const buscarAutorExistente = async () => {
-        if (nombre.trim() && apellido.trim()) {
-            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/autor?nombre=${nombre}&apellido=${apellido}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    console.log("Datos recibidos:", data);
-                    
-                    const huérfanos = data.filter(a => !a.is_verified);
-                    setPerfilesEncontrados(huérfanos);
+    if (nombre.trim() && apellido.trim()) {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/autor?nombre=${nombre}&apellido=${apellido}`);
+        if (res.ok) {
+            const data = await res.json();
+            console.log("Datos recibidos:", data);
+            
+            const huérfanos = data.filter(a => !a.is_verified && (a.email === null || a.email === ""));
+            
+            setPerfilesEncontrados(huérfanos);
         }
-    }};
+    }
+};
 
     function sendData(e) {
         e.preventDefault()

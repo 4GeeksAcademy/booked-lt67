@@ -3,32 +3,20 @@ import useGlobalReducer from "../hooks/useGlobalReducer";
 import { Link } from "react-router-dom";
 
 const VerPerfilAutorEditorial = () => {
-    const { store, dispatch } = useGlobalReducer();
+    const { store } = useGlobalReducer();
     const [editoriales, setEditoriales] = useState([]);
     const [autores, setAutores] = useState([]);
     const [loading, setLoading] = useState(true);
 
-
     const fetchPosts = async () => {
         try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/editorial`);
-            if (response.ok) {
-                const data = await response.json();
-                setEditoriales(data);
-            }
-        } 
+            const responseEd = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/editorial`);
+            if (responseEd.ok) setEditoriales(await responseEd.json());
 
-        catch (error) {
-            console.error("Error cargando posts:", error);}
-
-        try {const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/autor`);
-            if (response.ok) {
-                const data = await response.json();
-                setAutores(data);
-            }}
-
-        catch (error) {
-            console.error("Error cargando posts:", error);
+            const responseAut = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/autor`);
+            if (responseAut.ok) setAutores(await responseAut.json());
+        } catch (error) {
+            console.error("Error cargando perfiles:", error);
         } finally {
             setLoading(false);
         }
@@ -38,66 +26,91 @@ const VerPerfilAutorEditorial = () => {
         fetchPosts();
     }, []);
 
+    // Función auxiliar para generar la imagen circular (Avatar)
+    const renderAvatar = (url, nombre, size = "50px") => {
+        const finalUrl = url || `https://ui-avatars.com/api/?name=${encodeURIComponent(nombre)}&background=random&color=fff`;
+        return (
+            <img
+                src={finalUrl}
+                alt={nombre}
+                className="rounded-circle border shadow-sm"
+                style={{ width: size, height: size, objectFit: "cover" }}
+            />
+        );
+    };
 
-    if (loading) return <div className="text-center mt-5"><div className="spinner-border"></div></div>;
+    if (loading) return <div className="text-center mt-5"><div className="spinner-border text-primary"></div></div>;
 
     return (
-    <div className="container mt-5">
-        <div className="d-flex justify-content-center align-items-center mb-4">
-            <h1>Publicaciones</h1>
-        </div>
-
-        <div className="row">
-            
-            <div className="col-md-6 border-end"> 
-                <h3 className="mb-4 text-secondary text-center">Editoriales</h3>
-                {editoriales.length === 0 ? (
-                    <div className="alert alert-info">No hay publicaciones de editoriales.</div>
-                ) : (
-                    <div className="row">
-                    {editoriales.map((post) => (
-                        <div key={post.id} className="col-12 mb-3">
-                            <div className="card shadow-sm border-left-primary">
-                                <div className="card-body">
-                                    <div className="d-flex align-items-center gap-3">
-                                        <p className="fw-bold card-text mt-2">{post.nombre}</p>                                        
-                                        <Link to={"/ver_editorial_free/" + post.id} className="btn btn-sm btn-outline-primary">Ver</Link>                                        
-                                    </div>
-                                    <small className="fw-bold text-primary">País: {post.pais}</small>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                )}
+        <div className="container mt-5">
+            <div className="text-center mb-5">
+                <h1 className="fw-bold">Editoriales y Autores</h1>
+                <p className="text-muted">Encuentra tus sellos editoriales y autores favoritos</p>
             </div>
 
-            <div className="col-md-6">
-                <h3 className="mb-4 text-secondary text-center">Autores</h3>
-                {autores.length === 0 ? (
-                    <div className="alert alert-info">No hay publicaciones de autores.</div>
-                ) : (
-                    <div className="row">
-                        {autores.map((post) => (
-                            <div key={post.id} className="col-12 mb-3">
-                                <div className="card shadow-sm border-left-success">
-                                    <div className="card-body">
-                                        <div className="d-flex align-items-center gap-3">
-                                            <p className="fw-bold card-text mt-2">{post.nombre} {post.apellido}</p>                                  
-                                            <Link to={"/ver_autor_free/" + post.id} className="btn btn-sm btn-outline-primary">Ver</Link>
+            <div className="row">
+                {/* SECCIÓN EDITORIALES */}
+                <div className="col-md-6 border-end">
+                    <h3 className="mb-4 text-secondary text-center h4"><i className="fas fa-building me-2"></i>Editoriales</h3>
+                    {editoriales.length === 0 ? (
+                        <div className="alert alert-info">No hay editoriales registradas.</div>
+                    ) : (
+                        <div className="row px-2">
+                            {editoriales.map((ed) => (
+                                <div key={ed.id} className="col-12 mb-3">
+                                    <div className="card shadow-sm hover-shadow transition-all border-0 border-start border-primary border-4">
+                                        <div className="card-body d-flex align-items-center justify-content-between">
+                                            <div className="d-flex align-items-center gap-3">
+                                                {renderAvatar(ed.image_url, ed.nombre)}
+                                                <div>
+                                                    <p className="fw-bold mb-0 d-flex align-items-center">
+                                                        {ed.nombre}
+                                                        {ed.is_verified && <i className="fas fa-check-circle text-primary ms-1 small" title="Verificado"></i>}
+                                                    </p>
+                                                    <small className="text-muted"><i className="fas fa-map-marker-alt me-1"></i>{ed.pais}</small>
+                                                </div>
+                                            </div>
+                                            <Link to={"/ver_editorial_free/" + ed.id} className="btn btn-sm btn-primary rounded-pill px-3">Ver</Link>
                                         </div>
-                                        <small className="fw-bold text-primary">País: {post.pais}</small>      
                                     </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
+                {/* SECCIÓN AUTORES */}
+                <div className="col-md-6">
+                    <h3 className="mb-4 text-secondary text-center h4"><i className="fas fa-pen-nib me-2"></i>Autores</h3>
+                    {autores.length === 0 ? (
+                        <div className="alert alert-info">No hay autores registrados.</div>
+                    ) : (
+                        <div className="row px-2">
+                            {autores.map((aut) => (
+                                <div key={aut.id} className="col-12 mb-3">
+                                    <div className="card shadow-sm hover-shadow transition-all border-0 border-start border-success border-4">
+                                        <div className="card-body d-flex align-items-center justify-content-between">
+                                            <div className="d-flex align-items-center gap-3">
+                                                {renderAvatar(aut.foto, `${aut.nombre} ${aut.apellido}`)}
+                                                <div>
+                                                    <p className="fw-bold mb-0 d-flex align-items-center">
+                                                        {aut.nombre} {aut.apellido}
+                                                        {aut.is_verified && <i className="fas fa-check-circle text-primary ms-1 small" title="Verificado"></i>}
+                                                    </p>
+                                                    <small className="text-muted"><i className="fas fa-globe me-1"></i>{aut.pais}</small>
+                                                </div>
+                                            </div>
+                                            <Link to={"/ver_autor_free/" + aut.id} className="btn btn-sm btn-success rounded-pill px-3">Ver</Link>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
-    </div>
-);
+    );
 };
 
 export default VerPerfilAutorEditorial;
