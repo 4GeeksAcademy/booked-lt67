@@ -1,13 +1,13 @@
 import { Link, useNavigate, NavLink, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react"; 
+import { useState, useEffect } from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
-import logoBookedUrl from "../assets/img/logo_booked.png";
+import logoBookedUrl from "../assets/img/logo_booked1.png";
 
 export const Navbar = () => {
     const { store, dispatch } = useGlobalReducer();
     const navigate = useNavigate();
     const location = useLocation();
-    
+
     const [openDropdown, setOpenDropdown] = useState(null);
 
     useEffect(() => {
@@ -23,13 +23,13 @@ export const Navbar = () => {
 
     // --- LÓGICA DE LOGOUT INTEGRADA ---
     const handleLogout = () => {
-        localStorage.clear(); 
+        localStorage.clear();
         // Limpiamos explícitamente los estados en el store
         dispatch({ type: "set_auth_lector", payload: false });
         dispatch({ type: "set_auth_autor", payload: false });
         dispatch({ type: "set_auth_editorial", payload: false });
         dispatch({ type: "set_lector_id", payload: null });
-        
+
         navigate('/');
     };
 
@@ -51,11 +51,11 @@ export const Navbar = () => {
         <nav className="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm py-2">
             <div className="container">
                 <Link className="navbar-brand d-flex align-items-center" to="/" onClick={() => setOpenDropdown(null)}>
-                    <img 
-                        src={logoBookedUrl} 
-                        alt="Logo" 
-                        style={{ height: "65px", width: "auto" }} 
-                        className="my-1" 
+                    <img
+                        src={logoBookedUrl}
+                        alt="Logo"
+                        style={{ height: "75px", width: "auto" }}
+                        className="my-1"
                     />
                 </Link>
 
@@ -66,13 +66,15 @@ export const Navbar = () => {
                 <div className="collapse navbar-collapse" id="navbarNav">
                     <ul className="navbar-nav mx-auto mb-2 mb-lg-0 fw-bold text-uppercase" style={{ fontSize: '0.85rem', letterSpacing: '0.5px' }}>
                         <li className="nav-item px-lg-2">
-                            <NavLink className={({ isActive }) => isActive ? "nav-link text-primary" : "nav-link"} to="/">Home</NavLink>
+                            <NavLink className="nav-link nav-link-booked" to="/">
+                                Home
+                            </NavLink>
                         </li>
 
                         <li className={`nav-item dropdown px-lg-2`}>
-                            <a 
-                                className={`nav-link dropdown-toggle ${isActive(['post_autores', 'post_editoriales']) ? 'text-primary' : ''} ${openDropdown === 'foros' ? 'show' : ''}`} 
-                                href="#" 
+                            <a
+                                className={`nav-link dropdown-toggle ${isActive(['post_autores', 'post_editoriales']) ? 'text-primary' : ''} ${openDropdown === 'foros' ? 'show' : ''}`}
+                                href="#"
                                 onClick={(e) => { e.preventDefault(); toggleDropdown('foros'); }}
                             >
                                 Foros
@@ -84,9 +86,9 @@ export const Navbar = () => {
                         </li>
 
                         <li className="nav-item dropdown px-lg-2">
-                            <a 
-                                className={`nav-link dropdown-toggle ${isActive(['ver_autores', 'ver_editoriales']) ? 'text-primary' : ''} ${openDropdown === 'conoce' ? 'show' : ''}`} 
-                                href="#" 
+                            <a
+                                className={`nav-link dropdown-toggle ${isActive(['ver_autores', 'ver_editoriales']) ? 'text-primary' : ''} ${openDropdown === 'conoce' ? 'show' : ''}`}
+                                href="#"
                                 onClick={(e) => { e.preventDefault(); toggleDropdown('conoce'); }}
                             >
                                 Conoce
@@ -99,10 +101,10 @@ export const Navbar = () => {
 
                         {!isAuthorized && (
                             <li className="nav-item dropdown px-lg-2">
-                                <a 
+                                <a
                                     /* AQUÍ ESTÁ EL CAMBIO: Se agregó 'signup' al arreglo de isActive */
-                                    className={`nav-link dropdown-toggle ${isActive(['login', 'signup']) ? 'text-primary' : ''} ${openDropdown === 'acceso' ? 'show' : ''}`} 
-                                    href="#" 
+                                    className={`nav-link dropdown-toggle ${isActive(['login', 'signup']) ? 'text-primary' : ''} ${openDropdown === 'acceso' ? 'show' : ''}`}
+                                    href="#"
                                     onClick={(e) => { e.preventDefault(); toggleDropdown('acceso'); }}
                                 >
                                     Acceso
@@ -125,7 +127,7 @@ export const Navbar = () => {
                     <div className="d-flex align-items-center gap-3">
                         {isAuthorized ? (
                             <div className="d-flex align-items-center bg-light rounded-pill p-1 shadow-sm">
-                                <Link to={getDashboardPath()} className="btn btn-primary rounded-pill px-4 fw-bold border-0">
+                                <Link to={getDashboardPath()} className="btn btn-booked-blue rounded-pill px-4 fw-bold border-0">
                                     Dashboard
                                 </Link>
                                 <button className="btn btn-link text-danger text-decoration-none ms-1 px-3" onClick={handleLogout}>
@@ -133,7 +135,7 @@ export const Navbar = () => {
                                 </button>
                             </div>
                         ) : (
-                            <Link to="/login_lector" className="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                            <Link to="/login_lector" className="btn btn-booked-blue rounded-pill px-4 fw-bold shadow-sm">
                                 Únete Ahora
                             </Link>
                         )}

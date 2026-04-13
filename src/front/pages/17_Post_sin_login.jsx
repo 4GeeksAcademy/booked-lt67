@@ -34,6 +34,8 @@ const PostSinLogin = () => {
         }
     };
 
+    
+
     useEffect(() => {
         fetchPosts();
     }, []);

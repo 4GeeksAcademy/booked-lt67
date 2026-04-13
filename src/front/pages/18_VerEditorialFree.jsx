@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 
 const VerEditorialFree = () => {
     const { theId } = useParams();
     const [editorial, setEditorial] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetch(import.meta.env.VITE_BACKEND_URL + "api/editorial/" + theId)
@@ -78,11 +79,12 @@ const VerEditorialFree = () => {
                     <hr className="my-4" />
 
                     <div className="d-flex justify-content-between align-items-center">
-                        <Link to="/ver_autor_editorial">
-                            <button className="btn btn-outline-secondary">
-                                <i className="fas fa-arrow-left me-2"></i> Volver a la lista
-                            </button>
-                        </Link>
+                        <button
+                            className="btn btn-outline-secondary"
+                            onClick={() => navigate(-1)}
+                        >
+                            <i className="fas fa-arrow-left me-2"></i> Volver
+                        </button>
 
                         <div className="text-end">
                             {/* editorial.is_verified ? (

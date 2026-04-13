@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 
 const VerAutorFree = () => {
     const { theId } = useParams();
     const [autor, setautor] = useState(null);
+    const navigate = useNavigate();
+
 
 
     useEffect(() => {
@@ -74,11 +76,12 @@ const VerAutorFree = () => {
                     <hr className="my-4" />
 
                     <div className="d-flex justify-content-between align-items-center">
-                        <Link to="/ver_autor_editorial">
-                            <button className="btn btn-outline-secondary">
-                                <i className="fas fa-arrow-left me-2"></i> Volver a la lista
-                            </button>
-                        </Link>
+                        <button
+                            className="btn btn-outline-secondary"
+                            onClick={() => navigate(-1)}
+                        >
+                            <i className="fas fa-arrow-left me-2"></i> Volver
+                        </button>
                         {/* Un pequeño aviso si es un perfil fantasma */}
                         <div className="text-end">
                             {/* autor.is_verified ? (
