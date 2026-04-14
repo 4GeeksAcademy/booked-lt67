@@ -2,8 +2,9 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import BuscadorGoogleBooks from "../components/23_BuscadorGoogleBooks";
+import BuscarLibroIA from "../components/25_BuscarLibroIA"; 
 
-// Assets e Imágenes (Asegúrate de que las rutas sean correctas)
+// Assets e Imágenes
 import logoBookedUrl from "../assets/img/logo_booked1.png";
 import booksImg from "../assets/img/Books.png"; 
 
@@ -13,6 +14,9 @@ const PaginaLector = () => {
     const [idASeguir, setIdASeguir] = useState("");
     const [seccionActiva, setSeccionActiva] = useState("bienvenida");
     
+    // Estado para manejar el modal de ver las reviews de un libro
+    const [libroParaReviews, setLibroParaReviews] = useState(null);
+    
     const [db, setDb] = useState({ 
         usuario: null, 
         favoritos: [], 
@@ -21,6 +25,7 @@ const PaginaLector = () => {
         otros: [], 
         autoresFav: [], 
         todosAutores: [], 
+        reviews: [],
         loading: true 
     });
 
@@ -40,14 +45,15 @@ const PaginaLector = () => {
     const load = useCallback(async () => {
         if (!store.lector_id) return;
         try {
-            const [u, f, l, t, all, af, ta] = await Promise.all([
+            const [u, f, l, t, all, af, ta, revs] = await Promise.all([
                 request(`lector/${store.lector_id}`),
                 request(`lector/${store.lector_id}/favoritos`),
                 request(`lector/${store.lector_id}/leyendo`),
                 request(`libro`),
                 request(`lector`),
                 request(`lector_autores_favoritos`),
-                request(`autor`)
+                request(`autor`),
+                request(`reviews`)
             ]);
 
             const otros = all?.filter(o => o.id !== store.lector_id && !u?.siguiendo?.some(s => s.seguido_id === o.id)) || [];
@@ -57,6 +63,7 @@ const PaginaLector = () => {
                 usuario: u, favoritos: f || [], leyendo: l || [],
                 todos: t || [], otros, autoresFav: misAutoresFav,
                 todosAutores: ta || [],
+                reviews: revs || [],
                 loading: false
             });
         } catch (error) {
@@ -72,62 +79,117 @@ const PaginaLector = () => {
     if (!store.auth_lector) return <Navigate to="/login_lector" />;
     if (db.loading) return <div className="text-center mt-5"><div className="spinner-border text-info-booked"></div></div>;
 
-    // Componente de Tarjeta de Libro con estilo Home
+    // =========================================================
+    // TARJETA LIBRO
+    // =========================================================
     const TarjetaLibro = ({ l }) => {
-    const esFavorito = db.favoritos.some(f => (f.libro?.id || f.libro_id) === l.id);
-    const loEstaLeyendo = db.leyendo.some(ley => (ley.libro?.id || ley.libro_id) === l.id);
+        const esFavorito = db.favoritos.some(f => (f.libro?.id || f.libro_id) === l.id);
+        const loEstaLeyendo = db.leyendo.some(ley => (ley.libro?.id || ley.libro_id) === l.id);
 
-    return (
-        <div className="col-md-4 col-lg-3 mb-5">
-            {/* Añadimos un poco más de padding superior a la tarjeta (pt-5) */}
-            <div className="card-feature text-center h-100 shadow-sm border-0 bg-white p-3 pt-5">
-                <div className="book-cover-floating">
-                    <img 
-                        src={l.image_url || "https://via.placeholder.com/150x225?text=No+Cover"} 
-                        className="portada-full" 
-                        alt={l.nombre} 
-                    />
-                </div>
-                
-                {/* AQUÍ ESTÁ EL TRUCO: 
-                   Añadimos 'mt-5' para que el título baje y no sea tapado por la imagen flotante 
-                */}
-                <div className="mt-5 pt-2">
-                    <h6 className="fw-bold text-dark mb-1 text-truncate px-2">
-                        {l.nombre}
-                    </h6>
-                    <p className="small text-muted mb-3">
-                        {l.nombre_autor || "Autor Desconocido"}
-                    </p>
-                </div>
-                
-                <div className="d-flex justify-content-center gap-2 mt-auto pb-2">
-                    <button 
-                        className={`btn btn-sm rounded-pill px-3 ${loEstaLeyendo ? 'btn-warning text-white' : 'btn-outline-warning'}`}
-                        onClick={() => exec(loEstaLeyendo ? `leyendo/libros/${store.lector_id}/${l.id}` : `leyendo/libros`, 
-                                     loEstaLeyendo ? "DELETE" : "POST", 
-                                     loEstaLeyendo ? null : { lector_id: store.lector_id, libro_id: l.id })}
-                    >
-                        <i className="fas fa-book-open"></i>
-                    </button>
-                    <button 
-                        className={`btn btn-sm rounded-pill px-3 ${esFavorito ? 'btn-danger' : 'btn-outline-danger'}`}
-                        onClick={() => exec(esFavorito ? `favoritos/libros/${store.lector_id}/${l.id}` : `favoritos/libros`, 
-                                     esFavorito ? "DELETE" : "POST", 
-                                     esFavorito ? null : { lector_id: store.lector_id, libro_id: l.id })}
-                    >
-                        <i className={`fa${esFavorito ? 's' : 'r'} fa-heart`}></i>
-                    </button>
-                    <Link to={`/ver_libro/${l.id}`} className="btn btn-sm btn-booked-blue rounded-pill px-3">Detalles</Link>
+        return (
+            <div className="col-md-4 col-lg-3 mb-5" style={{ marginTop: '110px' }}>
+                <div className="card-feature text-center h-100 shadow-sm border-0 bg-white d-flex flex-column">
+                    <div className="book-cover-floating">
+                        <img 
+                            src={l.image_url || "https://via.placeholder.com/150x225?text=No+Cover"} 
+                            className="portada-full" 
+                            alt={l.nombre} 
+                        />
+                    </div>
+                    
+                    <div className="flex-grow-1 d-flex flex-column mt-3">
+                        <h6 className="fw-bold text-dark mb-1 text-truncate px-2">
+                            {l.nombre}
+                        </h6>
+                        <p className="small text-muted mb-3">
+                            {l.nombre_autor || "Autor Desconocido"}
+                        </p>
+                        
+                        <div className="d-flex justify-content-center gap-1 mt-auto flex-wrap">
+                            <button 
+                                className={`btn btn-sm rounded-pill px-2 ${loEstaLeyendo ? 'btn-warning text-white' : 'btn-outline-warning'}`}
+                                onClick={() => exec(loEstaLeyendo ? `leyendo/libros/${store.lector_id}/${l.id}` : `leyendo/libros`, 
+                                             loEstaLeyendo ? "DELETE" : "POST", 
+                                             loEstaLeyendo ? null : { lector_id: store.lector_id, libro_id: l.id })}
+                                title="Leyendo"
+                            >
+                                <i className="fas fa-book-open"></i>
+                            </button>
+                            <button 
+                                className={`btn btn-sm rounded-pill px-2 ${esFavorito ? 'btn-danger' : 'btn-outline-danger'}`}
+                                onClick={() => exec(esFavorito ? `favoritos/libros/${store.lector_id}/${l.id}` : `favoritos/libros`, 
+                                             esFavorito ? "DELETE" : "POST", 
+                                             esFavorito ? null : { lector_id: store.lector_id, libro_id: l.id })}
+                                title="Favorito"
+                            >
+                                <i className={`fa${esFavorito ? 's' : 'r'} fa-heart`}></i>
+                            </button>
+                            
+                            <button 
+                                className="btn btn-sm btn-outline-info rounded-pill px-2"
+                                onClick={() => setLibroParaReviews(l)}
+                                title="Ver Reseñas"
+                            >
+                                <i className="fas fa-star"></i>
+                            </button>
+
+                            <Link to={`/ver_libro/${l.id}`} className="btn btn-sm btn-booked-blue rounded-pill px-3">Detalles</Link>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    );
-};
+        );
+    };
 
     return (
-        <div className="d-flex" style={{ minHeight: "100vh" }}>
+        <div className="d-flex position-relative" style={{ minHeight: "100vh" }}>
             
+            {/* OVERLAY PARA MOSTRAR LAS REVIEWS DEL LIBRO */}
+            {libroParaReviews && (
+                <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style={{ backgroundColor: "rgba(0,0,0,0.6)", zIndex: 1050 }}>
+                    <div className="bg-white rounded-4 shadow-lg p-4" style={{ width: "90%", maxWidth: "600px", maxHeight: "80vh", overflowY: "auto" }}>
+                        <div className="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
+                            <h4 className="fw-bold text-dark mb-0">Reseñas: {libroParaReviews.nombre}</h4>
+                            <button className="btn-close" onClick={() => setLibroParaReviews(null)}></button>
+                        </div>
+                        
+                        <div className="d-flex flex-column gap-3">
+                            {db.reviews.filter(r => r.libro?.id === libroParaReviews.id).length > 0 ? (
+                                db.reviews.filter(r => r.libro?.id === libroParaReviews.id).map(rev => (
+                                    <div key={rev.id} className="p-3 border rounded-3 bg-light">
+                                        <div className="d-flex align-items-center gap-2 mb-2">
+                                            <div className="bg-info-booked rounded-circle d-flex align-items-center justify-content-center text-white fw-bold overflow-hidden"
+                                                style={{ width: '35px', height: '35px' }}>
+                                                {rev.foto_lector ? (
+                                                    <img src={rev.foto_lector} alt={rev.nombre_lector} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                ) : (
+                                                    <span>{rev.nombre_lector?.charAt(0).toUpperCase() || "L"}</span>
+                                                )}
+                                            </div>
+                                            <span className="fw-bold small">{rev.nombre_lector}</span>
+                                            <span className="ms-auto text-warning fw-bold small">
+                                                <i className="fas fa-star me-1"></i>{rev.puntuacion}/10
+                                            </span>
+                                        </div>
+                                        <p className="mb-0 text-muted fst-italic">"{rev.texto}"</p>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center text-muted my-4">
+                                    <i className="fas fa-comment-slash fa-2x mb-3 opacity-50"></i>
+                                    <p>No hay reseñas para este libro todavía. ¡Sé el primero en opinar!</p>
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="text-end mt-4 pt-3 border-top">
+                            <Link to="/nueva_review" state={{ libroId: libroParaReviews?.id }} className="btn btn-booked-blue rounded-pill me-2">Escribir Reseña</Link>
+                            <button className="btn btn-secondary rounded-pill" onClick={() => setLibroParaReviews(null)}>Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* --- SIDEBAR IZQUIERDO --- */}
             <div className="bg-white shadow-sm border-end" style={{ width: "280px", minWidth: "280px", zIndex: 10 }}>
                 <div className="p-4 text-center border-bottom">
@@ -148,9 +210,10 @@ const PaginaLector = () => {
                         { id: "bienvenida", icon: "house", label: "Dashboard" },
                         { id: "leyendo", icon: "book-open", label: "Lectura Actual" },
                         { id: "favoritos", icon: "heart", label: "Mis Favoritos" },
+                        { id: "biblioteca", icon: "search", label: "Biblioteca" },
+                        { id: "mis_reviews", icon: "star", label: "Mis Reseñas" },
                         { id: "autores", icon: "feather-alt", label: "Explorar Autores" },
                         { id: "seguidores", icon: "users", label: "Mi Red" },
-                        { id: "biblioteca", icon: "search", label: "Biblioteca" },
                     ].map(item => (
                         <button 
                             key={item.id}
@@ -164,7 +227,7 @@ const PaginaLector = () => {
                 </div>
             </div>
 
-            {/* --- CONTENIDO PRINCIPAL CON ESTILO HOME --- */}
+            {/* --- CONTENIDO PRINCIPAL --- */}
             <div className="flex-grow-1 overflow-auto" style={{ background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)' }}>
                 <div className="container-fluid p-5">
                     
@@ -176,16 +239,21 @@ const PaginaLector = () => {
                                 <h1 className="display-4 fw-bold text-dark mt-2 mb-4">
                                     Hola, <span className="text-info-booked" style={{ fontStyle: 'italic' }}>{db.usuario?.nombre}.</span>
                                 </h1>
-                                <p className="lead text-muted mb-5">Gestiona tu ecosistema literario, descubre nuevos autores y mantén tu colección al día.</p>
+                                <p className="lead text-muted mb-4">Gestiona tu ecosistema literario, descubre nuevos autores y mantén tu colección al día.</p>
                                 
-                                <div className="p-2 bg-white shadow-lg rounded-4 d-flex align-items-center border" style={{ maxWidth: '600px' }}>
+                                <div className="p-2 bg-white shadow-lg rounded-4 d-flex align-items-center border mb-4" style={{ maxWidth: '600px' }}>
                                     <div className="flex-grow-1 px-2">
                                         <BuscadorGoogleBooks onLibroAgregado={irAlLibro} />
                                     </div>
                                 </div>
                             </div>
-                            <div className="col-lg-5 d-none d-lg-block text-center">
+                            <div className="col-lg-5 d-none d-lg-block text-center mb-4">
                                 <img src={booksImg} alt="Libros" className="img-fluid" style={{ maxHeight: "350px", filter: "drop-shadow(0 20px 30px rgba(0,0,0,0.1))" }} />
+                            </div>
+
+                            {/* SECCIÓN ESCÁNER IA */}
+                            <div className="col-12 mt-4">
+                                <BuscarLibroIA />
                             </div>
                         </div>
                     )}
@@ -207,7 +275,63 @@ const PaginaLector = () => {
                         </div>
                     )}
 
-                    {/* SECCIÓN AUTORES (ESTILO CIRCULAR HOME) */}
+                    {/* SECCIÓN MIS REVIEWS */}
+                    {seccionActiva === "mis_reviews" && (
+                        <div>
+                            <div className="mb-5">
+                                <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Mi Opinión</span>
+                                <h2 className="fw-bold mt-2">Mis Reseñas Literarias</h2>
+                            </div>
+                            <div className="row">
+                                {db.reviews.filter(r => Number(r.lector_id) === Number(store.lector_id)).length > 0 ? (
+                                    db.reviews.filter(r => Number(r.lector_id) === Number(store.lector_id)).map(rev => (
+                                        <div key={rev.id} className="col-md-6 mb-4">
+                                            <div className="card shadow-sm border-0 rounded-4 p-4 h-100">
+                                                <div className="d-flex justify-content-between align-items-start mb-3">
+                                                    <div>
+                                                        <h5 className="fw-bold text-dark mb-1">{rev.libro?.nombre || "Libro Eliminado"}</h5>
+                                                        <span className="badge bg-warning text-dark">
+                                                            {rev.puntuacion} <i className="fas fa-star text-white"></i>
+                                                        </span>
+                                                    </div>
+                                                    <img 
+                                                        src={rev.libro?.image_url || "https://via.placeholder.com/50x75?text=No+Cover"} 
+                                                        alt={rev.libro?.nombre} 
+                                                        className="rounded shadow-sm"
+                                                        style={{ width: "50px", height: "75px", objectFit: "cover" }}
+                                                    />
+                                                </div>
+                                                <p className="text-muted fst-italic">"{rev.texto}"</p>
+                                                <div className="mt-auto pt-3 border-top text-end">
+                                                    {/* CORRECCIÓN: Ruta actualizada para editar review */}
+                                                    <Link to={`/editar_review/${rev.id}`} className="btn btn-sm btn-outline-info rounded-pill me-2">Editar</Link>
+                                                    <button 
+                                                        className="btn btn-sm btn-outline-danger rounded-pill"
+                                                        onClick={async () => {
+                                                            if(window.confirm("¿Seguro que deseas eliminar esta reseña?")){
+                                                                await request(`reviews/${rev.id}`, "DELETE");
+                                                                load(); 
+                                                            }
+                                                        }}
+                                                    >
+                                                        Eliminar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="col-12 text-center text-muted mt-5">
+                                        <i className="fas fa-pencil-alt fa-3x mb-3 text-info-booked opacity-50"></i>
+                                        <h4>Aún no has escrito ninguna reseña.</h4>
+                                        <p>Ve a tu biblioteca y comparte tu opinión sobre tus libros favoritos.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SECCIÓN AUTORES */}
                     {seccionActiva === "autores" && (
                         <div>
                             <div className="text-center mb-5">
@@ -216,30 +340,34 @@ const PaginaLector = () => {
                             </div>
                             <div className="row justify-content-center">
                                 {db.todosAutores.map((autor) => (
-                                    <div key={autor.id} className="col-md-3 mb-5">
-                                        <div className="card-feature text-center h-100 shadow-sm border-0 bg-white p-4">
-                                            <div className="book-cover-floating bg-white d-flex align-items-center justify-content-center shadow overflow-hidden"
-                                                style={{ borderRadius: '50%', width: '110px', height: '110px', margin: '0 auto' }}>
+                                    <div key={autor.id} className="col-md-3 mb-5" style={{ marginTop: '60px' }}>
+                                        <div className="card-feature text-center h-100 shadow-sm border-0 bg-white d-flex flex-column">
+                                            
+                                            <div className="foto-cover-floating bg-white d-flex align-items-center justify-content-center shadow overflow-hidden"
+                                                style={{ borderRadius: '50%', width: '100px', height: '100px', margin: '0 auto' }}>
                                                 <img 
                                                     src={autor.foto || "https://via.placeholder.com/150"} 
                                                     alt={autor.nombre} 
                                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                 />
                                             </div>
-                                            <div className="d-flex align-items-center justify-content-center mt-3">
-                                                <h6 className="fw-bold text-dark mb-0">{autor.nombre} {autor.apellido}</h6>
-                                                {autor.is_verified && (
-                                                    <span className="ms-2 d-flex align-items-center justify-content-center text-white shadow-sm"
-                                                        style={{ width: "18px", height: "18px", fontSize: "10px", backgroundColor: "#24b0d9", borderRadius: "50%" }}>✓</span>
-                                                )}
-                                            </div>
-                                            <p className="small text-muted mb-4 mt-1"><i className="fas fa-map-marker-alt me-1"></i>{autor.pais}</p>
-                                            <div className="d-grid mt-auto">
-                                                {db.autoresFav.some(fav => fav.autor_id === autor.id) ? (
-                                                    <button className="btn btn-sm btn-light text-danger rounded-pill border fw-bold" onClick={() => exec(`lector_autores_favoritos/${db.autoresFav.find(f => f.autor_id === autor.id).id}`, "DELETE")}>Dejar de seguir</button>
-                                                ) : (
-                                                    <button className="btn btn-sm btn-booked-blue rounded-pill fw-bold" onClick={() => exec(`lector_autores_favoritos`, "POST", { lector_id: store.lector_id, autor_id: autor.id })}>Seguir Autor</button>
-                                                )}
+                                            
+                                            <div className="flex-grow-1 d-flex flex-column mt-3">
+                                                <div className="d-flex align-items-center justify-content-center">
+                                                    <h6 className="fw-bold text-dark mb-0">{autor.nombre} {autor.apellido}</h6>
+                                                    {autor.is_verified && (
+                                                        <span className="ms-2 d-flex align-items-center justify-content-center text-white shadow-sm"
+                                                            style={{ width: "18px", height: "18px", fontSize: "10px", backgroundColor: "#24b0d9", borderRadius: "50%" }}>✓</span>
+                                                    )}
+                                                </div>
+                                                <p className="small text-muted mb-4 mt-1"><i className="fas fa-map-marker-alt me-1"></i>{autor.pais}</p>
+                                                <div className="d-grid mt-auto">
+                                                    {db.autoresFav.some(fav => fav.autor_id === autor.id) ? (
+                                                        <button className="btn btn-sm btn-light text-danger rounded-pill border fw-bold" onClick={() => exec(`lector_autores_favoritos/${db.autoresFav.find(f => f.autor_id === autor.id).id}`, "DELETE")}>Dejar de seguir</button>
+                                                    ) : (
+                                                        <button className="btn btn-sm btn-booked-blue rounded-pill fw-bold" onClick={() => exec(`lector_autores_favoritos`, "POST", { lector_id: store.lector_id, autor_id: autor.id })}>Seguir Autor</button>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -248,7 +376,7 @@ const PaginaLector = () => {
                         </div>
                     )}
 
-                    {/* SECCIÓN COMUNIDAD (ESTILO CARD ABOUT US) */}
+                    {/* SECCIÓN COMUNIDAD */}
                     {seccionActiva === "seguidores" && (
                         <div className="row g-4 mt-2">
                             <div className="col-lg-6">

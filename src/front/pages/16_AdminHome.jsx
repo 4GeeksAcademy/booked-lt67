@@ -1,80 +1,103 @@
-import React, { useEffect } from "react"
-import rigoImageUrl from "../assets/img/rigo-baby.jpg";
-import logoBookedUrl from "../assets/img/logo_booked.png";
+import React from "react";
+import logoBookedUrl from "../assets/img/logo_booked1.png";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
-import { useNavigate, Link, Navigate } from "react-router-dom";
+import { useNavigate, Link, Navigate, NavLink } from "react-router-dom";
 import AdminVerification from "../components/27_AdminVerification.jsx";
 
 const AdminHome = () => {
+    const { store, dispatch } = useGlobalReducer();
+    const navigate = useNavigate();
 
-    const { store, dispatch } = useGlobalReducer()
-    const navigate = useNavigate()
-
-    /* const loadMessage = async () => {
-        try {
-            const backendUrl = import.meta.env.VITE_BACKEND_URL
-
-            if (!backendUrl) throw new Error("VITE_BACKEND_URL is not defined in .env file")
-
-            const response = await fetch(backendUrl + "/api/hello")
-            const data = await response.json()
-
-            if (response.ok) dispatch({ type: "set_hello", payload: data.message })
-
-            return data
-
-        } catch (error) {
-            if (error.message) throw new Error(
-                `Could not fetch the message from the backend.
-                Please check if the backend is running and the backend port is public.`
-            );
-        }
-
-    } */
-
+    // Redirección si no es admin
     if (!store.auth_admin) {
-            return <Navigate to="/login_admin" />;
-        }
+        return <Navigate to="/login_admin" />;
+    }
 
-    /* useEffect(() => {
-        loadMessage()
-    }, []) */
+    // Array de rutas de administración para renderizar el menú dinámicamente
+    const adminModules = [
+        { path: "/lector", title: "Lectores", icon: "users" },
+        { path: "/autor", title: "Autores", icon: "feather-alt" },
+        { path: "/editorial", title: "Editoriales", icon: "building" },
+        { path: "/libro", title: "Libros", icon: "book" },
+        { path: "/review", title: "Reseñas", icon: "star" },
+        { path: "/lector_autores_favoritos", title: "Favoritos", icon: "heart" },
+        { path: "/ver_seguidores", title: "Seguidores", icon: "project-diagram" }
+    ];
 
     return (
-        <div className="text-center mt-5">
-
-            <h1 className="display-4">Hola Admin!</h1>
-            <AdminVerification />
-            <p className="lead">
-                {/* <img src={rigoImageUrl} className="img-fluid rounded-circle mb-3" alt="Rigo Baby" /> */}
-                <img src={logoBookedUrl} style={{ width: "500px", height: "auto" }} className="img-fluid rounded-circle mb-3" alt="Logo Booked" />
-            </p> 
-            <Link className="btn btn-primary" to="/lector">Ver Lectores</Link>
-
-            <Link className="btn btn-primary" to="/editorial">Ver Editoriales</Link>
+        <div className="d-flex position-relative" style={{ minHeight: "100vh" }}>
             
-            <Link className="btn btn-primary" to="/autor">Ver Autores</Link>
+            {/* --- SIDEBAR IZQUIERDO --- */}
+            <div className="bg-white shadow-sm border-end d-flex flex-column" style={{ width: "280px", minWidth: "280px", zIndex: 10 }}>
+                <div className="p-4 text-center border-bottom">
+                    <div className="position-relative d-inline-block mb-3 bg-light rounded-circle p-3">
+                        <i className="fas fa-user-shield fa-3x text-info-booked"></i>
+                    </div>
+                    <h6 className="fw-bold mb-0 text-dark">Administrador</h6>
+                    <span className="text-muted small">Panel de Control</span>
+                </div>
 
-            <Link className="btn btn-primary" to="/libro">Ver Libros</Link>
+                <div className="list-group list-group-flush p-3 mt-2 flex-grow-1">
+                    {/* Botón Activo (Dashboard) */}
+                    <div className="list-group-item border-0 rounded-4 mb-2 py-3 px-4 d-flex align-items-center bg-info-booked text-white shadow">
+                        <i className="fas fa-house me-3" style={{ width: "20px" }}></i> 
+                        <span className="fw-bold">Dashboard</span>
+                    </div>
 
-            <Link className="btn btn-primary" to="/lector_autores_favoritos">Ver lector autores favoritos</Link>
+                    {/* Mapeo de Módulos en el Sidebar */}
+                    {adminModules.map((mod, index) => (
+                        <Link 
+                            key={index} 
+                            to={mod.path} 
+                            className="list-group-item list-group-item-action border-0 rounded-4 mb-2 py-3 px-4 d-flex align-items-center text-muted text-decoration-none"
+                        >
+                            <i className={`fas fa-${mod.icon} me-3`} style={{ width: "20px" }}></i>
+                            <span className="fw-bold">{mod.title}</span>
+                        </Link>
+                    ))}
+                </div>
+            </div>
 
-            <Link className="btn btn-primary" to="/ver_seguidores">Ver Seguidores</Link>
+            {/* --- CONTENIDO PRINCIPAL --- */}
+            <div className="flex-grow-1 overflow-auto" style={{ background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)' }}>
+                <div className="container-fluid p-5">
+                    
+                    {/* Componente de verificación */}
+                    <AdminVerification />
 
-            <Link className="btn btn-primary" to="/review">Ver Reviews</Link>
-            
+                    {/* SECCIÓN BIENVENIDA */}
+                    <div className="row align-items-center mb-5 mt-4">
+                        <div className="col-lg-8">
+                            <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Centro de Mando</span>
+                            <h1 className="display-4 fw-bold text-dark mt-2 mb-4">
+                                Hola, <span className="text-info-booked" style={{ fontStyle: 'italic' }}>Admin.</span>
+                            </h1>
+                            <p className="lead text-muted mb-4">
+                                Bienvenido al panel de administración de Booked. 
+                                Selecciona un módulo en el menú lateral izquierdo para gestionar la base de datos, moderar la comunidad y administrar el ecosistema literario.
+                            </p>
+                        </div>
+                        <div className="col-lg-4 d-none d-lg-block text-center">
+                            <img 
+                                src={logoBookedUrl} 
+                                alt="Logo Booked" 
+                                className="img-fluid" 
+                                style={{ maxHeight: "200px", filter: "drop-shadow(0 10px 15px rgba(0,0,0,0.1))" }} 
+                            />
+                        </div>
+                    </div>
 
-            {/* <div className="alert alert-info">
-                {store.message ? (
-                    <span>{store.message}</span>
-                ) : (
-                    <span className="text-danger">
-                        Loading message from the backend (make sure your python 🐍 backend is running)...
-                    </span>
-                )}
-            </div> */}
+                    {/* MENSAJE DE INDICACIÓN (Opcional, para que no quede vacío abajo) */}
+                    <div className="text-center mt-5 p-5 bg-white rounded-4 shadow-sm border border-light" style={{ borderStyle: 'dashed !important' }}>
+                        <i className="fas fa-hand-pointer fa-3x text-muted mb-3 opacity-50"></i>
+                        <h4 className="fw-bold text-muted">Selecciona una opción del menú</h4>
+                        <p className="text-muted">Utiliza el menú lateral para navegar entre las diferentes secciones administrativas.</p>
+                    </div>
+
+                </div>
+            </div>
         </div>
     );
 }; 
 
-export default AdminHome
+export default AdminHome;

@@ -7,10 +7,10 @@ const Reviews = () => {
     const [reviews, setReviews] = useState([])
     const { store, dispatch } = useGlobalReducer()
     
-        if (!store.auth_admin) {
+/*         if (!store.auth_admin) {
             return <Navigate to="/login_admin" />;
         }
-
+ */
     function getReviews() {
         fetch(import.meta.env.VITE_BACKEND_URL + "api/reviews/")
             .then((response) => response.json())

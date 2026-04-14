@@ -21,14 +21,19 @@ export const Navbar = () => {
 
     const isAuthorized = autorLogueado || lectorLogueado || editorialLogueada || adminLogueado;
 
-    // --- LÓGICA DE LOGOUT INTEGRADA ---
+    // --- LÓGICA DE LOGOUT INTEGRADA Y CORREGIDA ---
     const handleLogout = () => {
         localStorage.clear();
-        // Limpiamos explícitamente los estados en el store
+        
+        // Limpiamos TODOS los estados de autenticación
         dispatch({ type: "set_auth_lector", payload: false });
         dispatch({ type: "set_auth_autor", payload: false });
         dispatch({ type: "set_auth_editorial", payload: false });
+        dispatch({ type: "set_auth_admin", payload: false }); // <-- ¡Línea agregada!
+        
+        // Limpiamos los IDs si es necesario
         dispatch({ type: "set_lector_id", payload: null });
+        // Si tienes otros IDs en tu reducer (autor_id, etc.), agrégalos aquí también.
 
         navigate('/');
     };
@@ -48,14 +53,13 @@ export const Navbar = () => {
     };
 
     return (
-        <nav className="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm py-2">
+        <nav className="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm py-1">
             <div className="container">
                 <Link className="navbar-brand d-flex align-items-center" to="/" onClick={() => setOpenDropdown(null)}>
                     <img
                         src={logoBookedUrl}
                         alt="Logo"
-                        style={{ height: "75px", width: "auto" }}
-                        className="my-1"
+                        style={{ height: "45px", width: "auto" }} 
                     />
                 </Link>
 
@@ -73,7 +77,7 @@ export const Navbar = () => {
 
                         <li className={`nav-item dropdown px-lg-2`}>
                             <a
-                                className={`nav-link dropdown-toggle ${isActive(['post_autores', 'post_editoriales']) ? 'text-primary' : ''} ${openDropdown === 'foros' ? 'show' : ''}`}
+                                className={`nav-link nav-link-booked dropdown-toggle ${isActive(['post_autores', 'post_editoriales']) ? 'active' : ''} ${openDropdown === 'foros' ? 'show' : ''}`}
                                 href="#"
                                 onClick={(e) => { e.preventDefault(); toggleDropdown('foros'); }}
                             >
@@ -87,7 +91,7 @@ export const Navbar = () => {
 
                         <li className="nav-item dropdown px-lg-2">
                             <a
-                                className={`nav-link dropdown-toggle ${isActive(['ver_autores', 'ver_editoriales']) ? 'text-primary' : ''} ${openDropdown === 'conoce' ? 'show' : ''}`}
+                                className={`nav-link nav-link-booked dropdown-toggle ${isActive(['ver_autores', 'ver_editoriales']) ? 'active' : ''} ${openDropdown === 'conoce' ? 'show' : ''}`}
                                 href="#"
                                 onClick={(e) => { e.preventDefault(); toggleDropdown('conoce'); }}
                             >
@@ -102,8 +106,7 @@ export const Navbar = () => {
                         {!isAuthorized && (
                             <li className="nav-item dropdown px-lg-2">
                                 <a
-                                    /* AQUÍ ESTÁ EL CAMBIO: Se agregó 'signup' al arreglo de isActive */
-                                    className={`nav-link dropdown-toggle ${isActive(['login', 'signup']) ? 'text-primary' : ''} ${openDropdown === 'acceso' ? 'show' : ''}`}
+                                    className={`nav-link nav-link-booked dropdown-toggle ${isActive(['login', 'signup']) ? 'active' : ''} ${openDropdown === 'acceso' ? 'show' : ''}`}
                                     href="#"
                                     onClick={(e) => { e.preventDefault(); toggleDropdown('acceso'); }}
                                 >
@@ -120,7 +123,7 @@ export const Navbar = () => {
                         )}
 
                         <li className="nav-item px-lg-2">
-                            <NavLink className={({ isActive }) => isActive ? "nav-link text-primary" : "nav-link"} to="/contact">Contacto</NavLink>
+                            <NavLink className={({ isActive }) => `nav-link nav-link-booked ${isActive ? "active" : ""}`} to="/contact">Contacto</NavLink>
                         </li>
                     </ul>
 
