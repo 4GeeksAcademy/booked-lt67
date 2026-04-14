@@ -211,6 +211,7 @@ class Libro(db.Model):
             "isbn_13": self.isbn_13,
             "descripcion": self.descripcion,
             "autor_id": self.autor_id,
+            "foto_autor": self.autor.foto_url if self.autor else None,
             "editorial_id": self.editorial_id,
             "nombre_autor": f"{self.autor.nombre} {self.autor.apellido}" if self.autor else "Sin autor",
             "nombre_editorial": self.editorial.nombre if self.editorial else "Sin editorial",

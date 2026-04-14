@@ -26,11 +26,11 @@ const Contact = () => {
         <div className="container py-5">
             {/* Encabezado del Proyecto */}
             <div className="text-center mb-5">
-                <h2 className="display-4 fw-bold text-primary">El Equipo detrás de Booked</h2>
+                <h2 className="display-4 fw-bold text-info-booked">El Equipo detrás de Booked</h2>
                 <p className="lead text-muted">
                     Desarrollado con dedicación por Rodolfo y Daniel para transformar la experiencia de lectura.
                 </p>
-                <div className="mx-auto bg-primary" style={{ height: "3px", width: "60px" }}></div>
+                <div className="mx-auto bg-info-booked" style={{ height: "3px", width: "60px" }}></div>
             </div>
 
             <div className="row justify-content-center g-4">
@@ -51,13 +51,13 @@ const Contact = () => {
                             </div>
                             <div className="card-body p-0">
                                 <h4 className="fw-bold mb-1">{member.name}</h4>
-                                <p className="text-primary fw-semibold mb-3">{member.role}</p>
+                                <p className="text-info-booked fw-semibold mb-3">{member.role}</p>
                                 <p className="card-text text-muted mb-4 small">
                                     {member.description}
                                 </p>
                                 
                                 <div className="d-flex justify-content-center gap-3">
-                                    <a href={member.linkedin} className="btn btn-outline-primary btn-sm rounded-circle p-2">
+                                    <a href={member.linkedin} className="btn btn-booked-blue btn-sm rounded-circle p-2">
                                         <i className="fab fa-linkedin-in" style={{ width: "18px" }}></i>
                                     </a>
                                     <a href={member.github} className="btn btn-outline-dark btn-sm rounded-circle p-2">
@@ -74,7 +74,7 @@ const Contact = () => {
             </div>
 
             <div className="text-center mt-5">
-                <Link to="/" className="btn btn-primary rounded-pill px-4 shadow-sm fw-bold">
+                <Link to="/" className="btn btn-booked-blue rounded-pill px-4 shadow-sm fw-bold">
                     Volver al Inicio
                 </Link>
             </div>
