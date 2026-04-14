@@ -320,6 +320,7 @@ class Reviews(db.Model):
             "id": self.id,
             "lector_id": self.lector_id,
             "nombre_lector": f"{self.lector.nombre} {self.lector.apellido}" if self.lector else None,
+            "foto_lector": self.lector.foto_url,
             "libro": self.libro.serialize() if self.libro else None,
             "texto": self.texto,
             "puntuacion": self.puntuacion
@@ -377,6 +378,7 @@ class PostEditorial(db.Model):
             "id": self.id,
             "editorial_id": self.editorial_id,
             "nombre_editorial": f"{self.editorial.nombre}" if self.editorial else None,
+            "foto_editorial": self.editorial.image_url,
             "texto": self.texto,
             "fecha": self.fecha.strftime("%d-%m-%Y %H:%M") if self.fecha else None
         }
@@ -397,6 +399,7 @@ class PostAutor(db.Model):
             "id": self.id,
             "autor_id": self.autor_id,
             "nombre_autor": f"{self.autor.nombre} {self.autor.apellido}" if self.autor else None,
+            "foto_autor": self.autor.foto_url if self.autor else None,
             "texto": self.texto,
             "fecha": self.fecha.strftime("%d-%m-%Y %H:%M")
         }
