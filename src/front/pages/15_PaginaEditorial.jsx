@@ -1,212 +1,362 @@
-import React, { useEffect, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import React, { useEffect, useState, useCallback } from "react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
-
-// 1. IMPORTAMOS EL COMPONENTE DEL MAPA
 import LectoresUbi from "../components/25_LectoresUbi"; 
+
+// Assets e Imágenes
+import booksImg from "../assets/img/Books.png"; 
 
 const PaginaEditorial = () => {
     const { store } = useGlobalReducer();
+    const navigate = useNavigate();
+    const editorialId = store.editorial_id || localStorage.getItem("editorial_id");
 
-    console.log("ID de la editorial en el store:", store.editorial_id);
-    console.log("¿Está autorizado?:", store.auth_editorial);
-
-
-    const editorialId = store.editorial_id;
-
-    const [posts, setPosts] = useState([]);
-    const [datosEditorial, setDatosEditorial] = useState(null);
-    const [libros, setLibros] = useState([]);
-
-    // --- NUEVO: ESTADOS PARA EL MAPA ---
-    const [mapaViews, setMapaViews] = useState({
-        favLibros: [],
-        leyendo: []
+    const [seccionActiva, setSeccionActiva] = useState("inicio");
+    
+    const [db, setDb] = useState({ 
+        perfil: null, 
+        misLibros: [], 
+        noticias: [], 
+        todasLasReviews: [],
+        loading: true 
     });
+
+    // Estados para el Mapa
+    const [mapaViews, setMapaViews] = useState({ favLibros: [], leyendo: [] });
     const [vistaMapaActual, setVistaMapaActual] = useState('favLibros');
-    // -----------------------------------
 
-    if (!store.auth_editorial) {
-        return <Navigate to="/login_editorial" />;
-    }
+    const api = `${import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "")}/api`;
+    const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
 
-    const cargarPanel = async () => {
+    const request = async (url, m = "GET", b = null) => {
         try {
+            const res = await fetch(`${api}/${url}`, {
+                method: m,
+                headers: { "Content-Type": "application/json" },
+                body: b ? JSON.stringify(b) : null
+            });
+            return res.ok ? await res.json() : null;
+        } catch (e) { return null; }
+    };
 
-            const respEd = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/editorial/${editorialId}`);
-            if (respEd.ok) setDatosEditorial(await respEd.json());
+    const loadData = useCallback(async () => {
+        if (!editorialId) return;
+        
+        try {
+            const [perfil, librosGlob, posts, respFavLibros, respLeyendo, reviewsGlob] = await Promise.all([
+                request(`editorial/${editorialId}`),
+                request(`libro/editorial/${editorialId}`), // Libros de esta editorial
+                request(`posteditorial/editorial/${editorialId}`),
+                request(`lectores_fav_libros_editorial/${editorialId}`),
+                request(`lectores_leyendo_editorial/${editorialId}`),
+                request(`reviews`) // Todas las reseñas
+            ]);
 
-            const respPosts = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/posteditorial/editorial/${editorialId}`);
-            if (respPosts.ok) setPosts(await respPosts.json());
+            const misLibrosFiltrados = librosGlob || [];
+            
+            // Filtramos las reviews para que solo muestre las de los libros de esta editorial
+            const idsMisLibros = misLibrosFiltrados.map(l => l.id);
+            const misReviewsFiltradas = reviewsGlob?.filter(r => idsMisLibros.includes(r.libro?.id)) || [];
 
-            const respLibros = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/libro/editorial/${editorialId}`);
-            if (respLibros.ok) {
-                const dataLibros = await respLibros.json();
-                setLibros(dataLibros);
-            }
-
-            // --- NUEVO: FETCH PARA EL MAPA ---
-            const respFavLibros = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/lectores_fav_libros_editorial/${editorialId}`);
-            const respLeyendo = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/lectores_leyendo_editorial/${editorialId}`);
+            setDb({
+                perfil: perfil,
+                misLibros: misLibrosFiltrados,
+                noticias: posts || [],
+                todasLasReviews: misReviewsFiltradas,
+                loading: false
+            });
 
             setMapaViews({
-                favLibros: respFavLibros.ok ? await respFavLibros.json() : [],
-                leyendo: respLeyendo.ok ? await respLeyendo.json() : []
+                favLibros: respFavLibros || [],
+                leyendo: respLeyendo || []
             });
-            // ---------------------------------
-
         } catch (error) {
-            console.error("Error cargando el panel:", error);
+            console.error("Error cargando datos:", error);
+            setDb(prev => ({ ...prev, loading: false }));
+        }
+    }, [editorialId]);
+
+    useEffect(() => { 
+        if (store.auth_editorial || localStorage.getItem("token_editorial")) {
+            loadData(); 
+        }
+    }, [loadData, store.auth_editorial]);
+
+    const deletelibro = async (idToDelete) => {
+        if (window.confirm("¿De verdad quieres eliminar este libro de tu catálogo?")) {
+            const res = await request(`libro/${idToDelete}`, "DELETE");
+            if(res) loadData();
         }
     };
 
-    useEffect(() => {
-        if (editorialId) cargarPanel();
-    }, [editorialId]);
-
-    function deletelibro(idToDelete) {
-        if (!confirm("¿De verdad quieres eliminar este libro?")) {
-            return;
+    const deletepost = async (idToDelete) => {
+        if (window.confirm("¿Estás seguro que quieres eliminar esta publicación?")) {
+            const res = await request(`posteditorial/${idToDelete}`, "DELETE");
+            if(res) loadData();
         }
-        console.log("se va a eliminar el libro" + idToDelete)
-        const requestOptions = {
-            method: "DELETE",
-        };
+    };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/libro/" + idToDelete, requestOptions)
-            .then((response) => response.text())
-            .then((result) => {
-                console.log(result)
-                cargarPanel()
-            })
-
+    if (!store.auth_editorial && !localStorage.getItem("token_editorial")) {
+        return <Navigate to="/login_editorial" />;
     }
 
-    function deletepost(idToDelete) {
-        if (!confirm("¿Estás seguro que quieres eliminar este post?")) {
-            return;
-        }
-        console.log("se va a eliminar el post" + idToDelete)
-        const requestOptions = {
-            method: "DELETE",
-        };
+    if (db.loading) return <div className="text-center mt-5"><div className="spinner-border text-info-booked"></div></div>;
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/posteditorial/" + idToDelete, requestOptions)
-            .then((response) => response.text())
-            .then((result) => {
-                console.log(result)
-                cargarPanel()
-            })
+    const fotoPerfil = db.perfil?.foto_url
+        ? (db.perfil.foto_url.startsWith("http") ? db.perfil.foto_url : `${baseUrl}${db.perfil.foto_url.startsWith('/') ? '' : '/'}${db.perfil.foto_url}`)
+        : `https://ui-avatars.com/api/?name=${db.perfil?.nombre || "Editorial"}&background=24b0d9&color=fff`;
 
-    }
+
+    // =========================================================
+    // TARJETA LIBRO (Estilo Booked - Adaptada para Editorial)
+    // =========================================================
+    const TarjetaLibroEditorial = ({ l }) => {
+        return (
+            <div className="col-md-4 col-lg-3 mb-5" style={{ marginTop: '110px' }}>
+                <div className="card-feature text-center h-100 shadow-sm border-0 bg-white d-flex flex-column pb-3 px-2">
+                    <div className="book-cover-floating">
+                        <img 
+                            src={l.image_url || "https://via.placeholder.com/150x225?text=No+Cover"} 
+                            className="portada-full" 
+                            alt={l.nombre} 
+                        />
+                    </div>
+                    
+                    <div className="flex-grow-1 d-flex flex-column mt-3">
+                        <h6 className="fw-bold text-dark mb-1 text-truncate px-2" title={l.nombre}>
+                            {l.nombre}
+                        </h6>
+                        <span className="badge bg-light text-info-booked border rounded-pill mx-auto mb-3">{l.genero}</span>
+                        
+                        <div className="d-flex justify-content-center gap-1 mt-auto flex-wrap">
+                            <Link to={`/ver_libro/${l.id}`} className="btn btn-sm btn-outline-info rounded-pill px-3" title="Ver Obra">
+                                <i className="fas fa-eye"></i>
+                            </Link>
+                            <Link to={`/editar_libro_editorial/${l.id}`} className="btn btn-sm btn-outline-warning rounded-pill px-3" title="Editar">
+                                <i className="fas fa-edit"></i>
+                            </Link>
+                            <button onClick={() => deletelibro(l.id)} className="btn btn-sm btn-danger rounded-pill px-3" title="Eliminar">
+                                <i className="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     return (
-        <div className="container mt-5">
-
-            <div className="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
-                <div>
-                    <h1>Panel de {datosEditorial?.nombre || "Editorial"}</h1>
-                    <p className="text-muted">Gestiona tus libros y publicaciones</p>
+        <div className="d-flex position-relative" style={{ minHeight: "100vh" }}>
+            
+            {/* --- SIDEBAR IZQUIERDO --- */}
+            <div className="bg-white shadow-sm border-end" style={{ width: "280px", minWidth: "280px", zIndex: 10 }}>
+                <div className="p-4 text-center border-bottom">
+                    <div className="position-relative d-inline-block mb-3">
+                        <img 
+                            src={fotoPerfil} 
+                            className="rounded-circle shadow-sm border border-3 border-light" 
+                            style={{ width: "80px", height: "80px", objectFit: "cover" }} 
+                            alt="Perfil Editorial"
+                        />
+                        {/* Badge identificador de Editorial */}
+                        <div className="bg-info-booked position-absolute bottom-0 end-0 rounded-circle d-flex align-items-center justify-content-center text-white border border-2 border-white" style={{ width: '25px', height: '25px' }} title="Cuenta de Editorial">
+                            <i className="fas fa-university fa-xs"></i>
+                        </div>
+                    </div>
+                    <h6 className="fw-bold mb-0 text-dark">{db.perfil?.nombre || "Editorial"}</h6>
+                    <Link to={`/actualizar_editorial/${editorialId}`} className="text-info-booked small text-decoration-none">Configurar Perfil</Link>
                 </div>
-                <div className="gap-2 d-flex">
-                    <Link to={`/nuevo_libro_editorial/${editorialId}`} className="btn btn-primary">
-                        <i className="fas fa-book me-2"></i>Agregar Libro
-                    </Link>
-                    <Link to={`/nueva_publicacion_editorial/${editorialId}`} className="btn btn-success">
-                        <i className="fas fa-plus me-2"></i>Nueva Publicación
-                    </Link>
+
+                <div className="list-group list-group-flush p-3 mt-2">
+                    {[
+                        { id: "inicio", icon: "house", label: "Dashboard" },
+                        { id: "libros", icon: "book", label: "Catálogo de Libros" },
+                        { id: "reviews", icon: "star", label: "Reseñas del Público" },
+                        { id: "mapa", icon: "map-marked-alt", label: "Impacto Global" },
+                    ].map(item => (
+                        <button 
+                            key={item.id}
+                            onClick={() => setSeccionActiva(item.id)} 
+                            className={`list-group-item list-group-item-action border-0 rounded-4 mb-2 py-3 px-4 d-flex align-items-center ${seccionActiva === item.id ? "bg-info-booked text-white shadow" : "text-muted"}`}
+                        >
+                            <i className={`fas fa-${item.icon} me-3`} style={{ width: "20px" }}></i> 
+                            <span className="fw-bold">{item.label}</span>
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            <div className="row">
+            {/* --- CONTENIDO PRINCIPAL --- */}
+            <div className="flex-grow-1 overflow-auto" style={{ background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)' }}>
+                <div className="container-fluid p-5">
 
-                <div className="col-md-4 mb-4">
-                    <div className="card shadow-sm border-0 bg-light">
-                        <div className="card-body">
-                            <h5>Informacion</h5>
-                            <p className="mb-1"><strong>Publicaciones:</strong> {posts.length}</p>
-                            <p className="mb-1"><strong>Email:</strong> {datosEditorial?.email}</p>
-                            <Link to={`/actualizar_editorial/${editorialId}`} className="btn btn-sm btn-outline-warning mt-2">
-                                Editar Perfil
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="row mt-5">
-                    <div className="col-12">
-                        <h3 className="border-bottom pb-2">Catálogo de Libros</h3>
-                    </div>
-                    {libros.length === 0 ? (
-                        <div className="col-12"><p className="text-muted">No has registrado libros aún.</p></div>
-                    ) : (
-                        libros.map(libro => (
-                            <div key={libro.id} className="col-md-3 mb-4">
-                                <div className="card h-100 shadow-sm border-0">
-                                    <div className="card-body">
-                                        <h5 className="card-title text-primary"><Link
-                                            to={`/ver_libro/${libro.id}`}
-                                            className="text-primary text-decoration-none"
-                                        >
-                                            {libro.nombre}
-                                        </Link></h5>
-                                        <p className="card-text text-muted small">Género: {libro.genero}</p>
-                                        <div className="d-flex gap-2">
-                                            <Link to={`/ver_libro/${libro.id}`} className="btn btn-sm btn-outline-primary">Ver</Link>
-                                            <Link to={`/editar_libro_editorial/${libro.id}`} className="btn btn-sm btn-outline-warning">Editar</Link>
-                                            <button onClick={() => deletelibro(libro.id)} className="btn btn-sm btn-outline-danger">Eliminar</button>
+                    {/* SECCIÓN DASHBOARD / INICIO */}
+                    {seccionActiva === "inicio" && (
+                        <div className="row align-items-center mb-5 mt-4">
+                            <div className="col-lg-7">
+                                <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Sede Editorial</span>
+                                <h1 className="display-4 fw-bold text-dark mt-2 mb-4">
+                                    Panel de <span className="text-info-booked" style={{ fontStyle: 'italic' }}>{db.perfil?.nombre}.</span>
+                                </h1>
+                                <p className="lead text-muted mb-4">Administra tu catálogo de libros, monitorea el impacto global y comunícate con tus lectores.</p>
+                                
+                                {/* CAJA RÁPIDA DE ACCIONES */}
+                                <div className="p-3 bg-white shadow-sm rounded-4 border mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3" style={{ maxWidth: '650px', borderLeft: '5px solid #24b0d9' }}>
+                                    <div className="d-flex align-items-center gap-3">
+                                        <div className="bg-light p-3 rounded-circle text-info-booked">
+                                            <i className="fas fa-bullhorn"></i>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-
-
-                <div className="col-md-8">
-                    <h3>Tus últimas publicaciones</h3>
-                    {posts.length === 0 ? (
-                        <div className="alert alert-info">Aún no has publicado nada. ¡Empieza ahora!</div>
-                    ) : (
-                        posts.map(post => (
-                            <div key={post.id} className="card mb-3 shadow-sm border-0">
-                                <div className="card-body">
-                                    <p>{post.texto}</p>
-                                    <div className="d-flex justify-content-between align-items-center">
-                                        <small className="text-muted">{post.fecha}</small>
                                         <div>
-                                            <button onClick={() => deletepost(post.id)} className="btn btn-sm btn-link text-danger">Borrar</button>
+                                            <h6 className="fw-bold mb-0">Gestión Activa</h6>
+                                            <p className="small text-muted mb-0">Tienes {db.misLibros.length} libros y {db.noticias.length} noticias.</p>
                                         </div>
+                                    </div>
+                                    <div className="d-flex gap-2">
+                                        <Link to={`/nuevo_libro_editorial/${editorialId}`} className="btn btn-sm btn-outline-info rounded-pill px-3 shadow-sm"><i className="fas fa-book me-1"></i> Añadir Libro</Link>
+                                        <Link to={`/nueva_publicacion_editorial/${editorialId}`} className="btn btn-sm btn-booked-blue rounded-pill px-3 shadow-sm"><i className="fas fa-plus me-1"></i> Publicar</Link>
                                     </div>
                                 </div>
                             </div>
-                        ))
-                    )}
+                            <div className="col-lg-5 d-none d-lg-block text-center mb-4">
+                                <img src={booksImg} alt="Libros" className="img-fluid" style={{ maxHeight: "300px", filter: "drop-shadow(0 20px 30px rgba(0,0,0,0.1))" }} />
+                            </div>
 
-                    {/* --- NUEVO: COMPONENTE DEL MAPA CON SWITCH --- */}
-                    <div className="mt-5 mb-4">
-                        <div className="d-flex justify-content-between align-items-center mb-3">
-                            <h3 className="mb-0">Ubicación de los Lectores</h3>
-                            <div className="btn-group shadow-sm" role="group">
-                                <button 
-                                    className={`btn btn-sm ${vistaMapaActual === 'favLibros' ? 'btn-primary' : 'btn-outline-primary'}`} 
-                                    onClick={() => setVistaMapaActual('favLibros')}>Fans de nuestros libros</button>
-                                <button 
-                                    className={`btn btn-sm ${vistaMapaActual === 'leyendo' ? 'btn-primary' : 'btn-outline-primary'}`} 
-                                    onClick={() => setVistaMapaActual('leyendo')}>Leyendo Ahora</button>
+                            {/* LISTA DE NOTICIAS DE LA EDITORIAL */}
+                            <div className="col-12 mt-5">
+                                <div className="d-flex justify-content-between align-items-center mb-4">
+                                    <h4 className="fw-bold text-dark mb-0">Tus Publicaciones Recientes</h4>
+                                </div>
+                                <div className="row">
+                                    {db.noticias.length > 0 ? db.noticias.map(post => (
+                                        <div key={post.id} className="col-md-6 mb-4">
+                                            <div className="card p-4 shadow-sm border-0 bg-white rounded-4 h-100">
+                                                <div className="d-flex justify-content-between border-bottom pb-2 mb-3">
+                                                    <small className="text-info-booked fw-bold"><i className="far fa-calendar-alt me-1"></i> {post.fecha}</small>
+                                                    <button className="btn btn-sm text-danger" onClick={() => deletepost(post.id)} title="Eliminar">
+                                                        <i className="fas fa-trash"></i> Borrar
+                                                    </button>
+                                                </div>
+                                                <p className="mb-0 text-muted" style={{ whiteSpace: 'pre-wrap' }}>{post.texto}</p>
+                                            </div>
+                                        </div>
+                                    )) : (
+                                        <div className="col-12 text-center p-5 bg-white rounded-4 shadow-sm">
+                                            <i className="fas fa-newspaper fa-3x mb-3 text-info-booked opacity-50"></i>
+                                            <p className="text-muted fw-bold fs-5">Aún no has publicado anuncios o noticias.</p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                        <div className="card shadow-sm border-0 p-2">
-                            <LectoresUbi lectores={mapaViews[vistaMapaActual]} />
+                    )}
+
+                    {/* SECCIÓN CATÁLOGO DE LIBROS (GRILLA ESTILO BOOKED) */}
+                    {seccionActiva === "libros" && (
+                        <div>
+                            <div className="d-flex justify-content-between align-items-end mb-5">
+                                <div>
+                                    <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Tu Catálogo</span>
+                                    <h2 className="fw-bold mt-2 mb-0">Libros Publicados ({db.misLibros.length})</h2>
+                                </div>
+                                <Link to={`/nuevo_libro_editorial/${editorialId}`} className="btn btn-booked-blue rounded-pill px-4 shadow-sm">
+                                    <i className="fas fa-plus me-2"></i>Registrar Obra
+                                </Link>
+                            </div>
+
+                            <div className="row mt-4">
+                                {db.misLibros.length > 0 ? (
+                                    db.misLibros.map(l => <TarjetaLibroEditorial key={l.id} l={l} />)
+                                ) : (
+                                    <div className="col-12 text-center text-muted mt-5">
+                                        <i className="fas fa-book fa-3x mb-3 text-info-booked opacity-50"></i>
+                                        <h4>Tu catálogo está vacío.</h4>
+                                        <p>Comienza a registrar las obras de tu editorial para que el mundo las descubra.</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                    {/* --------------------------------------------- */}
+                    )}
+
+                    {/* SECCIÓN REVIEWS (NUEVO PARA EDITORIAL) */}
+                    {seccionActiva === "reviews" && (
+                        <div>
+                            <div className="mb-5">
+                                <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Feedback del Público</span>
+                                <h2 className="fw-bold mt-2">Reseñas de tu Catálogo</h2>
+                            </div>
+                            
+                            <div className="row">
+                                {db.todasLasReviews.length > 0 ? (
+                                    db.todasLasReviews.map(rev => (
+                                        <div key={rev.id} className="col-md-6 mb-4">
+                                            <div className="card shadow-sm border-0 rounded-4 p-4 h-100 bg-white">
+                                                <div className="d-flex justify-content-between align-items-start mb-3">
+                                                    <div>
+                                                        <h6 className="fw-bold text-dark mb-1">
+                                                            <i className="fas fa-book-open text-info-booked me-2"></i>
+                                                            {rev.libro?.nombre}
+                                                        </h6>
+                                                    </div>
+                                                    <span className="badge bg-warning text-dark shadow-sm">
+                                                        {rev.puntuacion} <i className="fas fa-star text-white"></i>
+                                                    </span>
+                                                </div>
+                                                
+                                                <div className="bg-light p-3 rounded-4 mb-3 position-relative">
+                                                    <i className="fas fa-quote-left text-info-booked opacity-25 position-absolute" style={{ top: '10px', left: '10px', fontSize: '1.5rem' }}></i>
+                                                    <p className="text-muted fst-italic mb-0 text-center px-4">"{rev.texto}"</p>
+                                                </div>
+
+                                                <div className="mt-auto d-flex align-items-center gap-2 pt-2 border-top">
+                                                    <div className="bg-info-booked rounded-circle d-flex align-items-center justify-content-center text-white fw-bold overflow-hidden" style={{ width: '35px', height: '35px' }}>
+                                                        {rev.foto_lector ? (
+                                                            <img src={rev.foto_lector} alt={rev.nombre_lector} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        ) : (
+                                                            <span>{rev.nombre_lector?.charAt(0).toUpperCase() || "L"}</span>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <span className="fw-bold text-dark d-block small" style={{ lineHeight: '1' }}>{rev.nombre_lector}</span>
+                                                        <small className="text-muted" style={{ fontSize: '0.7rem' }}>Lector de Booked</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="col-12 text-center text-muted mt-5">
+                                        <i className="fas fa-comment-slash fa-3x mb-3 text-info-booked opacity-50"></i>
+                                        <h4>Aún no hay reseñas para tu catálogo.</h4>
+                                        <p>¡Pronto los lectores empezarán a dejar sus opiniones sobre tus publicaciones!</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SECCIÓN MAPA DE IMPACTO */}
+                    {seccionActiva === "mapa" && (
+                        <div>
+                            <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                                <div>
+                                    <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Alcance Global</span>
+                                    <h2 className="fw-bold mt-1 mb-0">Ubicación de los Lectores</h2>
+                                </div>
+                                <div className="btn-group shadow-sm bg-white rounded-pill p-1 border" role="group">
+                                    <button className={`btn btn-sm rounded-pill px-4 fw-bold ${vistaMapaActual === 'favLibros' ? 'btn-booked-blue text-white' : 'btn-white border-0 text-muted'}`} onClick={() => setVistaMapaActual('favLibros')}>Tienen Libros Favoritos</button>
+                                    <button className={`btn btn-sm rounded-pill px-4 fw-bold ${vistaMapaActual === 'leyendo' ? 'btn-booked-blue text-white' : 'btn-white border-0 text-muted'}`} onClick={() => setVistaMapaActual('leyendo')}>Leyendo Actualmente</button>
+                                </div>
+                            </div>
+                            <div className="card shadow-lg border-0 rounded-5 overflow-hidden p-3 bg-white" style={{ height: "600px" }}>
+                                <LectoresUbi lectores={mapaViews[vistaMapaActual]} />
+                            </div>
+                        </div>
+                    )}
 
                 </div>
             </div>
         </div>
     );
-}
+};
 
 export default PaginaEditorial;

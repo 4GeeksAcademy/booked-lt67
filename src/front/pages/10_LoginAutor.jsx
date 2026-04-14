@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
-import logoBookedUrl from "../assets/img/logo_booked.png"; // Importamos el logo
+import logoBookedUrl from "../assets/img/logo_booked.png"; 
 
 const LogInAutor = () => {
     const [email, setEmail] = useState('');
@@ -26,9 +26,14 @@ const LogInAutor = () => {
             })
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + 'api/login_autor', requestOptions)
+        // CORRECCIÓN: Limpiamos la URL base para evitar errores de barras invertidas y redirecciones fantasmas
+        const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+        const urlFinal = `${baseUrl}/api/login_autor`;
+
+        fetch(urlFinal, requestOptions)
             .then(response => {
                 if (!response.ok) {
+                    // Si tira 401 o cualquier error, lanzamos la excepción para ir al catch
                     throw new Error("Error en el login");
                 }
                 return response.json();
@@ -53,8 +58,8 @@ const LogInAutor = () => {
                 navigate("/pagina_autor");
             })
             .catch(error => {
-                console.error("Error:", error);
-                alert("Email o contraseña incorrectos");
+                console.error("Error detallado:", error);
+                alert("Email o contraseña incorrectos. Por favor, verifica tus datos.");
             });
     }
 
@@ -131,7 +136,7 @@ const LogInAutor = () => {
                     </form>
                 </div>
                 
-                {/* Decoración inferior - Usamos el mismo azul para consistencia */}
+                {/* Decoración inferior */}
                 <div className="bg-primary py-2 w-100 opacity-75"></div>
             </div>
         </div>
