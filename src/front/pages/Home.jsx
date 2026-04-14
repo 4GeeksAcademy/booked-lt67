@@ -13,6 +13,7 @@ export const Home = () => {
     const [editorialesUnicas, setEditorialesUnicas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [postsRecientes, setPostsRecientes] = useState([]);
+    const [listaReviews, setListaReviews] = useState([]);
     const api = `${import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "")}/api`;
 
     const load = useCallback(async () => {
@@ -97,12 +98,31 @@ export const Home = () => {
         loadPosts();
     }, [load, loadPosts]);
 
+
+    const loadReviews = useCallback(async () => {
+        try {
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/reviews`);
+            if (res.ok) {
+                const data = await res.json();
+                // Mezclamos un poco para que no siempre salgan las mismas primeras
+                setListaReviews(data.sort(() => Math.random() - 0.5));
+            }
+        } catch (e) {
+            console.error("Error cargando reviews:", e);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadReviews();
+    }, [loadReviews]);
+
+
     const irAlLibro = (libroId) => { if (libroId) navigate(`/ver_libro/${libroId}`); };
 
     return (
         <div className="pb-5">
             {/* --- SECCIÓN 1: HERO --- */}
-            <div className="py-5" style={{ background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)', minHeight: '550px', display: 'flex', alignItems: 'center' }}>
+            <div className="py-5 mb-3" style={{ background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)', minHeight: '550px', display: 'flex', alignItems: 'center' }}>
                 <div className="container">
                     <div className="row align-items-center">
                         <div className="col-lg-6 text-start">
@@ -125,7 +145,7 @@ export const Home = () => {
             </div>
 
             {/* --- SECCIÓN 2: NOVEDADES (Portadas Rectangulares) --- */}
-            <div className="container mt-1" style={{ marginTop: '-40px' }}>
+            <div className="container mt-5" style={{ marginTop: '-40px' }}>
                 <div className="row">
                     {loading ? (
                         <div className="text-center w-100"><div className="spinner-border text-info"></div></div>
@@ -210,27 +230,64 @@ export const Home = () => {
 
             <div className="reviews-ticker-container mt-5">
                 <div className="container mb-4">
-                    <h3 className="fw-bold text-center">Lo que nuestros lectores piensan!</h3>
+                    <h3 className="fw-bold text-center">¡Lo que nuestros lectores piensan!</h3>
                 </div>
 
                 <div className="ticker-wrapper">
-                    {/* Duplicamos los items para que el loop sea infinito sin saltos */}
-                    {[1, 2, 3, 4, 5, 1, 2, 3, 4, 5].map((item, index) => (
-                        <div key={index} className="review-card border">
-                            <div className="d-flex align-items-center gap-2 mb-3">
-                                <div className="bg-info-booked rounded-circle d-flex align-items-center justify-content-center text-white" style={{ width: '40px', height: '40px' }}>
-                                    <i className="fas fa-user"></i>
-                                </div>
-                                <div>
-                                    <h6 className="mb-0 fw-bold small">Lector #{item}</h6>
-                                    <div className="text-warning small">
-                                        <i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i>
+                    {/* Usamos listaReviews cargada desde tu API /api/reviews */}
+                    {listaReviews.length > 0 ? (
+                        [...listaReviews, ...listaReviews].map((rev, index) => (
+                            <div key={index} className="review-card border shadow-sm bg-white p-3 rounded-4" style={{ minWidth: '320px' }}>
+                                <div className="d-flex align-items-center gap-2 mb-3">
+                                    {/* Avatar del Lector con Fallback de Inicial */}
+                                    <div className="bg-info-booked rounded-circle d-flex align-items-center justify-content-center text-white fw-bold overflow-hidden border border-2 border-white shadow-sm"
+                                        style={{ width: '45px', height: '45px', minWidth: '45px' }}>
+                                        {rev.foto_lector ? (
+                                            <img
+                                                src={rev.foto_lector}
+                                                alt={rev.nombre_lector}
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            />
+                                        ) : (
+                                            <span>{rev.nombre_lector?.charAt(0).toUpperCase() || "L"}</span>
+                                        )}
+                                    </div>
+
+                                    <div className="text-start">
+                                        <h6 className="mb-0 fw-bold small text-dark">{rev.nombre_lector}</h6>
+                                        {/* Puntaje Numérico en lugar de estrellas */}
+                                        <div className="fw-bold text-warning" style={{ fontSize: '0.85rem' }}>
+                                            <i className="fas fa-star me-1" style={{ fontSize: '0.7rem' }}></i>
+                                            {rev.puntuacion} <span className="text-muted fw-normal" style={{ fontSize: '0.7rem' }}>/ 10</span>
+                                        </div>
                                     </div>
                                 </div>
+
+                                {/* Texto de la Review con límite de 3 líneas para uniformidad */}
+                                <p className="small text-muted mb-2 text-start italic"
+                                    style={{
+                                        height: '3.6em',
+                                        lineHeight: '1.2em',
+                                        overflow: 'hidden',
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 3,
+                                        WebkitBoxOrient: 'vertical'
+                                    }}>
+                                    "{rev.texto}"
+                                </p>
+
+                                {/* Referencia al Libro */}
+                                <div className="text-end border-top pt-2 mt-auto">
+                                    <small className="text-info-booked fw-bold" style={{ fontSize: '0.7rem' }}>
+                                        <i className="fas fa-book-open me-1"></i>
+                                        {rev.libro?.nombre || "Lectura Booked"}
+                                    </small>
+                                </div>
                             </div>
-                            <p className="small text-muted mb-0">"Booked ha cambiado mi forma de organizar mis lecturas. ¡El buscador es increíble!"</p>
-                        </div>
-                    ))}
+                        ))
+                    ) : (
+                        <div className="text-muted p-4 w-100 text-center">Cargando la voz de la comunidad...</div>
+                    )}
                 </div>
             </div>
 
@@ -247,7 +304,7 @@ export const Home = () => {
                         <div key={`author-${i}`} className="col-md-3 mb-5">
                             <div className="card-feature text-center h-100 shadow-sm border-0">
                                 {/* Contenedor de la imagen o icono */}
-                                <div className="book-cover-floating bg-white d-flex align-items-center justify-content-center shadow overflow-hidden"
+                                <div className="foto-cover-floating bg-white d-flex align-items-center justify-content-center shadow overflow-hidden"
                                     style={{ borderRadius: '50%', width: '100px', height: '100px', margin: '0 auto' }}>
 
                                     {autor.imagen ? (
@@ -282,7 +339,7 @@ export const Home = () => {
                     {editorialesUnicas.map((edit, i) => (
                         <div key={`edit-${i}`} className="col-md-3 mb-5">
                             <div className="card-feature text-center h-100 shadow-sm border-0">
-                                <div className="book-cover-floating bg-white d-flex align-items-center justify-content-center shadow"
+                                <div className="foto-cover-floating bg-white d-flex align-items-center justify-content-center shadow"
                                     style={{ borderRadius: '50%', width: '90px', height: '90px' }}>
                                     <i className="fas fa-university fa-2xl text-info-booked"></i>
                                 </div>
@@ -315,9 +372,9 @@ export const Home = () => {
 
                     <div className="row">
                         {postsRecientes.map((post, index) => {
-                            // --- ESTO ES LO QUE NO SABÍAS DÓNDE IBA ---
                             // Si tiene nombre_autor y no está vacío, es un Autor. Si no, es Editorial.
                             const esAutor = post.nombre_autor && post.nombre_autor.trim() !== "";
+
 
                             return (
                                 <div key={index} className="col-md-3 mb-4">
@@ -333,21 +390,50 @@ export const Home = () => {
                                                 </span>
                                             </div>
 
-                                            <h6 className="fw-bold mb-2 text-dark" style={{ fontSize: '0.9rem' }}>
+                                            {/* <h6 className="fw-bold mb-2 text-dark" style={{ fontSize: '0.9rem' }}>
                                                 {post.texto ? post.texto.substring(0, 50) + "..." : "Publicación"}
-                                            </h6>
+                                            </h6> */}
 
                                             <p className="small text-muted mb-3 flex-grow-1">
                                                 {post.texto}
                                             </p>
 
                                             <div className="d-flex align-items-center gap-2 pt-2 border-top">
-                                                <div className="bg-light rounded-circle d-flex align-items-center justify-content-center text-muted" style={{ width: '30px', height: '30px' }}>
-                                                    <i className={`fas ${esAutor ? 'fa-user' : 'fa-university'} small`}></i>
+                                                <div className="bg-light rounded-circle d-flex align-items-center justify-content-center text-muted overflow-hidden"
+                                                    style={{ width: '30px', height: '30px' }}>
+
+                                                    {/* Lógica unificada para Autor y Editorial con Fallback */}
+                                                    {esAutor ? (
+                                                        // ES AUTOR
+                                                        post.foto_autor ? (
+                                                            // Tiene foto
+                                                            <img
+                                                                src={post.foto_autor}
+                                                                alt={post.nombre_autor}
+                                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                            />
+                                                        ) : (
+                                                            // No tiene foto -> Icono fa-user
+                                                            <i className="fas fa-user small"></i>
+                                                        )
+                                                    ) : (
+                                                        // ES EDITORIAL
+                                                        post.foto_editorial ? (
+                                                            // Tiene logo/imagen
+                                                            <img
+                                                                src={post.foto_editorial}
+                                                                alt={post.nombre_editorial}
+                                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                            />
+                                                        ) : (
+                                                            // No tiene logo -> Icono fa-university
+                                                            <i className="fas fa-university small"></i>
+                                                        )
+                                                    )}
                                                 </div>
+
                                                 <div className="text-start">
                                                     <p className="very-small fw-bold mb-0 text-dark">
-                                                        {/* Evitamos el undefined del apellido */}
                                                         {esAutor
                                                             ? `${post.nombre_autor} ${post.apellido_autor || ""}`
                                                             : (post.nombre_editorial || "Editorial Booked")
@@ -365,6 +451,97 @@ export const Home = () => {
                         })}
                     </div>
                 </div>
+
+                <section className="testimonials py-60 bg-light overflow-hidden">
+                    <div className="container">
+                        <div className="row align-items-center">
+                            {/* Bloque de Texto Izquierda */}
+                            <div className="col-xl-5 mb-5 mb-xl-0">
+                                <div className="testimonials_text_block position-relative">
+                                    <h6 className="text-info-booked mb-2 fw-bold">–––– Testimoniales</h6>
+                                    <h2 className="mb-4 fw-bold display-5">
+                                        ¡Historias de Lectores! Algunos comentarios de nuestros <span className="text-info-booked">Usuarios</span>
+                                    </h2>
+                                    <p className="text-muted fs-5">
+                                        Únete a los miles de apasionados por la lectura que ya están organizando su mundo literario con Booked.
+                                    </p>
+
+                                    {/* Elemento decorativo de puntos (dots) */}
+                                    <div className="mt-4 d-flex gap-2 opacity-25">
+                                        {[...Array(12)].map((_, i) => (
+                                            <div key={i} className="bg-dark rounded-circle" style={{ width: '6px', height: '6px' }}></div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Bloque del Slider Derecha */}
+                            <div className="col-xl-7">
+                                <div id="testimonialCarousel" className="carousel slide" data-bs-ride="carousel">
+                                    <div className="carousel-inner">
+
+                                        {/* Testimonial 1 */}
+                                        <div className="carousel-item active">
+                                            <div className="testimonial_card bg-white shadow-sm p-4 p-md-5 rounded-4 border-0 mx-2">
+                                                <div className="d-md-flex align-items-center gap-4">
+                                                    <div className="position-relative mb-3 mb-md-0">
+                                                        <img src="https://i.pravatar.cc/150?u=1" alt="User" className="rounded-circle shadow" style={{ width: '100px', height: '100px', objectFit: 'cover' }} />
+                                                        <div className="bg-info-booked position-absolute bottom-0 end-0 rounded-circle d-flex align-items-center justify-content-center text-white border border-3 border-white" style={{ width: '35px', height: '35px' }}>
+                                                            <i className="fas fa-quote-right fa-xs"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-start">
+                                                        <h4 className="fw-bold mb-1">Jophie Alen</h4>
+                                                        <div className="text-warning mb-3">
+                                                            <i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i>
+                                                        </div>
+                                                        <p className="text-muted fst-italic fs-6">
+                                                            "Booked cambió totalmente cómo registro mis lecturas. Ahora no olvido ningún detalle de los libros que termino. ¡Es increíble!"
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Testimonial 2 */}
+                                        <div className="carousel-item">
+                                            <div className="testimonial_card bg-white shadow-sm p-4 p-md-5 rounded-4 border-0 mx-2">
+                                                <div className="d-md-flex align-items-center gap-4">
+                                                    <div className="position-relative mb-3 mb-md-0">
+                                                        <img src="https://i.pravatar.cc/150?u=2" alt="User" className="rounded-circle shadow" style={{ width: '100px', height: '100px', objectFit: 'cover' }} />
+                                                        <div className="bg-info-booked position-absolute bottom-0 end-0 rounded-circle d-flex align-items-center justify-content-center text-white border border-3 border-white" style={{ width: '35px', height: '35px' }}>
+                                                            <i className="fas fa-quote-right fa-xs"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-start">
+                                                        <h4 className="fw-bold mb-1">Angel Whites</h4>
+                                                        <div className="text-warning mb-3">
+                                                            <i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star-half-alt"></i>
+                                                        </div>
+                                                        <p className="text-muted fst-italic fs-6">
+                                                            "La interfaz es súper limpia y fácil de usar. Me encanta poder ver las fotos de otros lectores y sus reseñas en tiempo real."
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                    {/* Controles del Slider */}
+                                    <div className="d-flex gap-2 mt-4 justify-content-md-start justify-content-center">
+                                        <button className="btn btn-outline-info-booked rounded-circle d-flex align-items-center justify-content-center" type="button" data-bs-target="#testimonialCarousel" data-bs-slide="prev" style={{ width: '45px', height: '45px' }}>
+                                            <i className="fas fa-arrow-left"></i>
+                                        </button>
+                                        <button className="btn btn-info-booked text-white rounded-circle d-flex align-items-center justify-content-center" type="button" data-bs-target="#testimonialCarousel" data-bs-slide="next" style={{ width: '45px', height: '45px' }}>
+                                            <i className="fas fa-arrow-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
                 <div className="container py-5 my-5">
                     <div className="bg-dark rounded-5 p-5 text-center text-white position-relative overflow-hidden"

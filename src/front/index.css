@@ -82,12 +82,12 @@ body {
 
 /* Contenedor del libro que flota sobre la tarjeta */
 .book-cover-floating {
-    width: 100px; 
+    width: 135px; 
     aspect-ratio: 2 / 3;
     background: var(--booked-white);
     border-radius: 8px;
     position: absolute;
-    top: -80px; 
+    top: -135px; 
     left: 50%;
     transform: translateX(-50%);
     box-shadow: 0 12px 24px rgba(0,0,0,0.15);
@@ -96,6 +96,23 @@ body {
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
     z-index: 2;
 }
+
+.foto-cover-floating {
+    width: 100px; 
+    aspect-ratio: 2 / 3;
+    background: var(--booked-white);
+    border-radius: 8px;
+    position: absolute;
+    top: -50px; 
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    border: 3px solid var(--booked-white);
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    z-index: 2;
+}
+
 
 .card-feature:hover .book-cover-floating {
     transform: translateX(-50%) translateY(-10px) rotate(-3deg);
