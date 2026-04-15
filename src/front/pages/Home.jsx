@@ -2,9 +2,20 @@ import React, { useEffect, useState, useCallback } from "react";
 import logoBookedUrl from "../assets/img/logo_booked1.png";
 import chicaLeyendoUrl from "../assets/img/chica-pensativa-sentada-sobre-libros.png";
 import dateLeyendoUrl from "../assets/img/medium-shot-couple-having-bookstore-date.jpg";
+import cosmosFlotanteUrl from '../assets/img/cosmos.png';
+import explosionFlotanteUrl from '../assets/img/explosion.png';
+import ideaFlotanteUrl from '../assets/img/idea.png';
+import fenixFlotanteUrl from '../assets/img/fenix.png';
+import mapaFlotanteUrl from '../assets/img/mapa.png';
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import { Link, useNavigate } from "react-router-dom";
 import BuscadorGoogleBooks from "../components/23_BuscadorGoogleBooks";
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Autoplay, Pagination, Navigation } from 'swiper/modules';
+
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
 
 export const Home = () => {
     const navigate = useNavigate();
@@ -139,6 +150,40 @@ export const Home = () => {
                         <div className="col-lg-6 d-none d-lg-block text-center">
                             {/* Uso de tu variable local */}
                             <img src={chicaLeyendoUrl} style={{ width: '85%' }} alt="Hero Booked" />
+                            <img
+                                src={ideaFlotanteUrl}
+                                alt="Libro Flotante"
+                                className="floating-png png-1"
+                                style={{ width: '60px' }}
+                            />
+
+                            <img
+                                src={explosionFlotanteUrl}
+                                alt="fenix"
+                                className="floating-png png-2"
+                                style={{ width: '60px' }}
+                            />
+
+                            <img
+                                src={cosmosFlotanteUrl}
+                                alt="cosmos"
+                                className="floating-png png-3"
+                                style={{ width: '60px' }}
+                            />
+
+                            <img
+                                src={fenixFlotanteUrl}
+                                alt="fenix"
+                                className="floating-png png-4"
+                                style={{ width: '90px' }}
+                            />
+
+                            <img
+                                src={mapaFlotanteUrl}
+                                alt="mapa"
+                                className="floating-png png-5"
+                                style={{ width: '70px' }}
+                            />
                         </div>
                     </div>
                 </div>
@@ -229,8 +274,8 @@ export const Home = () => {
             </div>
 
             <div className="reviews-ticker-container mt-5">
-                <div className="container mb-4">
-                    <h3 className="fw-bold text-center">¡Lo que nuestros lectores piensan!</h3>
+                <div className="container mb-5">
+                    <h3 className="fw-bold text-center">¡Lo que nuestros lectores opinan de lo que leyeron!</h3>
                 </div>
 
                 <div className="ticker-wrapper">
@@ -452,12 +497,13 @@ export const Home = () => {
                     </div>
                 </div>
 
-                <section className="testimonials py-60 bg-light overflow-hidden">
+                <section className="testimonials-full-bg py-60">
                     <div className="container">
                         <div className="row align-items-center">
-                            {/* Bloque de Texto Izquierda */}
-                            <div className="col-xl-5 mb-5 mb-xl-0">
-                                <div className="testimonials_text_block position-relative">
+
+                            {/* COLUMNA IZQUIERDA: Texto */}
+                            <div className="col-xl-5 mb-5  mb-xl-0">
+                                <div className="testimonials_text_block ml-2 position-relative">
                                     <h6 className="text-info-booked mb-2 fw-bold">–––– Testimoniales</h6>
                                     <h2 className="mb-4 fw-bold display-5">
                                         ¡Historias de Lectores! Algunos comentarios de nuestros <span className="text-info-booked">Usuarios</span>
@@ -466,7 +512,7 @@ export const Home = () => {
                                         Únete a los miles de apasionados por la lectura que ya están organizando su mundo literario con Booked.
                                     </p>
 
-                                    {/* Elemento decorativo de puntos (dots) */}
+                                    {/* Dots decorativos */}
                                     <div className="mt-4 d-flex gap-2 opacity-25">
                                         {[...Array(12)].map((_, i) => (
                                             <div key={i} className="bg-dark rounded-circle" style={{ width: '6px', height: '6px' }}></div>
@@ -475,70 +521,62 @@ export const Home = () => {
                                 </div>
                             </div>
 
-                            {/* Bloque del Slider Derecha */}
+                            {/* COLUMNA DERECHA: Slider */}
                             <div className="col-xl-7">
-                                <div id="testimonialCarousel" className="carousel slide" data-bs-ride="carousel">
-                                    <div className="carousel-inner">
-
-                                        {/* Testimonial 1 */}
-                                        <div className="carousel-item active">
-                                            <div className="testimonial_card bg-white shadow-sm p-4 p-md-5 rounded-4 border-0 mx-2">
-                                                <div className="d-md-flex align-items-center gap-4">
-                                                    <div className="position-relative mb-3 mb-md-0">
-                                                        <img src="https://i.pravatar.cc/150?u=1" alt="User" className="rounded-circle shadow" style={{ width: '100px', height: '100px', objectFit: 'cover' }} />
-                                                        <div className="bg-info-booked position-absolute bottom-0 end-0 rounded-circle d-flex align-items-center justify-content-center text-white border border-3 border-white" style={{ width: '35px', height: '35px' }}>
-                                                            <i className="fas fa-quote-right fa-xs"></i>
-                                                        </div>
+                                <Swiper
+                                    spaceBetween={40}
+                                    centeredSlides={true}
+                                    autoplay={{ delay: 4000, disableOnInteraction: false }}
+                                    pagination={{
+                                        clickable: true,
+                                        /* dynamicBullets: false, // Quítalo o ponlo en false */
+                                    }}
+                                    // navigation={false} // Ya las quitamos
+                                    modules={[Autoplay, Pagination]}
+                                    className="mySwiper p-4"
+                                >
+                                    <SwiperSlide>
+                                        <div className="testimonial_card shadow-sm p-4 p-md-5">
+                                            <div className="d-md-flex align-items-center gap-4">
+                                                <div className="position-relative mb-3 mb-md-0">
+                                                    <img src="https://i.pravatar.cc/150?u=1" alt="User" className="rounded-circle shadow" style={{ width: '100px', height: '100px', objectFit: 'cover' }} />
+                                                    <div className="quote-badge">
+                                                        <i className="fas fa-quote-right fa-xs text-white"></i>
                                                     </div>
-                                                    <div className="text-start">
-                                                        <h4 className="fw-bold mb-1">Jophie Alen</h4>
-                                                        <div className="text-warning mb-3">
-                                                            <i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i>
-                                                        </div>
-                                                        <p className="text-muted fst-italic fs-6">
-                                                            "Booked cambió totalmente cómo registro mis lecturas. Ahora no olvido ningún detalle de los libros que termino. ¡Es increíble!"
-                                                        </p>
+                                                </div>
+                                                <div className="text-start">
+                                                    <h4 className="fw-bold mb-1">Jophie Alen</h4>
+                                                    <div className="text-warning mb-2 small">
+                                                        <i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i>
                                                     </div>
+                                                    <p className="text-muted fst-italic">"Booked cambió totalmente cómo registro mis lecturas. Ahora no olvido ningún detalle de los libros que termino."</p>
                                                 </div>
                                             </div>
                                         </div>
+                                    </SwiperSlide>
 
-                                        {/* Testimonial 2 */}
-                                        <div className="carousel-item">
-                                            <div className="testimonial_card bg-white shadow-sm p-4 p-md-5 rounded-4 border-0 mx-2">
-                                                <div className="d-md-flex align-items-center gap-4">
-                                                    <div className="position-relative mb-3 mb-md-0">
-                                                        <img src="https://i.pravatar.cc/150?u=2" alt="User" className="rounded-circle shadow" style={{ width: '100px', height: '100px', objectFit: 'cover' }} />
-                                                        <div className="bg-info-booked position-absolute bottom-0 end-0 rounded-circle d-flex align-items-center justify-content-center text-white border border-3 border-white" style={{ width: '35px', height: '35px' }}>
-                                                            <i className="fas fa-quote-right fa-xs"></i>
-                                                        </div>
+                                    <SwiperSlide>
+                                        <div className="testimonial_card shadow-sm p-4 p-md-5">
+                                            <div className="d-md-flex align-items-center gap-4">
+                                                <div className="position-relative mb-3 mb-md-0">
+                                                    <img src="https://i.pravatar.cc/150?u=2" alt="User" className="rounded-circle shadow" style={{ width: '100px', height: '100px', objectFit: 'cover' }} />
+                                                    <div className="quote-badge">
+                                                        <i className="fas fa-quote-right fa-xs text-white"></i>
                                                     </div>
-                                                    <div className="text-start">
-                                                        <h4 className="fw-bold mb-1">Angel Whites</h4>
-                                                        <div className="text-warning mb-3">
-                                                            <i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star-half-alt"></i>
-                                                        </div>
-                                                        <p className="text-muted fst-italic fs-6">
-                                                            "La interfaz es súper limpia y fácil de usar. Me encanta poder ver las fotos de otros lectores y sus reseñas en tiempo real."
-                                                        </p>
+                                                </div>
+                                                <div className="text-start">
+                                                    <h4 className="fw-bold mb-1">Angel Whites</h4>
+                                                    <div className="text-warning mb-2 small">
+                                                        <i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star-half-alt"></i>
                                                     </div>
+                                                    <p className="text-muted fst-italic">"La interfaz es súper limpia y fácil de usar. Me encanta poder ver las fotos de otros lectores y sus reseñas."</p>
                                                 </div>
                                             </div>
                                         </div>
-
-                                    </div>
-
-                                    {/* Controles del Slider */}
-                                    <div className="d-flex gap-2 mt-4 justify-content-md-start justify-content-center">
-                                        <button className="btn btn-outline-info-booked rounded-circle d-flex align-items-center justify-content-center" type="button" data-bs-target="#testimonialCarousel" data-bs-slide="prev" style={{ width: '45px', height: '45px' }}>
-                                            <i className="fas fa-arrow-left"></i>
-                                        </button>
-                                        <button className="btn btn-info-booked text-white rounded-circle d-flex align-items-center justify-content-center" type="button" data-bs-target="#testimonialCarousel" data-bs-slide="next" style={{ width: '45px', height: '45px' }}>
-                                            <i className="fas fa-arrow-right"></i>
-                                        </button>
-                                    </div>
-                                </div>
+                                    </SwiperSlide>
+                                </Swiper>
                             </div>
+
                         </div>
                     </div>
                 </section>
