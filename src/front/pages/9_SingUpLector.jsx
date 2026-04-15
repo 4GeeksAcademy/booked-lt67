@@ -1,134 +1,105 @@
 import React, { useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
-import SelectorUbicacion from "./24_Georreferenciacion";
-import logoBookedUrl from "../assets/img/logo_booked.png"; // Asegúrate de que esta ruta sea correcta
+import logoBookedUrl from "../assets/img/logo_booked.png";
 
 const SignUpLector = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
-    const [nombre, setNombre] = useState('');
-    const [apellido, setApellido] = useState('');
-    const [pais, setPais] = useState('');
-    const [ubicacion, setUbicacion] = useState({ lat: null, lng: null });
+    const navigate = useNavigate();
 
-    const { store, dispatch } = useGlobalReducer();
+    const { store } = useGlobalReducer();
 
+    // Si ya está logueado, lo mandamos a su panel
     if (store.auth_lector === true) {
         return <Navigate to="/pagina_lector" />;
     }
 
-    function sendData(e) {
+    function handleContinuar(e) {
         e.preventDefault();
-        const requestOptions = {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                "email": email,
-                "username": username,
-                "password": password,
-                "nombre": nombre,
-                "apellido": apellido,
-                "pais": pais,
-                "latitud": ubicacion.lat,
-                "longitud": ubicacion.lng
-            })
-        };
-
-        fetch(import.meta.env.VITE_BACKEND_URL + 'api/signup_lector', requestOptions)
-            .then(response => {
-                if (!response.ok) throw new Error("Error al crear el lector");
-                return response.json();
-            })
-            .then(data => {
-                alert("¡Bienvenido a Booked! Cuenta creada con éxito.");
-                localStorage.setItem("token_lector", data.access_token);
-                localStorage.setItem("lector_id", data.lector_id);
-                dispatch({
-                    type: "set_auth_lector",
-                    payload: { auth: true, id: data.lector_id, nombre: data.nombre }
-                });
-            })
-            .catch(err => {
-                console.error("Error:", err);
-                alert("No se pudo completar el registro.");
-            });
+        // Pasamos los datos al siguiente componente sin tocar la base de datos aún
+        navigate("/completar_registro_lector", { 
+            state: { email, username, password } 
+        });
     }
 
     return (
-        <div className="container-fluid min-vh-100 bg-light py-5 d-flex align-items-center">
+        <div className="container-fluid min-vh-100 d-flex align-items-center py-5" style={{ background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)' }}>
             <div className="container">
-                <div className="card shadow-lg border-0 rounded-4 overflow-hidden mx-auto" style={{ maxWidth: "850px" }}>
+                <div className="card shadow-lg border-0 rounded-5 overflow-hidden mx-auto" style={{ maxWidth: "950px" }}>
                     <div className="row g-0">
-                        {/* Panel Izquierdo: Bienvenida con Azul Suave */}
+                        
+                        {/* PANEL IZQUIERDO */}
                         <div 
-                            className="col-lg-4 d-flex flex-column align-items-center justify-content-center p-5 text-center"
-                            style={{ backgroundColor: "#eaf2ff" }} // Azul pálido para que resalte el logo
+                            className="col-lg-4 d-flex flex-column align-items-center justify-content-center p-5 text-center text-white position-relative overflow-hidden"
+                            style={{ backgroundColor: "#24b0d9" }} 
                         >
-                            <img 
-                                src={logoBookedUrl} // Corregido: sin llaves extras
-                                alt="Booked Logo" 
-                                style={{ height: "100px", width: "auto" }} 
-                                className="mb-4" 
-                            />
-                            <h3 className="fw-bold text-primary">Únete a la Comunidad</h3>
-                            <p className="small text-muted">Crea tu perfil para descubrir, reseñar y compartir tus lecturas favoritas.</p>
+                            <i className="fas fa-book-reader position-absolute opacity-10" style={{ fontSize: '7rem', top: '-15px', left: '-10px' }}></i>
+
+                            <div className="position-relative z-index-1">
+                                <img 
+                                    src={logoBookedUrl} 
+                                    alt="Booked Logo" 
+                                    style={{ height: "70px", width: "auto", filter: "brightness(0) invert(1)" }} 
+                                    className="mb-4 drop-shadow" 
+                                />
+                                <h3 className="fw-bold mb-3">Tu ecosistema digital.</h3>
+                                <p className="small opacity-75 mb-4">
+                                    Únete a miles de lectores para descubrir, reseñar y organizar tu vida literaria en un solo lugar.
+                                </p>
+                                <hr className="w-25 mx-auto border-white opacity-50 mb-4" />
+                                <p className="small mb-0">¿Ya tienes cuenta?</p>
+                                <Link to="/login_lector" className="btn btn-outline-light rounded-pill px-4 mt-2 fw-bold shadow-sm">
+                                    Inicia Sesión
+                                </Link>
+                            </div>
                         </div>
 
-                        {/* Panel Derecho: Formulario */}
-                        <div className="col-lg-8 bg-white p-4 p-md-5">
-                            <h2 className="fw-bold text-dark mb-4 h3">Registro de Lector</h2>
+                        {/* PANEL DERECHO: Formulario Paso 1 */}
+                        <div className="col-lg-8 bg-white p-4 p-md-5 d-flex flex-column justify-content-center">
+                            <div className="mb-4 pb-2 border-bottom d-flex justify-content-between align-items-end">
+                                <div>
+                                    <h2 className="fw-bold text-dark h3 mb-1">Registro de Lector</h2>
+                                    <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '1px' }}>— Crea tu cuenta gratuita</span>
+                                </div>
+                                <span className="badge bg-light text-muted border rounded-pill px-3 py-2">Paso 1 de 2</span>
+                            </div>
                             
-                            <form onSubmit={sendData}>
-                                <div className="row">
-                                    <div className="col-md-12 mb-3">
-                                        <label className="form-label small fw-bold text-secondary text-uppercase">Username</label>
-                                        <div className="input-group input-group-sm">
-                                            <span className="input-group-text bg-light border-0 rounded-start-pill"><i className="fas fa-at"></i></span>
-                                            <input value={username} onChange={(e) => setUsername(e.target.value)} type="text" className="form-control bg-light border-0 rounded-end-pill py-2" placeholder="Tu usuario" required />
+                            <form onSubmit={handleContinuar}>
+                                <div className="row g-3">
+                                    {/* Nombre de Usuario */}
+                                    <div className="col-md-12 mb-2">
+                                        <label className="form-label small fw-bold text-muted text-uppercase mb-1">Nombre de Usuario</label>
+                                        <div className="input-group shadow-sm rounded-pill overflow-hidden">
+                                            <span className="input-group-text bg-light border-0 text-info-booked ps-4"><i className="fas fa-at"></i></span>
+                                            <input value={username} onChange={(e) => setUsername(e.target.value)} type="text" className="form-control bg-light border-0 py-2 ps-2" placeholder="ej. lector_fan_99" required />
                                         </div>
                                     </div>
 
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label small fw-bold text-secondary text-uppercase">Nombre</label>
-                                        <input value={nombre} onChange={(e) => setNombre(e.target.value)} type="text" className="form-control form-control-sm bg-light border-0 rounded-pill py-2 px-3" placeholder="Juan" required />
-                                    </div>
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label small fw-bold text-secondary text-uppercase">Apellido</label>
-                                        <input value={apellido} onChange={(e) => setApellido(e.target.value)} type="text" className="form-control form-control-sm bg-light border-0 rounded-pill py-2 px-3" placeholder="Pérez" required />
-                                    </div>
-
-                                    <div className="col-md-12 mb-3">
-                                        <label className="form-label small fw-bold text-secondary text-uppercase">Email</label>
-                                        <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className="form-control form-control-sm bg-light border-0 rounded-pill py-2 px-3" placeholder="email@ejemplo.com" required />
+                                    {/* Email */}
+                                    <div className="col-md-12 mb-2">
+                                        <label className="form-label small fw-bold text-muted text-uppercase mb-1">Correo Electrónico</label>
+                                        <div className="input-group shadow-sm rounded-pill overflow-hidden">
+                                            <span className="input-group-text bg-light border-0 text-muted ps-4"><i className="fas fa-envelope"></i></span>
+                                            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className="form-control bg-light border-0 py-2 ps-2" placeholder="correo@ejemplo.com" required />
+                                        </div>
                                     </div>
 
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label small fw-bold text-secondary text-uppercase">Contraseña</label>
-                                        <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" className="form-control form-control-sm bg-light border-0 rounded-pill py-2 px-3" placeholder="••••••••" required />
-                                    </div>
-                                    <div className="col-md-6 mb-4">
-                                        <label className="form-label small fw-bold text-secondary text-uppercase">País</label>
-                                        <input value={pais} onChange={(e) => setPais(e.target.value)} type="text" className="form-control form-control-sm bg-light border-0 rounded-pill py-2 px-3" placeholder="Chile" required />
-                                    </div>
-
-                                    {/* Mapa de Ubicación */}
-                                    <div className="col-12 mb-4">
-                                        <label className="form-label small fw-bold text-secondary text-uppercase mb-2 d-block">Tu Ubicación (Opcional)</label>
-                                        <div className="rounded-3 overflow-hidden border bg-light p-2" style={{ height: "250px" }}>
-                                            <SelectorUbicacion onLocationSelect={setUbicacion} />
+                                    {/* Contraseña */}
+                                    <div className="col-md-12 mb-4">
+                                        <label className="form-label small fw-bold text-muted text-uppercase mb-1">Contraseña</label>
+                                        <div className="input-group shadow-sm rounded-pill overflow-hidden">
+                                            <span className="input-group-text bg-light border-0 text-muted ps-4"><i className="fas fa-lock"></i></span>
+                                            <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" className="form-control bg-light border-0 py-2 ps-2" placeholder="••••••••" required minLength="6" />
                                         </div>
                                     </div>
                                 </div>
 
-                                <button type="submit" className="btn btn-primary w-100 rounded-pill py-2 fw-bold shadow-sm mb-3">
-                                    CREAR CUENTA
-                                </button>
-
-                                <div className="text-center">
-                                    <span className="text-muted small">¿Ya tienes cuenta? </span>
-                                    <Link to="/login_lector" className="text-primary fw-bold text-decoration-none small">Inicia Sesión</Link>
+                                <div className="d-grid mt-3">
+                                    <button type="submit" className="btn btn-booked-blue btn-lg rounded-pill fw-bold shadow-sm d-flex justify-content-center align-items-center">
+                                        CONTINUAR <i className="fas fa-arrow-right ms-2"></i>
+                                    </button>
                                 </div>
                             </form>
                         </div>
