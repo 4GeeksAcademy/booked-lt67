@@ -71,6 +71,9 @@ import EscanerLibro from "./components/25_BuscarLibroIA";
 import VerPerfilEditorial from "./pages/18_VerPerfilEditoriales";
 import PostEditorial from "./pages/17_PostEditorial";
 import Contact from "./pages/30_Contact";
+import CompletarRegistroLector from "./pages/9_CompletarRegistro";
+import CompletarRegistroAutor from "./pages/10_CompletarRegistroAutor";
+import CompletarRegistroEditorial from "./pages/11_CompletarRegistroEditorial";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -174,6 +177,10 @@ export const router = createBrowserRouter(
       <Route path="/test-imagen-ia" element={<EscanerLibro />} />
 
       <Route path="/contact" element={<Contact />} />
+
+      <Route path="/completar_registro_lector" element={<CompletarRegistroLector />} />
+      <Route path="/completar_registro_autor" element={<CompletarRegistroAutor />} />
+      <Route path="/completar_registro_editorial" element={<CompletarRegistroEditorial />} />
 
       </Route>
     )

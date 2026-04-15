@@ -6,6 +6,7 @@ import logoBookedUrl from "../assets/img/logo_booked.png";
 const LogInAutor = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [cargando, setCargando] = useState(false);
     const { store, dispatch } = useGlobalReducer();
     const navigate = useNavigate();
 
@@ -16,6 +17,7 @@ const LogInAutor = () => {
 
     function sendData(e) {
         e.preventDefault();
+        setCargando(true);
 
         const requestOptions = {
             method: 'POST',
@@ -26,16 +28,12 @@ const LogInAutor = () => {
             })
         };
 
-        // CORRECCIÓN: Limpiamos la URL base para evitar errores de barras invertidas y redirecciones fantasmas
         const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
         const urlFinal = `${baseUrl}/api/login_autor`;
 
         fetch(urlFinal, requestOptions)
             .then(response => {
-                if (!response.ok) {
-                    // Si tira 401 o cualquier error, lanzamos la excepción para ir al catch
-                    throw new Error("Error en el login");
-                }
+                if (!response.ok) throw new Error("Error en el login");
                 return response.json();
             })
             .then(data => {
@@ -60,87 +58,110 @@ const LogInAutor = () => {
             .catch(error => {
                 console.error("Error detallado:", error);
                 alert("Email o contraseña incorrectos. Por favor, verifica tus datos.");
+                setCargando(false);
             });
     }
 
     return (
-        <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-light py-5">
-            <div className="card shadow-lg border-0 rounded-4 overflow-hidden" style={{ maxWidth: "450px", width: "100%" }}>
-                <div className="card-body p-5">
-                    
-                    {/* Sección del Logo y Encabezado Personalizado para Autor */}
-                    <div className="text-center mb-4">
-                        <img 
-                            src={logoBookedUrl} 
-                            alt="Booked Logo" 
-                            style={{ height: "80px", width: "auto" }} 
-                            className="mb-3"
-                        />
-                        <h2 className="fw-bold text-dark">Panel de Autor</h2>
-                        <p className="text-muted">Gestiona tus obras y conecta con tus lectores</p>
-                    </div>
-
-                    <form onSubmit={sendData}>
-                        {/* Input Email */}
-                        <div className="mb-4">
-                            <label className="form-label fw-bold text-secondary small text-uppercase">Correo Profesional</label>
-                            <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0 rounded-start-pill text-muted">
-                                    <i className="fas fa-envelope"></i>
-                                </span>
-                                <input 
-                                    value={email} 
-                                    onChange={(e) => setEmail(e.target.value)} 
-                                    type="email" 
-                                    className="form-control border-start-0 rounded-end-pill py-2 shadow-none" 
-                                    placeholder="autor@ejemplo.com"
-                                    required 
-                                />
-                            </div>
-                        </div>
-
-                        {/* Input Password */}
-                        <div className="mb-4">
-                            <label className="form-label fw-bold text-secondary small text-uppercase">Contraseña</label>
-                            <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0 rounded-start-pill text-muted">
-                                    <i className="fas fa-lock"></i>
-                                </span>
-                                <input 
-                                    value={password} 
-                                    onChange={(e) => setPassword(e.target.value)} 
-                                    type="password" 
-                                    className="form-control border-start-0 rounded-end-pill py-2 shadow-none" 
-                                    placeholder="••••••••"
-                                    required 
-                                />
-                            </div>
-                        </div>
-
-                        {/* Botón de Ingreso */}
-                        <button 
-                            type="submit" 
-                            className="btn btn-primary w-100 rounded-pill py-2 fw-bold shadow-sm mb-3 mt-2"
-                            style={{ letterSpacing: "0.5px" }}
+        <div className="container-fluid min-vh-100 d-flex align-items-center py-5" style={{ background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)' }}>
+            <div className="container">
+                <div className="card shadow-lg border-0 rounded-5 overflow-hidden mx-auto" style={{ maxWidth: "950px" }}>
+                    <div className="row g-0">
+                        
+                        {/* PANEL IZQUIERDO: Bienvenida Autor */}
+                        <div 
+                            className="col-lg-5 d-flex flex-column align-items-center justify-content-center p-5 text-center text-white position-relative overflow-hidden"
+                            style={{ backgroundColor: "#24b0d9" }}
                         >
-                            INGRESAR AL PANEL
-                        </button>
+                            <i className="fas fa-feather-alt position-absolute opacity-10" style={{ fontSize: '7rem', top: '-15px', left: '-10px' }}></i>
 
-                        {/* Link de Registro */}
-                        <div className="text-center mt-4">
-                            <span className="text-muted small">¿Eres un autor nuevo? </span>
-                            <Link to="/signup_autor" className="text-primary fw-bold text-decoration-none small">
-                                Regístrate aquí
-                            </Link>
+                            <div className="position-relative z-index-1">
+                                <img 
+                                    src={logoBookedUrl} 
+                                    alt="Booked Logo" 
+                                    style={{ height: "70px", width: "auto", filter: "brightness(0) invert(1)" }} 
+                                    className="mb-4 drop-shadow" 
+                                />
+                                <h3 className="fw-bold mb-3">Tu taller literario.</h3>
+                                <p className="small opacity-75 mb-4">
+                                    Accede a tu panel para gestionar tus obras, publicar noticias y conectar directamente con tu comunidad de lectores.
+                                </p>
+                                <hr className="w-25 mx-auto border-white opacity-50 mb-4" />
+                                <p className="small mb-0">¿Aún no reclamas tu perfil?</p>
+                                <Link to="/signup_autor" className="btn btn-outline-light rounded-pill px-4 mt-2 fw-bold shadow-sm">
+                                    Regístrate aquí
+                                </Link>
+                            </div>
                         </div>
-                    </form>
+
+                        {/* PANEL DERECHO: Formulario Login */}
+                        <div className="col-lg-7 bg-white p-4 p-md-5 d-flex flex-column justify-content-center">
+                            <div className="mb-5 pb-2 border-bottom d-flex justify-content-between align-items-end">
+                                <div>
+                                    <h2 className="fw-bold text-dark h3 mb-1">Acceso a Creadores</h2>
+                                    <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '1px' }}>— Inicia Sesión</span>
+                                </div>
+                                <div className="bg-light rounded-circle p-3 text-info-booked shadow-sm">
+                                    <i className="fas fa-user-edit fa-lg"></i>
+                                </div>
+                            </div>
+                            
+                            <form onSubmit={sendData}>
+                                <div className="row g-4">
+                                    
+                                    {/* Input Email */}
+                                    <div className="col-12">
+                                        <label className="form-label small fw-bold text-muted text-uppercase mb-1">Correo Profesional</label>
+                                        <div className="input-group shadow-sm rounded-pill overflow-hidden">
+                                            <span className="input-group-text bg-light border-0 text-info-booked ps-4"><i className="fas fa-envelope"></i></span>
+                                            <input 
+                                                value={email} 
+                                                onChange={(e) => setEmail(e.target.value)} 
+                                                type="email" 
+                                                className="form-control bg-light border-0 py-3 ps-2" 
+                                                placeholder="autor@ejemplo.com" 
+                                                required 
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Input Password */}
+                                    <div className="col-12">
+                                        <label className="form-label small fw-bold text-muted text-uppercase mb-1">Contraseña</label>
+                                        <div className="input-group shadow-sm rounded-pill overflow-hidden">
+                                            <span className="input-group-text bg-light border-0 text-info-booked ps-4"><i className="fas fa-lock"></i></span>
+                                            <input 
+                                                value={password} 
+                                                onChange={(e) => setPassword(e.target.value)} 
+                                                type="password" 
+                                                className="form-control bg-light border-0 py-3 ps-2" 
+                                                placeholder="••••••••" 
+                                                required 
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="d-grid mt-5">
+                                    <button 
+                                        type="submit" 
+                                        className="btn btn-booked-blue btn-lg rounded-pill fw-bold shadow-sm d-flex justify-content-center align-items-center py-3"
+                                        disabled={cargando}
+                                    >
+                                        {cargando ? (
+                                            <><span className="spinner-border spinner-border-sm me-2" aria-hidden="true"></span> Validando credenciales...</>
+                                        ) : (
+                                            <>INGRESAR A MI CUENTA <i className="fas fa-sign-in-alt ms-2"></i></>
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
-                
-                {/* Decoración inferior */}
-                <div className="bg-primary py-2 w-100 opacity-75"></div>
             </div>
         </div>
     );
-}
+};
 
 export default LogInAutor;
