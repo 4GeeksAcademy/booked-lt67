@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import successSound from "../assets/sounds/BookedAudioLogov2.mp3"
 
 const BuscadorGoogleBooks = ({ onLibroAgregado, mode = "normal", defaultValue = "" }) => {
     const [query, setQuery] = useState(defaultValue);
@@ -9,7 +10,7 @@ const BuscadorGoogleBooks = ({ onLibroAgregado, mode = "normal", defaultValue = 
         if (defaultValue) setQuery(defaultValue);
     }, [defaultValue]);
 
-    useEffect(() => {
+    useEffect(() => { 
         
         if (query.length < 2) {
             setResults([]);
@@ -22,6 +23,12 @@ const BuscadorGoogleBooks = ({ onLibroAgregado, mode = "normal", defaultValue = 
 
         return () => clearTimeout(timeoutId);
     }, [query]);
+
+    const playSuccess = () => {
+        const audio = new Audio(successSound);
+        audio.volume = 0.4; // Ajustamos el volumen para que no asuste al usuario
+        audio.play().catch(e => console.log("Audio bloqueado por el navegador"));
+    };
 
     const fetchBooks = async (searchTerm) => {
         if (!searchTerm || searchTerm.trim().length < 3) return;
@@ -65,6 +72,7 @@ const BuscadorGoogleBooks = ({ onLibroAgregado, mode = "normal", defaultValue = 
         };
 
         if (mode === "asistente") {
+            playSuccess();
             console.log("Modo asistente: Rellenando formulario...");
             setQuery("");
             setResults([]);
@@ -86,6 +94,8 @@ const BuscadorGoogleBooks = ({ onLibroAgregado, mode = "normal", defaultValue = 
 
             if (res.ok) {
                 const data = await res.json();
+
+                playSuccess();
 
 
                 setQuery("");
