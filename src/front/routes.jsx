@@ -74,6 +74,7 @@ import Contact from "./pages/30_Contact";
 import CompletarRegistroLector from "./pages/9_CompletarRegistro";
 import CompletarRegistroAutor from "./pages/10_CompletarRegistroAutor";
 import CompletarRegistroEditorial from "./pages/11_CompletarRegistroEditorial";
+import Biblioteca from "./pages/30_Biblioteca";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -181,6 +182,8 @@ export const router = createBrowserRouter(
       <Route path="/completar_registro_lector" element={<CompletarRegistroLector />} />
       <Route path="/completar_registro_autor" element={<CompletarRegistroAutor />} />
       <Route path="/completar_registro_editorial" element={<CompletarRegistroEditorial />} />
+
+      <Route path="/biblioteca" element={<Biblioteca />} />
 
       </Route>
     )

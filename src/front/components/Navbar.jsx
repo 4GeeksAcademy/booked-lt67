@@ -110,6 +110,7 @@ export const Navbar = () => {
                                 <ul className={`dropdown-menu border-0 shadow-sm mt-lg-2 rounded-4 overflow-hidden ${openDropdown === 'conoce' ? 'show' : ''}`}>
                                     <li><NavLink className={({ isActive }) => getDropdownItemClass(isActive)} to="/ver_autores">Autores</NavLink></li>
                                     <li><NavLink className={({ isActive }) => getDropdownItemClass(isActive)} to="/ver_editoriales">Editoriales</NavLink></li>
+                                    <li><NavLink className={({ isActive }) => getDropdownItemClass(isActive)} to="/biblioteca">Biblioteca</NavLink></li>
                                 </ul>
                             </li>
 
