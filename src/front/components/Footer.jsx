@@ -32,7 +32,7 @@ export const Footer = () => (
                         </li>
                         <li>
                             {/* Supongo que "Libros" va a tu lista general o catálogo */}
-                            <Link to="/libros" className="text-decoration-none">Libros</Link>
+                            <Link to="/biblioteca" className="text-decoration-none">Libros</Link>
                         </li>
                         <li>
                             <Link to="/ver_editoriales" className="text-decoration-none">Editoriales</Link>
@@ -42,11 +42,14 @@ export const Footer = () => (
 
                 {/* CENTRO: Soporte */}
                 <div className="col-lg-2 col-md-6">
-                    <h5 className="fw-bold mb-4">Soporte</h5>
+                    <h5 className="fw-bold mb-4">Comunidad</h5>
                     <ul className="list-unstyled footer-links">
-                        <li><a href="#">Ayuda</a></li>
-                        <li><a href="#">Términos</a></li>
-                        <li><a href="#">Privacidad</a></li>
+                        <li>
+                            <Link to="/post_autores" className="text-decoration-none">Foro Autores</Link>
+                        </li>
+                        <li>
+                            <Link to="/post_editoriales" className="text-decoration-none">Foro Editorial</Link>
+                        </li>
                     </ul>
                 </div>
 
