@@ -21,7 +21,18 @@ const ChatComunidad = ({ emisorId, receptorId, nombreReceptor, esPopUp = false }
         } catch (error) { console.error("Error comunidad:", error); }
     }, [emisorId, receptorId]);
 
-    useEffect(() => { obtenerMensajes(); }, [obtenerMensajes]);
+    useEffect(() => {
+    obtenerMensajes();
+
+    const intervalo = setInterval(() => {
+        console.log("Revisando si hay chismes nuevos...");
+        obtenerMensajes();
+    }, 4000); 
+
+    
+    return () => clearInterval(intervalo);
+    
+}, [obtenerMensajes]);
 
     useEffect(() => {
         if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -72,7 +83,7 @@ const ChatComunidad = ({ emisorId, receptorId, nombreReceptor, esPopUp = false }
                         onKeyPress={(e) => e.key === 'Enter' && enviarMensaje()}
                     />
                     <button className="btn bg-info-booked text-white px-3" onClick={enviarMensaje}>
-                        <i className="fas fa-paper-plane"></i>
+                        <i className="fas fa-chevron-right"></i>
                     </button>
                 </div>
             </div>

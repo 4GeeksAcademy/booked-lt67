@@ -14,10 +14,12 @@ const PaginaLector = () => {
     const navigate = useNavigate();
     const [idASeguir, setIdASeguir] = useState("");
     const [seccionActiva, setSeccionActiva] = useState("bienvenida");
+    const [amigoSeleccionado, setAmigoSeleccionado] = useState(null);
+
 
     // Estado para manejar el modal de ver las reviews de un libro
     const [libroParaReviews, setLibroParaReviews] = useState(null);
-   
+
 
     const [db, setDb] = useState({
         usuario: null,
@@ -404,7 +406,21 @@ const PaginaLector = () => {
                                                 <div className="bg-light rounded-circle p-2 text-info-booked"><i className="fas fa-user"></i></div>
                                                 <span className="fw-bold text-dark">{r.nombre_seguido}</span>
                                             </div>
-                                            <button className="btn btn-sm text-danger fw-bold" onClick={() => exec(`unfollow/${r.relacion_id}`, "DELETE")}>Eliminar</button>
+                                            <div className="d-flex gap-2">
+                                                {/* NUEVO BOTÓN: Enviar Mensaje */}
+                                                <button
+                                                    className="btn btn-sm btn-outline-info-booked rounded-pill"
+                                                    onClick={() => {
+                                                        // 1. Guardamos los datos del amigo para que DmLector sepa a quién abrir
+                                                        setAmigoSeleccionado({ id: r.seguido_id, nombre: r.nombre_seguido });
+                                                        // 2. Cambiamos a la sección de mensajes
+                                                        setSeccionActiva("mensajes_comunidad");
+                                                    }}
+                                                >
+                                                    <i className="fas fa-comment"></i>
+                                                </button>
+                                                <button className="btn btn-sm text-danger fw-bold" onClick={() => exec(`unfollow/${r.relacion_id}`, "DELETE")}>Eliminar</button>
+                                            </div>
                                         </div>
                                     )) : <p className="text-muted small">Aún no sigues a otros lectores.</p>}
                                 </div>
@@ -414,15 +430,20 @@ const PaginaLector = () => {
 
                     {/* SECCIÓN DMs COMUNIDAD (PANEL INDEPENDIENTE) */}
                     {seccionActiva === "mensajes_comunidad" && (
-            <div>
-                <div className="mb-4">
-                    <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Comunidad</span>
-                    <h2 className="fw-bold mt-2">Mis Mensajes Directos</h2>
-                </div>
-                {/* Cargamos el componente que tiene la lista y el chat */}
-                <DmLector />
-            </div>
-        )}
+                        <div>
+                            <div className="mb-4">
+                                <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Comunidad</span>
+                                <h2 className="fw-bold mt-2">Mis Mensajes Directos</h2>
+                            </div>
+                            {/* Cargamos el componente que tiene la lista y el chat */}
+                            {seccionActiva === "mensajes_comunidad" && (
+                                <DmLector
+                                    amigoForzado={amigoSeleccionado}
+                                    setAmigoForzado={setAmigoSeleccionado}
+                                />
+                            )}
+                        </div>
+                    )}
 
                 </div>
             </div>

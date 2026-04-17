@@ -135,9 +135,7 @@ const EscanerLibro = () => {
                                     </p>
 
                                     {/* Botón de acción integrado (Asegúrate de conectarlo a tu lógica de agregar libros) */}
-                                    <button className="btn btn-sm btn-outline-info rounded-pill px-4 fw-bold">
-                                        <i className="fas fa-plus me-1"></i> Agregar a mi Biblioteca
-                                    </button>
+                                    
                                 </div>
                             </div>
                         </div>

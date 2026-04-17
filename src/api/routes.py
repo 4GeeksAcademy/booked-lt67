@@ -1770,18 +1770,29 @@ def obtener_mensajes_editorial(ed_id):
 @api.route('/chat/comunidad/enviar', methods=['POST'])
 @jwt_required()
 def enviar_dm_lector():
-    body = request.get_json()
-    emisor_id = get_jwt_identity()
-    
-    nuevo_msg = DmLector(
-        contenido=body['contenido'],
-        emisor_id=emisor_id,
-        receptor_id=body['receptor_id']
-    )
-    
-    db.session.add(nuevo_msg)
-    db.session.commit()
-    return jsonify({"msg": "Mensaje enviado a la comunidad"}), 201
+    try:
+        body = request.get_json()
+        emisor_id = get_jwt_identity()
+        
+        # 1. Creamos el registro
+        nuevo_msg = DmLector(
+            contenido=body['contenido'],
+            emisor_id=emisor_id,
+            receptor_id=body['receptor_id']
+        )
+        
+        db.session.add(nuevo_msg)
+        db.session.commit()
+        
+        # 2. Refrescamos para que las relaciones (emisor/receptor) se carguen y el serialize no falle
+        db.session.refresh(nuevo_msg) 
+        
+        return jsonify(nuevo_msg.serialize()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"ERROR EN CHAT: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 
 @api.route('/chat/comunidad/<int:lector1_id>/<int:lector2_id>', methods=['GET'])
