@@ -25,14 +25,17 @@ class User(db.Model):
 
 class Lector(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str] = mapped_column(
-        String(120), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(nullable=False)
+    
+    # Estos ahora son opcionales para el registro inicial
     username: Mapped[str] = mapped_column(String(120), nullable=False)
-    nombre: Mapped[str] = mapped_column(String(120),  nullable=False)
-    apellido: Mapped[str] = mapped_column(String(120), nullable=False)
-    pais_donde_reside: Mapped[str] = mapped_column(String(120), nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
+    nombre: Mapped[str] = mapped_column(String(120), nullable=True)
+    apellido: Mapped[str] = mapped_column(String(120), nullable=True)
+    pais_donde_reside: Mapped[str] = mapped_column(String(120), nullable=True)
+    
+    # En lugar de solo nullable=True, ponle un default para que la cuenta funcione
+    is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False, default=True)
     foto_url: Mapped[str] = mapped_column(String(500), nullable=True)
 
     latitud: Mapped[float] = mapped_column(db.Float, nullable=True)
