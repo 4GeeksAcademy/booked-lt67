@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor, Reviews, Admin, PostEditorial, LecturaActual, PostAutor
+from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor, Reviews, Admin, PostEditorial, LecturaActual, PostAutor, Mensaje, DmLector
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -26,7 +26,6 @@ import requests
 from werkzeug.utils import secure_filename
 
 api = Blueprint('api', __name__)
-
 # Allow CORS requests to this API
 CORS(api)
 
@@ -1719,3 +1718,100 @@ def verify_account():
 
     db.session.commit()
     return jsonify({"msg": f"Perfil {action} con éxito"}), 200
+
+
+@api.route('/enviar-mensaje', methods=['POST'])
+@jwt_required()
+def enviar_mensaje():
+    body = request.get_json()
+    if not body:
+        return jsonify({"msg": "Faltan datos en el cuerpo"}), 400
+
+    try:
+        nuevo_mensaje = Mensaje(
+            contenido=body.get("contenido"),
+            lector_id=body.get("lector_id"),
+            editorial_id=body.get("editorial_id"),
+            tipo_emisor=body.get("tipo_emisor") # Debe ser 'lector' o 'editorial'
+        )
+        db.session.add(nuevo_mensaje)
+        db.session.commit()
+        return jsonify({"msg": "Mensaje enviado con éxito"}), 201
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al enviar: {str(e)}")
+        return jsonify({"error": "No se pudo guardar el mensaje"}), 500
+
+
+@api.route('/chat/<int:lector_id>/<int:editorial_id>', methods=['GET'])
+@jwt_required()
+def obtener_chat(lector_id, editorial_id):
+    try:
+        # Buscamos todos los mensajes entre este lector y esta editorial
+        mensajes = Mensaje.query.filter_by(
+            lector_id=lector_id, 
+            editorial_id=editorial_id
+        ).order_by(Mensaje.fecha_envio.asc()).all()
+        
+        # Serializamos de forma segura
+        return jsonify([m.serialize() for m in mensajes]), 200
+        
+    except Exception as e:
+        print(f"Error en el servidor al obtener chat: {str(e)}")
+        return jsonify({"error": "Error interno del servidor"}), 500
+    
+@api.route('/mensajes/editorial/<int:ed_id>', methods=['GET'])
+@jwt_required()
+def obtener_mensajes_editorial(ed_id):
+    mensajes = Mensaje.query.filter_by(editorial_id=ed_id).all()
+    return jsonify([m.serialize() for m in mensajes]), 200
+
+
+@api.route('/chat/comunidad/enviar', methods=['POST'])
+@jwt_required()
+def enviar_dm_lector():
+    body = request.get_json()
+    emisor_id = get_jwt_identity()
+    
+    nuevo_msg = DmLector(
+        contenido=body['contenido'],
+        emisor_id=emisor_id,
+        receptor_id=body['receptor_id']
+    )
+    
+    db.session.add(nuevo_msg)
+    db.session.commit()
+    return jsonify({"msg": "Mensaje enviado a la comunidad"}), 201
+
+
+@api.route('/chat/comunidad/<int:lector1_id>/<int:lector2_id>', methods=['GET'])
+@jwt_required()
+def obtener_dm_lector(lector1_id, lector2_id):
+    mensajes = DmLector.query.filter(
+        (DmLector.emisor_id == lector1_id) & (DmLector.receptor_id == lector2_id) |
+        (DmLector.emisor_id == lector2_id) & (DmLector.receptor_id == lector1_id)
+    ).order_by(DmLector.fecha_envio.asc()).all()
+    
+    return jsonify([m.serialize() for m in mensajes]), 200
+
+
+@api.route('/mis-contactos-comunidad', methods=['GET'])
+@jwt_required()
+def obtener_contactos():
+    id_actual = get_jwt_identity()
+    
+    # Buscamos todos los mensajes donde el usuario fue emisor o receptor
+    mensajes = DmLector.query.filter(
+        (DmLector.emisor_id == id_actual) | (DmLector.receptor_id == id_actual)
+    ).all()
+
+    # Extraemos los IDs de las otras personas (sin repetir)
+    ids_contactos = set()
+    for m in mensajes:
+        if m.emisor_id != id_actual: ids_contactos.add(m.emisor_id)
+        if m.receptor_id != id_actual: ids_contactos.add(m.receptor_id)
+
+    # Obtenemos los objetos Lector
+    contactos = Lector.query.filter(Lector.id.in_(ids_contactos)).all()
+    
+    return jsonify([c.serialize() for c in contactos]), 200

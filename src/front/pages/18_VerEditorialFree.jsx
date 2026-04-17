@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import useGlobalReducer from "../hooks/useGlobalReducer";
+import Chat from "../components/37_Chat";
 
 const VerEditorialFree = () => {
+
+    const { store } = useGlobalReducer();;
     const { theId } = useParams();
     const [editorial, setEditorial] = useState(null);
+    const [mostrarChat, setMostrarChat] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -34,7 +39,7 @@ const VerEditorialFree = () => {
         <div className="container-fluid min-vh-100 py-5" style={{ background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)' }}>
             <div className="container">
                 <div className="card shadow-lg border-0 rounded-5 overflow-hidden mx-auto" style={{ maxWidth: "850px" }}>
-                    
+
                     {/* BANNER DE CABECERA EDITORIAL */}
                     <div className="bg-info-booked position-relative" style={{ height: "140px", width: "100%" }}>
                         {/* Adorno de fondo en el banner */}
@@ -53,7 +58,7 @@ const VerEditorialFree = () => {
                                         style={{ width: "160px", height: "160px", objectFit: "cover", border: "4px solid white" }}
                                     />
                                     {editorial.is_verified && (
-                                        <div 
+                                        <div
                                             className="position-absolute bg-primary text-white rounded-circle d-flex align-items-center justify-content-center border border-3 border-white shadow-sm"
                                             style={{ width: "35px", height: "35px", bottom: "10px", right: "10px", fontSize: "16px" }}
                                             title="Sello Oficial Verificado"
@@ -70,7 +75,7 @@ const VerEditorialFree = () => {
                                     <h1 className="fw-bold text-dark mb-0 display-6">
                                         {nombre}
                                     </h1>
-                                    
+
                                     {/* ESTADOS DEL PERFIL EDITORIAL */}
                                     <div className="mt-2 mt-md-0">
                                         {editorial.is_verified ? (
@@ -117,15 +122,51 @@ const VerEditorialFree = () => {
                         <hr className="my-4 opacity-25" />
 
                         {/* PIE DE TARJETA: Botones */}
-                        <div className="d-flex justify-content-center justify-content-md-start">
-                            <button
-                                className="btn btn-light border rounded-pill px-4 shadow-sm fw-bold text-muted"
-                                onClick={() => navigate(-1)}
-                            >
-                                <i className="fas fa-arrow-left me-2"></i> Volver atrás
-                            </button>
+                        <div className="d-flex flex-column align-items-center align-items-md-start gap-3 mt-4">
+
+                            <div className="d-flex justify-content-center justify-content-md-start">
+                                <button
+                                    className="btn btn-light border rounded-pill px-4 shadow-sm fw-bold text-muted"
+                                    onClick={() => navigate(-1)}
+                                >
+                                    <i className="fas fa-arrow-left me-2"></i> Volver atrás
+                                </button>
+
+
+                                {/* 1. EL BOTÓN SOLO APARECE SI EL LECTOR ESTÁ LOGUEADO */}
+                                {store.auth_lector ? (
+                                    <button
+                                        className="btn btn-booked-blue shadow-sm px-4 rounded-pill"
+                                        onClick={() => setMostrarChat(true)}
+                                    >
+                                        <i className="fas fa-comments me-2"></i>
+                                        {mostrarChat ? "Cerrar Chat" : "Contactar Editorial"}
+                                    </button>
+                                ) : (
+                                    /* 2. OPCIONAL: Mensaje para usuarios no logueados */
+                                    <button
+                                        className="btn btn-outline-secondary rounded-pill px-4 shadow-sm"
+                                        onClick={() => navigate("/login_lector")}
+                                    >
+                                        <i className="fas fa-user-lock me-2"></i> Loguéate para contactar
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* 3. EL COMPONENTE CHAT SOLO SE RENDERIZA SI HAY AUTH */}
+                            {mostrarChat && store.auth_lector && (
+                                <Chat
+                                    key={mostrarChat ? "abierto" : "cerrado"} // Truco para forzar rerender si es necesario
+                                    lectorId={store.lector_id || localStorage.getItem("lector_id")}
+                                    editorialId={theId}
+                                    tipoUsuario="lector"
+                                    esPopUp={true}
+                                    abiertoInicial={mostrarChat}
+                                    nombreEditorial={editorial?.nombre}
+                                />
+                            )}
                         </div>
-                        
+
                     </div>
                 </div>
             </div>

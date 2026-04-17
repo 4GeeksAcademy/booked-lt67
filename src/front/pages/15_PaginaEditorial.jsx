@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
-import LectoresUbi from "../components/25_LectoresUbi"; 
+import LectoresUbi from "../components/25_LectoresUbi";
+import Chat from "../components/37_Chat";
 
 // Assets e Imágenes
-import booksImg from "../assets/img/Books.png"; 
+import booksImg from "../assets/img/Books.png";
 
 const PaginaEditorial = () => {
     const { store } = useGlobalReducer();
@@ -12,16 +13,18 @@ const PaginaEditorial = () => {
     const editorialId = store.editorial_id || localStorage.getItem("editorial_id");
 
     const [seccionActiva, setSeccionActiva] = useState("inicio");
-    
-    const [db, setDb] = useState({ 
-        perfil: null, 
-        misLibros: [], 
-        noticias: [], 
+    const [lectorSeleccionado, setLectorSeleccionado] = useState(null);
+    const [listaChats, setListaChats] = useState([]);
+
+    const [db, setDb] = useState({
+        perfil: null,
+        misLibros: [],
+        noticias: [],
         todasLasReviews: [],
-        loading: true 
+        loading: true
     });
 
-    // Estados para el Mapa
+
     const [mapaViews, setMapaViews] = useState({ favLibros: [], leyendo: [] });
     const [vistaMapaActual, setVistaMapaActual] = useState('favLibros');
 
@@ -39,9 +42,49 @@ const PaginaEditorial = () => {
         } catch (e) { return null; }
     };
 
+    const cargarContactos = useCallback(async () => {
+        if (!editorialId) return;
+        const token = localStorage.getItem("token_editorial");
+
+        try {
+            // Obtenemos todos los mensajes relacionados con esta editorial
+            // Nota: Si creas el endpoint de contactos es mejor, si no, filtramos aquí
+            const res = await fetch(`${api}/mensajes/editorial/${editorialId}`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const mensajes = await res.json();
+                // Extraemos lectores únicos de los mensajes
+                const contactosUnicos = [];
+                const idsVistos = new Set();
+
+                mensajes.forEach(m => {
+                    if (!idsVistos.has(m.lector_id)) {
+                        idsVistos.add(m.lector_id);
+                        contactosUnicos.push({
+                            id: m.lector_id,
+                            nombre: m.nombre_lector || `Lector #${m.lector_id}`,
+                            foto: m.foto_lector,
+                            ultimoMsg: m.contenido
+                        });
+                    }
+                });
+                setListaChats(contactosUnicos);
+            }
+        } catch (error) {
+            console.error("Error cargando contactos:", error);
+        }
+    }, [editorialId, api]);
+
+    useEffect(() => {
+        if (seccionActiva === "mensajes") {
+            cargarContactos();
+        }
+    }, [seccionActiva, cargarContactos]);
+
     const loadData = useCallback(async () => {
         if (!editorialId) return;
-        
+
         try {
             const [perfil, librosGlob, posts, respFavLibros, respLeyendo, reviewsGlob] = await Promise.all([
                 request(`editorial/${editorialId}`),
@@ -53,7 +96,7 @@ const PaginaEditorial = () => {
             ]);
 
             const misLibrosFiltrados = librosGlob || [];
-            
+
             // Filtramos las reviews para que solo muestre las de los libros de esta editorial
             const idsMisLibros = misLibrosFiltrados.map(l => l.id);
             const misReviewsFiltradas = reviewsGlob?.filter(r => idsMisLibros.includes(r.libro?.id)) || [];
@@ -76,23 +119,23 @@ const PaginaEditorial = () => {
         }
     }, [editorialId]);
 
-    useEffect(() => { 
+    useEffect(() => {
         if (store.auth_editorial || localStorage.getItem("token_editorial")) {
-            loadData(); 
+            loadData();
         }
     }, [loadData, store.auth_editorial]);
 
     const deletelibro = async (idToDelete) => {
         if (window.confirm("¿De verdad quieres eliminar este libro de tu catálogo?")) {
             const res = await request(`libro/${idToDelete}`, "DELETE");
-            if(res) loadData();
+            if (res) loadData();
         }
     };
 
     const deletepost = async (idToDelete) => {
         if (window.confirm("¿Estás seguro que quieres eliminar esta publicación?")) {
             const res = await request(`posteditorial/${idToDelete}`, "DELETE");
-            if(res) loadData();
+            if (res) loadData();
         }
     };
 
@@ -115,19 +158,19 @@ const PaginaEditorial = () => {
             <div className="col-md-4 col-lg-3 mb-5" style={{ marginTop: '110px' }}>
                 <div className="card-feature text-center h-100 shadow-sm border-0 bg-white d-flex flex-column pb-3 px-2">
                     <div className="book-cover-floating">
-                        <img 
-                            src={l.image_url || "https://via.placeholder.com/150x225?text=No+Cover"} 
-                            className="portada-full" 
-                            alt={l.nombre} 
+                        <img
+                            src={l.image_url || "https://via.placeholder.com/150x225?text=No+Cover"}
+                            className="portada-full"
+                            alt={l.nombre}
                         />
                     </div>
-                    
+
                     <div className="flex-grow-1 d-flex flex-column mt-3">
                         <h6 className="fw-bold text-dark mb-1 text-truncate px-2" title={l.nombre}>
                             {l.nombre}
                         </h6>
                         <span className="badge bg-light text-info-booked border rounded-pill mx-auto mb-3">{l.genero}</span>
-                        
+
                         <div className="d-flex justify-content-center gap-1 mt-auto flex-wrap">
                             <Link to={`/ver_libro/${l.id}`} className="btn btn-sm btn-outline-info rounded-pill px-3" title="Ver Obra">
                                 <i className="fas fa-eye"></i>
@@ -147,15 +190,15 @@ const PaginaEditorial = () => {
 
     return (
         <div className="d-flex position-relative" style={{ minHeight: "100vh" }}>
-            
+
             {/* --- SIDEBAR IZQUIERDO --- */}
             <div className="bg-white shadow-sm border-end" style={{ width: "280px", minWidth: "280px", zIndex: 10 }}>
                 <div className="p-4 text-center border-bottom">
                     <div className="position-relative d-inline-block mb-3">
-                        <img 
-                            src={fotoPerfil} 
-                            className="rounded-circle shadow-sm border border-3 border-light" 
-                            style={{ width: "80px", height: "80px", objectFit: "cover" }} 
+                        <img
+                            src={fotoPerfil}
+                            className="rounded-circle shadow-sm border border-3 border-light"
+                            style={{ width: "80px", height: "80px", objectFit: "cover" }}
                             alt="Perfil Editorial"
                         />
                         {/* Badge identificador de Editorial */}
@@ -173,13 +216,14 @@ const PaginaEditorial = () => {
                         { id: "libros", icon: "book", label: "Catálogo de Libros" },
                         { id: "reviews", icon: "star", label: "Reseñas del Público" },
                         { id: "mapa", icon: "map-marked-alt", label: "Impacto Global" },
+                        { id: "mensajes", icon: "envelope", label: "Mensajes Directos" },
                     ].map(item => (
-                        <button 
+                        <button
                             key={item.id}
-                            onClick={() => setSeccionActiva(item.id)} 
+                            onClick={() => setSeccionActiva(item.id)}
                             className={`list-group-item list-group-item-action border-0 rounded-4 mb-2 py-3 px-4 d-flex align-items-center ${seccionActiva === item.id ? "bg-info-booked text-white shadow" : "text-muted"}`}
                         >
-                            <i className={`fas fa-${item.icon} me-3`} style={{ width: "20px" }}></i> 
+                            <i className={`fas fa-${item.icon} me-3`} style={{ width: "20px" }}></i>
                             <span className="fw-bold">{item.label}</span>
                         </button>
                     ))}
@@ -199,7 +243,7 @@ const PaginaEditorial = () => {
                                     Panel de <span className="text-info-booked" style={{ fontStyle: 'italic' }}>{db.perfil?.nombre}.</span>
                                 </h1>
                                 <p className="lead text-muted mb-4">Administra tu catálogo de libros, monitorea el impacto global y comunícate con tus lectores.</p>
-                                
+
                                 {/* CAJA RÁPIDA DE ACCIONES */}
                                 <div className="p-3 bg-white shadow-sm rounded-4 border mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3" style={{ maxWidth: '650px', borderLeft: '5px solid #24b0d9' }}>
                                     <div className="d-flex align-items-center gap-3">
@@ -284,7 +328,7 @@ const PaginaEditorial = () => {
                                 <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Feedback del Público</span>
                                 <h2 className="fw-bold mt-2">Reseñas de tu Catálogo</h2>
                             </div>
-                            
+
                             <div className="row">
                                 {db.todasLasReviews.length > 0 ? (
                                     db.todasLasReviews.map(rev => (
@@ -301,7 +345,7 @@ const PaginaEditorial = () => {
                                                         {rev.puntuacion} <i className="fas fa-star text-white"></i>
                                                     </span>
                                                 </div>
-                                                
+
                                                 <div className="bg-light p-3 rounded-4 mb-3 position-relative">
                                                     <i className="fas fa-quote-left text-info-booked opacity-25 position-absolute" style={{ top: '10px', left: '10px', fontSize: '1.5rem' }}></i>
                                                     <p className="text-muted fst-italic mb-0 text-center px-4">"{rev.texto}"</p>
@@ -349,6 +393,84 @@ const PaginaEditorial = () => {
                             </div>
                             <div className="card shadow-lg border-0 rounded-5 overflow-hidden p-3 bg-white" style={{ height: "600px" }}>
                                 <LectoresUbi lectores={mapaViews[vistaMapaActual]} />
+                            </div>
+                        </div>
+                    )}
+
+                    {seccionActiva === "mensajes" && (
+                        <div className="container-fluid animate__animated animate__fadeIn">
+                            <div className="row" style={{ height: 'calc(100vh - 160px)' }}>
+                                {/* LISTA DE CONVERSACIONES */}
+                                <div className="col-md-4 h-100 ps-0">
+                                    <div className="card shadow-sm border-0 rounded-4 h-100 bg-white overflow-hidden">
+                                        <div className="p-3 bg-info-booked text-white d-flex justify-content-between align-items-center">
+                                            <h6 className="fw-bold mb-0"><i className="fas fa-comments me-2"></i>Chats Directos</h6>
+                                            <button onClick={cargarContactos} className="btn btn-sm btn-light rounded-circle">
+                                                <i className="fas fa-sync-alt"></i>
+                                            </button>
+                                        </div>
+
+                                        <div className="overflow-auto" style={{ height: '100%' }}>
+                                            {listaChats.length > 0 ? listaChats.map(chat => (
+                                                <div
+                                                    key={chat.id}
+                                                    onClick={() => setLectorSeleccionado(chat)}
+                                                    className={`p-3 d-flex align-items-center gap-3 border-bottom cursor-pointer transition-all ${lectorSeleccionado?.id === chat.id ? "bg-light border-start border-4 border-info-booked" : "hover-bg-light"}`}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    <img
+                                                        src={chat.foto || `https://ui-avatars.com/api/?name=${chat.nombre}&background=random`}
+                                                        className="rounded-circle"
+                                                        style={{ width: '45px', height: '45px', objectFit: 'cover' }}
+                                                        alt="Lector"
+                                                    />
+                                                    <div className="flex-grow-1 overflow-hidden">
+                                                        <h6 className="fw-bold mb-0 text-dark small">{chat.nombre}</h6>
+                                                        <p className="mb-0 text-muted small text-truncate">{chat.ultimoMsg}</p>
+                                                    </div>
+                                                </div>
+                                            )) : (
+                                                <div className="text-center p-5 mt-5">
+                                                    <i className="fas fa-user-friends fa-2x mb-3 text-muted opacity-50"></i>
+                                                    <p className="text-muted small">No hay conversaciones activas.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* AREA DEL CHAT */}
+                                <div className="col-md-8 h-100 pe-0">
+                                    {lectorSeleccionado ? (
+                                        <div className="card shadow-sm border-0 rounded-4 h-100 bg-white overflow-hidden d-flex flex-column">
+                                            {/* Header del Chat Seleccionado */}
+                                            <div className="p-3 border-bottom d-flex align-items-center bg-white">
+                                                <img src={lectorSeleccionado.foto || `https://ui-avatars.com/api/?name=${lectorSeleccionado.nombre}`} className="rounded-circle me-3" style={{ width: '35px', height: '35px' }} />
+                                                <h6 className="fw-bold mb-0">{lectorSeleccionado.nombre}</h6>
+                                            </div>
+
+                                            {/* El componente de chat ahora vive aquí adentro */}
+                                            <div style={{ height: "100%" }}>
+                                                <Chat
+                                                    lectorId={lectorSeleccionado.id}
+                                                    editorialId={editorialId}
+                                                    tipoUsuario="editorial"
+                                                    esPopUp={false} // 
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="card shadow-sm border-0 rounded-4 h-100 d-flex align-items-center justify-content-center bg-white p-5 text-center">
+                                            <div className="animate__animated animate__pulse animate__infinite">
+                                                <div className="bg-light p-4 rounded-circle d-inline-block mb-3">
+                                                    <i className="fas fa-paper-plane fa-3x text-info-booked opacity-50"></i>
+                                                </div>
+                                                <h5 className="text-dark fw-bold">Tu Mensajería</h5>
+                                                <p className="text-muted">Selecciona un lector de la izquierda para responder sus dudas o propuestas.</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}
