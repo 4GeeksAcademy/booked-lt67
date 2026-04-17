@@ -240,7 +240,7 @@ const PaginaLector = () => {
                             <div className="col-lg-7">
                                 <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Bienvenido de vuelta</span>
                                 <h1 className="display-4 fw-bold text-dark mt-2 mb-4">
-                                    Hola, <span className="text-info-booked" style={{ fontStyle: 'italic' }}>{db.usuario?.nombre}.</span>
+                                    Hola, <span className="text-info-booked" style={{ fontStyle: 'italic' }}>{db.usuario?.username}.</span>
                                 </h1>
                                 <p className="lead text-muted mb-4">Gestiona tu ecosistema literario, descubre nuevos autores y mantén tu colección al día.</p>
 
