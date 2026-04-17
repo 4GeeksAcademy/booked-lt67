@@ -69,7 +69,7 @@ const Biblioteca = () => {
                     <div className="shelf-wood-background position-absolute top-0 start-0 w-100 h-100 rounded-4 z-index-1 detailed-wood-texture"></div>
 
                     {/* El libro físico apoyado en la repisa */}
-                    <div className="book-physical position-relative z-index-3 mt-3 mx-auto" onClick={() => irAlLibro(l.id)} title={l.nombre}>
+                    <div className="book-physical position-relative z-index-3" onClick={() => irAlLibro(l.id)} title={l.nombre}>
                         <img
                             src={l.image_url || "https://via.placeholder.com/150x225?text=No+Cover"}
                             alt={l.nombre}
@@ -230,12 +230,16 @@ const Biblioteca = () => {
 
                     /* EL LIBRO FÍSICO 3D (Sobre la repisa) */
                     .book-physical {
-                        position: relative;
                         z-index: 3;
-                        width: 105px; /* Tamaño estandarizado */
-                        height: 160px;
+                        width: 130px;
+                        height: 195px;
                         cursor: pointer;
-                        /* Sombra realista proyectada en el fondo oscuro */
+                        /* --- ESTO ES LO NUEVO --- */
+                        bottom: -20px; /* Se apoya exactamente sobre los 25px que mide el suelo de madera */
+                        left: 0;
+                        right: 0;
+                        margin: auto; /* Lo centra horizontalmente */
+                        /* ------------------------ */
                         box-shadow: 15px 15px 20px rgba(0,0,0,0.6), inset -2px 0px 4px rgba(255,255,255,0.3);
                         border-radius: 2px 5px 5px 2px;
                         transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
