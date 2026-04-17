@@ -86,7 +86,8 @@ class Lector(db.Model):
 class Editorial(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    nombre: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    nombre: Mapped[str] = mapped_column(
+        String(120), unique=True, nullable=False)
     pais: Mapped[str] = mapped_column(String(120), nullable=False)
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=True)
     password: Mapped[str] = mapped_column(String(255), nullable=True)
@@ -97,7 +98,7 @@ class Editorial(db.Model):
 
     libros: Mapped[List["Libro"]] = relationship(
         back_populates="editorial",
-        cascade="all, delete-orphan" 
+        cascade="all, delete-orphan"
     )
 
     posts: Mapped[List["PostEditorial"]] = relationship(
@@ -126,10 +127,10 @@ class Autor(db.Model):
     apellido: Mapped[str] = mapped_column(String(120), nullable=False)
     pais: Mapped[str] = mapped_column(String(120), nullable=True)
     email = db.Column(db.String(120), unique=True,
-                      nullable=True)  
+                      nullable=True)
     password = db.Column(db.String(250), unique=False,
-                         nullable=True) 
-    
+                         nullable=True)
+
     is_verified = db.Column(db.Boolean(), default=False)
     foto_url = db.Column(db.String(500), nullable=True)
     verification_status = db.Column(db.String(50), default="pending")
@@ -138,15 +139,12 @@ class Autor(db.Model):
                       ] = relationship(back_populates="autor")
 
     libros: Mapped[List["Libro"]] = relationship(
-    back_populates="autor", 
-    cascade="all, delete-orphan")
+        back_populates="autor",
+        cascade="all, delete-orphan")
 
     posts: Mapped[List["PostAutor"]] = relationship(
-    back_populates="autor",
-    cascade="all, delete-orphan" )
-
-    
-    
+        back_populates="autor",
+        cascade="all, delete-orphan")
 
     def __repr__(self):
         return f'<Autor: {self.nombre} {self.apellido}>'
@@ -402,4 +400,60 @@ class PostAutor(db.Model):
             "foto_autor": self.autor.foto_url if self.autor else None,
             "texto": self.texto,
             "fecha": self.fecha.strftime("%d-%m-%Y %H:%M")
+        }
+
+
+class Mensaje(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    contenido = db.Column(db.Text, nullable=False)
+    fecha_envio = db.Column(db.DateTime, default=datetime.utcnow)
+
+    lector_id = db.Column(db.Integer, db.ForeignKey(
+        'lector.id'), nullable=False)
+
+    editorial_id = db.Column(db.Integer, db.ForeignKey(
+        'editorial.id'), nullable=False)
+
+    # Para saber si el emisor es 'Lector' o 'Editorial'
+    tipo_emisor = db.Column(db.String(50), nullable=False)
+
+    lector = db.relationship('Lector')
+    editorial = db.relationship('Editorial')
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "contenido": self.contenido,
+            "fecha_envio": self.fecha_envio.strftime("%Y-%m-%d %H:%M:%S"),
+            "lector_id": self.lector_id,
+            "editorial_id": self.editorial_id,
+            "nombre_editorial": f"{self.editorial.nombre}" if self.editorial else None,
+            "nombre_lector": f"{self.lector.nombre} {self.lector.apellido}" if self.lector else None,
+            "foto_lector": self.lector.foto_url if self.lector else None,
+            "foto_editorial": self.editorial.image_url if self.editorial else None,
+            "tipo_emisor": self.tipo_emisor
+        }
+
+class DmLector(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    contenido = db.Column(db.Text, nullable=False)
+    fecha_envio = db.Column(db.DateTime, default=datetime.utcnow)
+
+    emisor_id = db.Column(db.Integer, db.ForeignKey('lector.id'), nullable=False)
+    receptor_id = db.Column(db.Integer, db.ForeignKey('lector.id'), nullable=False)
+
+    emisor = db.relationship('Lector', foreign_keys=[emisor_id])
+    receptor = db.relationship('Lector', foreign_keys=[receptor_id])
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "contenido": self.contenido,
+            "fecha_envio": self.fecha_envio.strftime("%Y-%m-%d %H:%M:%S"),
+            "emisor_id": self.emisor_id,
+            "receptor_id": self.receptor_id,
+            "nombre_emisor": f"{self.emisor.nombre} {self.emisor.apellido}",
+            "foto_emisor": self.emisor.foto_url,
+            "nombre_receptor": f"{self.receptor.nombre} {self.receptor.apellido}",
+            "foto_receptor": self.receptor.foto_url
         }

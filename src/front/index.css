@@ -511,3 +511,115 @@ body {
 .hero-right-content:hover .png-1 { transform: scale(1.1) translate(5px, -5px); }
 .hero-right-content:hover .png-2 { transform: scale(1.1) translate(-5px, 5px); }
 .hero-right-content:hover .png-3 { transform: scale(1.1) translate(10px, -10px); }
+
+/* ==========================================================================
+   WIDGET DE CHAT FLOTANTE - BOOKED STYLE
+   ========================================================================== */
+
+.booked-chat-container {
+  position: fixed;
+  bottom: 30px;
+  left: 30px; /* Lo querías en la izquierda */
+  z-index: 9999;
+  font-family: "Inter", sans-serif;
+}
+
+/* El Botón Circular (Trigger) */
+.btn-chat-trigger {
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  background-color: var(--booked-blue);
+  color: white;
+  border: none;
+  box-shadow: 0 10px 25px rgba(36, 176, 217, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+}
+
+.btn-chat-trigger:hover {
+  transform: scale(1.1) rotate(5deg);
+  background-color: var(--booked-blue-hover);
+}
+
+/* La Ventana del Chat */
+.booked-chat-window {
+  width: 360px;
+  height: 500px;
+  background: var(--booked-white);
+  border-radius: 20px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.05);
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header al estilo Navbar */
+.chat-header {
+  background: var(--booked-blue);
+  background: linear-gradient(90deg, var(--booked-blue) 0%, #35c4ed 100%);
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Burbujas de Mensaje */
+.msg-bubble {
+  max-width: 80%;
+  padding: 12px 16px;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  position: relative;
+}
+
+/* Mensaje que envías TÚ (Lector o Editorial) */
+.msg-sent {
+  background-color: var(--booked-blue);
+  color: white;
+  border-radius: 18px 18px 2px 18px;
+  align-self: flex-end;
+  box-shadow: 0 4px 10px rgba(36, 176, 217, 0.2);
+}
+
+/* Mensaje que recibes */
+.msg-received {
+  background-color: var(--booked-gray-light);
+  color: var(--booked-dark);
+  border-radius: 18px 18px 18px 2px;
+  align-self: flex-start;
+  border: 1px solid #eee;
+}
+
+/* Input Area */
+.chat-input-area {
+  padding: 15px;
+  background: white;
+  border-top: 1px solid #eee;
+}
+
+.chat-input-area input {
+  border-radius: 10px;
+  border: 1px solid #eee;
+  padding: 10px 15px;
+  transition: all 0.3s ease;
+}
+
+.chat-input-area input:focus {
+  outline: none;
+  border-color: var(--booked-blue);
+  box-shadow: 0 0 0 3px rgba(36, 176, 217, 0.1);
+}
