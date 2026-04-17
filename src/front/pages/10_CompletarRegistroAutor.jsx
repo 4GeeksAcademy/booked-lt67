@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, Navigate, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
-import SelectorUbicacion from "../pages/24_Georreferenciacion"; // Asegúrate de que la ruta sea correcta
 
 const CompletarRegistroAutor = () => {
     const navigate = useNavigate();
@@ -11,11 +10,10 @@ const CompletarRegistroAutor = () => {
     // Recuperamos los datos del Paso 1
     const { nombre, apellido, email, password, autorIdSeleccionado } = location.state || {};
 
-    // Cambiamos el string 'pais' por el objeto de coordenadas
-    const [ubicacion, setUbicacion] = useState({ lat: null, lng: null });
+    const [pais, setPais] = useState('');
     const [cargando, setCargando] = useState(false);
 
-    // Protección de ruta
+    // Protección: Si alguien entra a esta ruta sin pasar por el Paso 1, lo devolvemos
     useEffect(() => {
         if (!email || !nombre || !password) {
             navigate("/signup_autor");
@@ -27,7 +25,7 @@ const CompletarRegistroAutor = () => {
     }
 
     function sendData(e) {
-        if (e) e.preventDefault();
+        e.preventDefault();
         setCargando(true);
         
         const requestOptions = {
@@ -38,21 +36,18 @@ const CompletarRegistroAutor = () => {
                 "password": password,
                 "nombre": nombre,
                 "apellido": apellido,
-                "latitud": ubicacion.lat,  // Enviamos latitud
-                "longitud": ubicacion.lng, // Enviamos longitud
+                "pais": pais,
                 "reclamar_id": autorIdSeleccionado
-                // 'pais' eliminado ya que se obtiene de la ubicación en el backend o dashboard
             })
         };
 
-        const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-
-        fetch(`${baseUrl}/api/signup_autor`, requestOptions)
+        fetch(import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + '/api/signup_autor', requestOptions)
             .then(response => {
                 if (!response.ok) throw new Error("Error en el registro de autor");
                 return response.json();
             })
             .then(data => {
+                // Guardamos la sesión
                 localStorage.setItem("autor_id", data.autor_id);
                 localStorage.setItem("token_autor", data.access_token);
                 localStorage.setItem("nombre_autor", data.nombre);
@@ -73,6 +68,7 @@ const CompletarRegistroAutor = () => {
             });
     }
 
+    // Retorno de seguridad mientras redirige si no hay datos
     if (!email) return null; 
 
     return (
@@ -81,29 +77,29 @@ const CompletarRegistroAutor = () => {
                 <div className="card shadow-lg border-0 rounded-5 overflow-hidden mx-auto" style={{ maxWidth: "950px" }}>
                     <div className="row g-0">
                         
-                        {/* PANEL IZQUIERDO: Informativo */}
+                        {/* PANEL IZQUIERDO: Paso 2 */}
                         <div 
                             className="col-lg-4 d-flex flex-column align-items-center justify-content-center p-5 text-center text-white position-relative overflow-hidden"
-                            style={{ backgroundColor: "#1e99bd" }}
+                            style={{ backgroundColor: "#1e99bd" }} // Un azul un poquito más oscuro para denotar avance
                         >
-                            <i className="fas fa-feather-alt position-absolute opacity-10" style={{ fontSize: '7rem', top: '-15px', left: '-10px' }}></i>
+                            <i className="fas fa-globe-americas position-absolute opacity-10" style={{ fontSize: '7rem', top: '-15px', left: '-10px' }}></i>
 
                             <div className="position-relative z-index-1">
                                 <div className="bg-white rounded-circle d-inline-flex align-items-center justify-content-center text-info-booked mb-4 shadow" style={{ width: '80px', height: '80px' }}>
                                     <i className="fas fa-map-marked-alt fa-2x"></i>
                                 </div>
-                                <h3 className="fw-bold mb-3">Tu taller en el mapa</h3>
+                                <h3 className="fw-bold mb-3">Último detalle</h3>
                                 <p className="small opacity-75 mb-4">
-                                    Define tu ubicación base. Esto permitirá que los lectores de tu zona se enteren de tus próximos eventos o firmas de libros.
+                                    Cuéntanos desde dónde escribes para completar la configuración de tu panel de autor.
                                 </p>
                             </div>
                         </div>
 
-                        {/* PANEL DERECHO: Formulario con Mapa */}
+                        {/* PANEL DERECHO: Formulario Paso 2 */}
                         <div className="col-lg-8 bg-white p-4 p-md-5 d-flex flex-column justify-content-center">
-                            <div className="mb-4 pb-2 border-bottom d-flex justify-content-between align-items-end flex-wrap gap-2">
+                            <div className="mb-5 pb-2 border-bottom d-flex justify-content-between align-items-end flex-wrap gap-2">
                                 <div>
-                                    <h2 className="fw-bold text-dark h3 mb-1">Casi terminamos</h2>
+                                    <h2 className="fw-bold text-dark h3 mb-1">Completa tu perfil</h2>
                                     <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '1px' }}>— Paso final</span>
                                 </div>
                                 <div className="d-flex align-items-center gap-2">
@@ -116,48 +112,39 @@ const CompletarRegistroAutor = () => {
                             
                             <form onSubmit={sendData}>
                                 <div className="row g-3">
-                                    <div className="col-12">
-                                        <label className="form-label small fw-bold text-muted text-uppercase mb-2">
-                                            <i className="fas fa-crosshairs text-info-booked me-2"></i>
-                                            Marca tu ubicación principal
-                                        </label>
-                                        
-                                        {/* Mapa interactivo */}
-                                        <div className="rounded-4 overflow-hidden border shadow-sm bg-light p-1" style={{ height: "300px" }}>
-                                            <SelectorUbicacion onLocationSelect={setUbicacion} />
+                                    
+                                    {/* País */}
+                                    <div className="col-md-12 mb-4">
+                                        <label className="form-label small fw-bold text-muted text-uppercase mb-2">País de Residencia u Origen</label>
+                                        <div className="input-group shadow-sm rounded-pill overflow-hidden">
+                                            <span className="input-group-text bg-light border-0 text-muted ps-4"><i className="fas fa-globe"></i></span>
+                                            <input 
+                                                value={pais} 
+                                                onChange={(e) => setPais(e.target.value)} 
+                                                type="text" 
+                                                className="form-control bg-light border-0 py-3 ps-2" 
+                                                placeholder="Ej. España, México, Argentina..." 
+                                                required 
+                                            />
                                         </div>
-                                        
-                                        <p className="text-muted text-center mt-2 mb-4" style={{ fontSize: '0.8rem' }}>
-                                            Haz clic en el mapa para situar tu marcador. 
-                                            {autorIdSeleccionado && " Vincularemos esta ubicación a tu perfil reclamado."}
-                                        </p>
                                     </div>
                                 </div>
 
-                                <div className="d-grid gap-3">
+                                <div className="d-grid mt-4">
                                     <button 
                                         type="submit" 
                                         className="btn btn-booked-blue btn-lg rounded-pill fw-bold shadow-sm py-3"
                                         disabled={cargando}
                                     >
                                         {cargando ? (
-                                            <><span className="spinner-border spinner-border-sm me-2"></span> Finalizando...</>
+                                            <><span className="spinner-border spinner-border-sm me-2" aria-hidden="true"></span> Configurando panel...</>
                                         ) : (
-                                            "FINALIZAR Y ENTRAR AL PANEL"
+                                            <>FINALIZAR Y CREAR CUENTA</>
                                         )}
-                                    </button>
-
-                                    {/* Opción de omitir si no quieren poner ubicación ahora */}
-                                    <button 
-                                        type="button" 
-                                        onClick={() => sendData()} 
-                                        className="btn btn-link text-muted btn-sm text-decoration-none"
-                                        disabled={cargando}
-                                    >
-                                        Saltar este paso por ahora
                                     </button>
                                 </div>
                             </form>
+
                         </div>
                     </div>
                 </div>

@@ -87,40 +87,32 @@ class Lector(db.Model):
 
 
 class Editorial(db.Model):
-    __tablename__ = 'editorial'
     id: Mapped[int] = mapped_column(primary_key=True)
-    # Obligatorio para identificar la empresa
-    nombre: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
-    # Credenciales Críticas
-    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(String(255), nullable=False)
-    
-    # Coordenadas para el mapa (nullable=True para que el Paso 2 sea opcional)
-    latitud: Mapped[float] = mapped_column(db.Float, nullable=True)
-    longitud: Mapped[float] = mapped_column(db.Float, nullable=True)
-    
-    # Otros datos opcionales
-    pais: Mapped[str] = mapped_column(String(120), nullable=True)
-    image_url: Mapped[str] = mapped_column(String(255), nullable=True)
-    
+    nombre: Mapped[str] = mapped_column(
+        String(120), unique=True, nullable=False)
+    pais: Mapped[str] = mapped_column(String(120), nullable=False)
+    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=True)
+    password: Mapped[str] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
-    verification_status: Mapped[str] = mapped_column(String(50), default="pending")
-
-    libros: Mapped[List["Libro"]] = relationship(back_populates="editorial", cascade="all, delete-orphan")
-    posts: Mapped[List["PostEditorial"]] = relationship(back_populates="editorial", cascade="all, delete-orphan")
-
+    image_url: Mapped[str] = mapped_column(String(255), nullable=True)
+    verification_status = db.Column(db.String(50), default="pending")
+    libros: Mapped[List["Libro"]] = relationship(
+        back_populates="editorial",
+        cascade="all, delete-orphan"
+    )
+    posts: Mapped[List["PostEditorial"]] = relationship(
+        back_populates="editorial",
+        cascade="all, delete-orphan"
+    )
     def __repr__(self):
         return f'<Editorial: {self.nombre}>'
-
     def serialize(self):
         return {
             "id": self.id,
             "nombre": self.nombre,
-            "email": self.email,
-            "latitud": self.latitud,
-            "longitud": self.longitud,
             "pais": self.pais,
+            "email": self.email,
             "image_url": self.image_url,
             "is_verified": self.is_verified,
             "verification_status": self.verification_status
@@ -135,34 +127,25 @@ class Autor(db.Model):
                       nullable=True)
     password = db.Column(db.String(250), unique=False,
                          nullable=True)
-
     is_verified = db.Column(db.Boolean(), default=False)
     foto_url = db.Column(db.String(500), nullable=True)
     verification_status = db.Column(db.String(50), default="pending")
-
     favorited: Mapped[List["Lector_Autores_Favoritos"]
                       ] = relationship(back_populates="autor")
-
     libros: Mapped[List["Libro"]] = relationship(
         back_populates="autor",
         cascade="all, delete-orphan")
-
     posts: Mapped[List["PostAutor"]] = relationship(
         back_populates="autor",
         cascade="all, delete-orphan")
-
     def __repr__(self):
         return f'<Autor: {self.nombre} {self.apellido}>'
-
     def serialize(self):
-
         foto_final = self.foto_url
-
         if self.foto_url:
             if not self.foto_url.startswith("http"):
                 base_url = os.getenv("VITE_BACKEND_URL", "").rstrip("/")
                 foto_final = f"{base_url}/{self.foto_url.lstrip('/')}"
-
         return {
             "id": self.id,
             "nombre": self.nombre,
@@ -173,7 +156,6 @@ class Autor(db.Model):
             "is_verified": self.is_verified,
             "verification_status": self.verification_status
         }
-
 
 class Libro(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
