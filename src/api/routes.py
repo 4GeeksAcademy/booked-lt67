@@ -895,38 +895,46 @@ def signup_lector():
 
 @api.route("/signup_editorial", methods=["POST"])
 def signup_editorial():
-
     body = request.get_json()
     nombre_ed = body.get("nombre")
     email = body.get("email")
     password = body.get("password")
-    nombre = body.get("nombre")
+    # Nuevos campos de mapa
+    latitud = body.get("latitud")
+    longitud = body.get("longitud")
+    # Otros campos
     pais = body.get("pais", "Desconocido")
-    image_url = body.get("image_url")  # Captura la URL de Cloudinary
+    image_url = body.get("image_url")
 
     if not nombre_ed or not email or not password:
         return jsonify({"msg": "Datos incompletos"}), 400
 
-    
+    # Buscamos si la editorial ya existe (lógica de reclamar perfil)
     editorial = Editorial.query.filter(Editorial.nombre.ilike(f"%{nombre_ed}%")).first()
 
     if editorial:
+        # Si ya está verificada, no se puede reclamar
         if editorial.is_verified:
             return jsonify({"msg": "Esta editorial ya tiene un dueño"}), 400
         
+        # ACTUALIZACIÓN: Reclamar perfil existente
         editorial.email = email
         editorial.password = generate_password_hash(password)
         editorial.pais = pais
+        editorial.latitud = latitud   # Guardamos coordenadas al reclamar
+        editorial.longitud = longitud # Guardamos coordenadas al reclamar
         editorial.image_url = image_url
         editorial.is_verified = True
         msg = "Has reclamado tu perfil editorial con éxito"
     else:
-
+        # CREACIÓN: Editorial totalmente nueva
         editorial = Editorial(
             nombre=nombre_ed,
             email=email,
             password=generate_password_hash(password),
             pais=pais,
+            latitud=latitud,   # Guardamos coordenadas nuevas
+            longitud=longitud, # Guardamos coordenadas nuevas
             image_url=image_url,
             is_verified=True 
         )
@@ -935,10 +943,18 @@ def signup_editorial():
 
     try:
         db.session.commit()
-        return jsonify({"msg": msg, "editorial_id": editorial.id}), 201
+        # Incluimos el access_token si quieres que haga login automático al registrarse
+        access_token = create_access_token(identity=str(editorial.id))
+        return jsonify({
+            "msg": msg, 
+            "editorial_id": editorial.id, 
+            "nombre": editorial.nombre,
+            "access_token": access_token # Importante para tu frontend
+        }), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({"msg": "Error al registrar"}), 500
+        print(f"Error DB: {str(e)}") # Para que puedas verlo en la consola
+        return jsonify({"msg": "Error al registrar en la base de datos"}), 500
 
 
 @api.route("/login_admin", methods=["POST"])
