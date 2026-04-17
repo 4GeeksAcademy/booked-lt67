@@ -151,7 +151,7 @@ const VerLibro = () => {
                                     {store.auth_lector ? (
                                         <div className="bg-light border rounded-4 p-4 position-relative overflow-hidden">
                                             {/* Decoración de fondo */}
-                                            <i className="fas fa-brain position-absolute opacity-10" style={{ fontSize: '6rem', right: '-10px', bottom: '-10px', color: '#24b0d9' }}></i>
+                                            {/* <i className="fas fa-brain position-absolute opacity-10" style={{ fontSize: '6rem', right: '-10px', bottom: '-10px', color: '#24b0d9' }}></i> */}
                                             
                                             <div className="position-relative z-index-1">
                                                 {summary || libro.resumen_ia ? (
