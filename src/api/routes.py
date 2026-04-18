@@ -867,7 +867,7 @@ def signup_lector():
         password=body.get("password"),
         nombre=body.get("nombre"),
         apellido=body.get("apellido"),
-        pais_donde_reside=body.get("pais"),
+        pais_donde_reside=body.get("pais") or "No especificado",
         # CORRECCIÓN AQUÍ: Usar corchetes body["latitud"] o mejor body.get("latitud")
         latitud=body.get("latitud"),
         longitud=body.get("longitud"),
@@ -877,6 +877,7 @@ def signup_lector():
     try:
         db.session.add(nuevo_lector)
         db.session.commit()
+
     except Exception as e:
         db.session.rollback()
         # Imprime el error en la consola de Python para que puedas verlo mientras desarrollas
@@ -884,7 +885,7 @@ def signup_lector():
         return jsonify({"msg": "Error al crear el usuario", "error": str(e)}), 400
 
     # Cambiamos identity a string (versiones recientes de Flask-JWT-Extended lo requieren)
-    access_token = create_access_token(identity=str(nuevo_lector.email))
+    access_token = create_access_token(identity=str(nuevo_lector.id))
 
     return jsonify({
         "msg": "Lector creado",
