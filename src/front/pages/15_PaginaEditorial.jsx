@@ -47,14 +47,11 @@ const PaginaEditorial = () => {
         const token = localStorage.getItem("token_editorial");
 
         try {
-            // Obtenemos todos los mensajes relacionados con esta editorial
-            // Nota: Si creas el endpoint de contactos es mejor, si no, filtramos aquí
             const res = await fetch(`${api}/mensajes/editorial/${editorialId}`, {
                 headers: { "Authorization": `Bearer ${token}` }
             });
             if (res.ok) {
                 const mensajes = await res.json();
-                // Extraemos lectores únicos de los mensajes
                 const contactosUnicos = [];
                 const idsVistos = new Set();
 
@@ -88,16 +85,14 @@ const PaginaEditorial = () => {
         try {
             const [perfil, librosGlob, posts, respFavLibros, respLeyendo, reviewsGlob] = await Promise.all([
                 request(`editorial/${editorialId}`),
-                request(`libro/editorial/${editorialId}`), // Libros de esta editorial
+                request(`libro/editorial/${editorialId}`), 
                 request(`posteditorial/editorial/${editorialId}`),
                 request(`lectores_fav_libros_editorial/${editorialId}`),
                 request(`lectores_leyendo_editorial/${editorialId}`),
-                request(`reviews`) // Todas las reseñas
+                request(`reviews`) 
             ]);
 
             const misLibrosFiltrados = librosGlob || [];
-
-            // Filtramos las reviews para que solo muestre las de los libros de esta editorial
             const idsMisLibros = misLibrosFiltrados.map(l => l.id);
             const misReviewsFiltradas = reviewsGlob?.filter(r => idsMisLibros.includes(r.libro?.id)) || [];
 
@@ -145,14 +140,12 @@ const PaginaEditorial = () => {
 
     if (db.loading) return <div className="text-center mt-5"><div className="spinner-border text-info-booked"></div></div>;
 
-    const fotoPerfil = db.perfil?.foto_url
-        ? (db.perfil.foto_url.startsWith("http") ? db.perfil.foto_url : `${baseUrl}${db.perfil.foto_url.startsWith('/') ? '' : '/'}${db.perfil.foto_url}`)
+    // CORRECCIÓN AQUÍ: Se cambia foto_url por image_url según tu JSON
+    const fotoPerfil = db.perfil?.image_url
+        ? (db.perfil.image_url.startsWith("http") ? db.perfil.image_url : `${baseUrl}${db.perfil.image_url.startsWith('/') ? '' : '/'}${db.perfil.image_url}`)
         : `https://ui-avatars.com/api/?name=${db.perfil?.nombre || "Editorial"}&background=24b0d9&color=fff`;
 
 
-    // =========================================================
-    // TARJETA LIBRO (Estilo Booked - Adaptada para Editorial)
-    // =========================================================
     const TarjetaLibroEditorial = ({ l }) => {
         return (
             <div className="col-md-4 col-lg-3 mb-5" style={{ marginTop: '110px' }}>
@@ -201,7 +194,6 @@ const PaginaEditorial = () => {
                             style={{ width: "80px", height: "80px", objectFit: "cover" }}
                             alt="Perfil Editorial"
                         />
-                        {/* Badge identificador de Editorial */}
                         <div className="bg-info-booked position-absolute bottom-0 end-0 rounded-circle d-flex align-items-center justify-content-center text-white border border-2 border-white" style={{ width: '25px', height: '25px' }} title="Cuenta de Editorial">
                             <i className="fas fa-university fa-xs"></i>
                         </div>
@@ -234,7 +226,6 @@ const PaginaEditorial = () => {
             <div className="flex-grow-1 overflow-auto" style={{ background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)' }}>
                 <div className="container-fluid p-5">
 
-                    {/* SECCIÓN DASHBOARD / INICIO */}
                     {seccionActiva === "inicio" && (
                         <div className="row align-items-center mb-5 mt-4">
                             <div className="col-lg-7">
@@ -244,7 +235,6 @@ const PaginaEditorial = () => {
                                 </h1>
                                 <p className="lead text-muted mb-4">Administra tu catálogo de libros, monitorea el impacto global y comunícate con tus lectores.</p>
 
-                                {/* CAJA RÁPIDA DE ACCIONES */}
                                 <div className="p-3 bg-white shadow-sm rounded-4 border mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3" style={{ maxWidth: '650px', borderLeft: '5px solid #24b0d9' }}>
                                     <div className="d-flex align-items-center gap-3">
                                         <div className="bg-light p-3 rounded-circle text-info-booked">
@@ -265,7 +255,6 @@ const PaginaEditorial = () => {
                                 <img src={booksImg} alt="Libros" className="img-fluid" style={{ maxHeight: "300px", filter: "drop-shadow(0 20px 30px rgba(0,0,0,0.1))" }} />
                             </div>
 
-                            {/* LISTA DE NOTICIAS DE LA EDITORIAL */}
                             <div className="col-12 mt-5">
                                 <div className="d-flex justify-content-between align-items-center mb-4">
                                     <h4 className="fw-bold text-dark mb-0">Tus Publicaciones Recientes</h4>
@@ -294,7 +283,6 @@ const PaginaEditorial = () => {
                         </div>
                     )}
 
-                    {/* SECCIÓN CATÁLOGO DE LIBROS (GRILLA ESTILO BOOKED) */}
                     {seccionActiva === "libros" && (
                         <div>
                             <div className="d-flex justify-content-between align-items-end mb-5">
@@ -321,7 +309,6 @@ const PaginaEditorial = () => {
                         </div>
                     )}
 
-                    {/* SECCIÓN REVIEWS (NUEVO PARA EDITORIAL) */}
                     {seccionActiva === "reviews" && (
                         <div>
                             <div className="mb-5">
@@ -378,7 +365,6 @@ const PaginaEditorial = () => {
                         </div>
                     )}
 
-                    {/* SECCIÓN MAPA DE IMPACTO */}
                     {seccionActiva === "mapa" && (
                         <div>
                             <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
@@ -400,7 +386,6 @@ const PaginaEditorial = () => {
                     {seccionActiva === "mensajes" && (
                         <div className="container-fluid animate__animated animate__fadeIn">
                             <div className="row" style={{ height: 'calc(100vh - 160px)' }}>
-                                {/* LISTA DE CONVERSACIONES */}
                                 <div className="col-md-4 h-100 ps-0">
                                     <div className="card shadow-sm border-0 rounded-4 h-100 bg-white overflow-hidden">
                                         <div className="p-3 bg-info-booked text-white d-flex justify-content-between align-items-center">
@@ -439,23 +424,20 @@ const PaginaEditorial = () => {
                                     </div>
                                 </div>
 
-                                {/* AREA DEL CHAT */}
                                 <div className="col-md-8 h-100 pe-0">
                                     {lectorSeleccionado ? (
                                         <div className="card shadow-sm border-0 rounded-4 h-100 bg-white overflow-hidden d-flex flex-column">
-                                            {/* Header del Chat Seleccionado */}
                                             <div className="p-3 border-bottom d-flex align-items-center bg-white">
                                                 <img src={lectorSeleccionado.foto || `https://ui-avatars.com/api/?name=${lectorSeleccionado.nombre}`} className="rounded-circle me-3" style={{ width: '35px', height: '35px' }} />
                                                 <h6 className="fw-bold mb-0">{lectorSeleccionado.nombre}</h6>
                                             </div>
 
-                                            {/* El componente de chat ahora vive aquí adentro */}
                                             <div style={{ height: "100%" }}>
                                                 <Chat
                                                     lectorId={lectorSeleccionado.id}
                                                     editorialId={editorialId}
                                                     tipoUsuario="editorial"
-                                                    esPopUp={false} // 
+                                                    esPopUp={false}
                                                 />
                                             </div>
                                         </div>
