@@ -412,7 +412,8 @@ export const Home = () => {
                             <span className="text-info-booked fw-bold small text-uppercase">— Feed de Comunidad</span>
                             <h2 className="fw-bold">Últimos Posts de Autores y Editoriales</h2>
                         </div>
-                        <Link to="/posts" className="btn btn-outline-info rounded-pill px-4">Ver todo el Feed</Link>
+                        <Link to="/post_autores" className="btn btn-outline-info rounded-pill px-4 mx-2">Ver feed de Autores</Link>
+                        <Link to="/post_editoriales" className="btn btn-outline-info rounded-pill px-4 mx-2">Ver feed de Editoriales</Link>
                     </div>
 
                     <div className="row">
