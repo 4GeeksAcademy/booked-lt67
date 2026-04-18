@@ -76,36 +76,30 @@ const NuevaReview = () => {
                         <div className="card shadow-lg border-0 rounded-5 overflow-hidden">
                             <div className="row g-0">
                                 
-                                {/* LADO IZQUIERDO: OCUPANDO TODO EL ESPACIO */}
-                                <div className="col-md-5 bg-info-booked position-relative d-flex align-items-center justify-content-center overflow-hidden" style={{ minHeight: "450px" }}>
+                                {/* LADO IZQUIERDO: CENTRADO CON TAMAÑO AJUSTADO */}
+                                <div className="col-md-5 bg-info-booked d-flex flex-column align-items-center justify-content-center p-4 text-center text-white" style={{ minHeight: "450px" }}>
                                     {libroSeleccionado ? (
-                                        <div className="w-100 h-100 d-flex flex-column align-items-center justify-content-center">
-                                            {/* Imagen como fondo principal o centrada ocupando el máximo */}
-                                            <div className="w-100 h-100 d-flex align-items-center justify-content-center p-0">
-                                                <img 
-                                                    src={libroSeleccionado.image_url || "https://via.placeholder.com/400x600?text=No+Cover"} 
-                                                    alt="Portada"
-                                                    style={{ 
-                                                        width: "100%", 
-                                                        height: "100%", 
-                                                        objectFit: "cover", // Esto hace que ocupe todo el espacio de la columna
-                                                        position: "absolute",
-                                                        top: 0,
-                                                        left: 0
-                                                    }}
-                                                />
-                                                {/* Overlay para que el texto sea legible sobre la imagen si lo deseas */}
-                                                <div className="position-absolute bottom-0 w-100 p-4 text-center" style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.7))', color: 'white' }}>
-                                                    <h3 className="fw-bold mb-0">{libroSeleccionado.nombre}</h3>
-                                                    <p className="small mb-0 opacity-75">{libroSeleccionado.nombre_autor}</p>
-                                                </div>
+                                        <div className="animate__animated animate__fadeIn">
+                                            <img 
+                                                src={libroSeleccionado.image_url || "https://via.placeholder.com/400x600?text=No+Cover"} 
+                                                alt="Portada"
+                                                className="img-fluid rounded-3 shadow-lg mb-4"
+                                                style={{ 
+                                                    maxHeight: "320px", // Tamaño controlado para que no sea gigante
+                                                    width: "auto",
+                                                    objectFit: "contain"
+                                                }}
+                                            />
+                                            <div className="mt-2">
+                                                <h3 className="fw-bold mb-1">{libroSeleccionado.nombre}</h3>
+                                                <p className="opacity-75" style={{ fontStyle: 'italic' }}>{libroSeleccionado.nombre_autor}</p>
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="text-white text-center p-5">
+                                        <div className="p-4">
                                             <i className="fas fa-book-open fa-3x mb-3 opacity-50"></i>
                                             <h3 className="fw-bold">Selecciona un libro</h3>
-                                            <p className="opacity-75">La portada aparecerá aquí</p>
+                                            <p className="opacity-75 small">La portada y detalles aparecerán aquí</p>
                                         </div>
                                     )}
                                 </div>
@@ -182,7 +176,6 @@ const NuevaReview = () => {
                                         </div>
                                     </form>
                                 </div>
-
                             </div>
                         </div>
                     </div>
