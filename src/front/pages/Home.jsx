@@ -84,8 +84,8 @@ export const Home = () => {
     const loadPosts = useCallback(async () => {
         try {
             const [resEditorial, resAutor] = await Promise.all([
-                fetch(`${import.meta.env.VITE_BACKEND_URL}api/posteditorial`),
-                fetch(`${import.meta.env.VITE_BACKEND_URL}api/postautor`)
+                fetch(`${import.meta.env.VITE_BACKEND_URL}/api/posteditorial`),
+                fetch(`${import.meta.env.VITE_BACKEND_URL}/api/postautor`)
             ]);
 
             if (resEditorial.ok && resAutor.ok) {
@@ -112,7 +112,7 @@ export const Home = () => {
 
     const loadReviews = useCallback(async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/reviews`);
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reviews`);
             if (res.ok) {
                 const data = await res.json();
                 // Mezclamos un poco para que no siempre salgan las mismas primeras

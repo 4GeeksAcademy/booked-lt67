@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import logoBookedUrl from "../assets/img/logo_booked.png";
+import FotoRodolfo from "../assets/img/RodolfoImage.jpg";
 
 const Contact = () => {
     const team = [
@@ -8,9 +9,10 @@ const Contact = () => {
             name: "Rodolfo",
             role: "Full Stack Developer",
             description: "Especialista en arquitectura de backend y gestión de bases de datos. Apasionado por la eficiencia y el código limpio.",
-            image: logoBookedUrl, // Corregido: pasamos la variable directamente
-            linkedin: "#",
-            github: "#"
+            image: FotoRodolfo, // Corregido: pasamos la variable directamente
+            linkedin: "www.linkedin.com/in/rodolfo-porras-avila-a75392b8",
+            github: "https://github.com/porrasrodolfo7-hub",
+            email: "porrasrodolfo7@gmail.com"
         },
         {
             name: "Daniel",
@@ -45,7 +47,7 @@ const Contact = () => {
                                     <img
                                         src={member.image}
                                         alt={member.name}
-                                        style={{ width: "80%", height: "auto", objectFit: "contain" }}
+                                        style={{ width: "100%", height: "auto", objectFit: "contain" }}
                                     />
                                 </div>
                             </div>
@@ -63,7 +65,7 @@ const Contact = () => {
                                     <a href={member.github} className="btn btn-outline-dark btn-sm rounded-circle p-2">
                                         <i className="fab fa-github" style={{ width: "18px" }}></i>
                                     </a>
-                                    <a href={`mailto:${member.name.toLowerCase()}@example.com`} className="btn btn-outline-secondary btn-sm rounded-circle p-2">
+                                    <a href={`mailto:${member.email}`} className="btn btn-outline-secondary btn-sm rounded-circle p-2">
                                         <i className="far fa-envelope" style={{ width: "18px" }}></i>
                                     </a>
                                 </div>
