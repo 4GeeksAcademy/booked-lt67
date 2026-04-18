@@ -187,7 +187,6 @@ const PaginaLector = () => {
                         </div>
 
                         <div className="text-end mt-4 pt-3 border-top">
-                            // Busca esta línea en tu componente PaginaLector (dentro del modal de reviews)
                             <Link 
                             to="/nueva_review" 
                             state={{ libroId: libroParaReviews?.id, libroNombre: libroParaReviews?.nombre }} 
