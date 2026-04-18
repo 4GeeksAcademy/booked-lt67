@@ -38,6 +38,7 @@ cloudinary.config(
 )
 
 
+
 @api.route('/upload_image', methods=['GET'])
 def upload_image():
     timestamp = int(time.time())
@@ -1775,44 +1776,31 @@ def obtener_mensajes_editorial(ed_id):
     mensajes = Mensaje.query.filter_by(editorial_id=ed_id).all()
     return jsonify([m.serialize() for m in mensajes]), 200
 
-
 @api.route('/chat/comunidad/enviar', methods=['POST'])
 @jwt_required()
 def enviar_dm_lector():
     try:
         body = request.get_json()
-        email_emisor = get_jwt_identity() # Esto es el email del token
-        
-        # BUSCAMOS al objeto Lector para obtener su ID real
-        lector_emisor = Lector.query.filter_by(email=email_emisor).first()
-        if not lector_emisor:
-            return jsonify({"msg": "Lector emisor no encontrado"}), 404
-
-        # 1. Creamos el registro usando el ID numérico
+        # No dependas solo del token para el emisor si el front ya sabe quién es
+        # Hagámoslo igual al de enviar_mensaje
         nuevo_msg = DmLector(
-            contenido=body['contenido'],
-            emisor_id=lector_emisor.id, # Ahora sí es un Integer
-            receptor_id=body['receptor_id']
+            contenido=body.get('contenido'),
+            emisor_id=body.get('emisor_id'), # <--- Cámbialo para recibirlo del body
+            receptor_id=body.get('receptor_id')
         )
-        
         db.session.add(nuevo_msg)
         db.session.commit()
-        
-        db.session.refresh(nuevo_msg) 
-        return jsonify(nuevo_msg.serialize()), 201
-
+        # Importante: devolver un mensaje de éxito igual que en editorial
+        return jsonify({"msg": "Mensaje enviado con éxito", "nuevo_mensaje": nuevo_msg.serialize()}), 201
     except Exception as e:
         db.session.rollback()
-        print(f"ERROR EN CHAT: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/chat/comunidad/<int:lector1_id>/<int:lector2_id>', methods=['GET'])
+@api.route('/chat/comunidad/<int:lector1_id>/<int:lector2_id>', methods=['GET']) 
 @jwt_required()
 def obtener_dm_lector(lector1_id, lector2_id):
-    # Nota: Aquí SQLAlchemy ya recibe enteros, el problema del log 
-    # venía probablemente del "enviar" o de cómo el frontend pedía la URL.
-    
+    # Esta es la ruta que tu log marca como 404
     mensajes = DmLector.query.filter(
         ((DmLector.emisor_id == lector1_id) & (DmLector.receptor_id == lector2_id)) |
         ((DmLector.emisor_id == lector2_id) & (DmLector.receptor_id == lector1_id))
@@ -1824,28 +1812,30 @@ def obtener_dm_lector(lector1_id, lector2_id):
 @api.route('/mis-contactos-comunidad', methods=['GET'])
 @jwt_required()
 def obtener_contactos():
-    email_actual = get_jwt_identity() # Esto es el email del token
+    # 1. Ahora sabemos que identity es el ID (el "2"), no el email
+    identity_actual = get_jwt_identity()
     
-    # 1. PASO CLAVE: Buscamos al lector para obtener su ID numérico real
-    lector_actual = Lector.query.filter_by(email=email_actual).first()
+    
+    # 2. Buscamos por ID en lugar de email
+    lector_actual = Lector.query.get(identity_actual)
     
     if not lector_actual:
-        return jsonify({"msg": "Lector no encontrado"}), 404
+        return jsonify([]), 200
         
     id_numerico = lector_actual.id
-
-    # 2. Ahora usamos el id_numerico para filtrar
+    # ... el resto del código se queda exactamente igual ...
+    
     mensajes = DmLector.query.filter(
         (DmLector.emisor_id == id_numerico) | (DmLector.receptor_id == id_numerico)
     ).all()
 
-    # 3. Extraemos los IDs de las otras personas
     ids_contactos = set()
     for m in mensajes:
         if m.emisor_id != id_numerico: ids_contactos.add(m.emisor_id)
         if m.receptor_id != id_numerico: ids_contactos.add(m.receptor_id)
 
-    # 4. Obtenemos los objetos Lector de los demás
-    contactos = Lector.query.filter(Lector.id.in_(ids_contactos)).all()
-    
+    if not ids_contactos:
+        return jsonify([]), 200
+
+    contactos = Lector.query.filter(Lector.id.in_(list(ids_contactos))).all()
     return jsonify([c.serialize() for c in contactos]), 200

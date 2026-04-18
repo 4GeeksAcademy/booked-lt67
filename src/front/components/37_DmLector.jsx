@@ -3,53 +3,62 @@ import useGlobalReducer from "../hooks/useGlobalReducer";
 import ChatComunidad from "../components/37_ChatComunidad";
 
 // RECIBIMOS las props del padre (PaginaLector)
-const DmLector = ({ amigoForzado, setAmigoForzado }) => { 
+const DmLector = ({ amigoForzado, setAmigoForzado }) => {
     const { store } = useGlobalReducer();
     const [amigos, setAmigos] = useState([]);
     const [amigoSeleccionado, setAmigoSeleccionado] = useState(null);
 
-    // UNIFICAMOS TODO EN UN SOLO EFECTO
-   useEffect(() => {
-    const cargarTodo = async () => {
+    useEffect(() => {
+        // 1. Definimos las constantes
         const token = localStorage.getItem("token_lector");
         const miId = store.lector_id || localStorage.getItem("lector_id");
-        const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-        
-        const response = await fetch(`${baseUrl}/api/mis-contactos-comunidad`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
 
-        if (response.ok) {
-            const data = await response.json();
-            const listaServidor = data.filter(amigo => Number(amigo.id) !== Number(miId));
+        // 2. Validación: Si no hay token o ID, nos salimos antes de hacer el fetch
+        if (!token || !miId) return;
 
-            // Si hay un amigo forzado, lo metemos en la lista SI O SI
-            if (amigoForzado && amigoForzado.id) {
-                const existe = listaServidor.find(a => Number(a.id) === Number(amigoForzado.id));
-                
-                if (!existe) {
-                    setAmigos([amigoForzado, ...listaServidor]);
-                } else {
-                    setAmigos(listaServidor);
+        const cargarTodo = async () => {
+            try {
+                const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+                const response = await fetch(`${baseUrl}/api/mis-contactos-comunidad`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const listaServidor = data.filter(amigo => Number(amigo.id) !== Number(miId));
+
+                    // Si hay un amigo forzado, lo metemos en la lista SI O SI
+                    if (amigoForzado && amigoForzado.id) {
+                        const existe = listaServidor.find(a => Number(a.id) === Number(amigoForzado.id));
+
+                        if (!existe) {
+                            setAmigos([amigoForzado, ...listaServidor]);
+                        } else {
+                            setAmigos(listaServidor);
+                        }
+                        setAmigoSeleccionado(amigoForzado);
+                    } else {
+                        // Carga normal (al refrescar o entrar directo)
+                        setAmigos(listaServidor);
+
+                        if (listaServidor.length > 0 && !amigoSeleccionado && !amigoForzado) {
+                            setAmigoSeleccionado(listaServidor[0]);
+                        }
+                    }
                 }
-                // Lo seleccionamos
-                setAmigoSeleccionado(amigoForzado);
-            } else {
-                // Si no hay amigo forzado, carga normal
-                setAmigos(listaServidor);
+            } catch (error) {
+                console.error("Error cargando contactos:", error);
             }
-        }
-    };
+        };
 
-    cargarTodo();
-    // NOTA: Quitamos el setAmigoForzado(null) de aquí para que no 
-    // provoque un re-render que borre al usuario antes de escribir.
-}, [amigoForzado, store.lector_id]);
+        cargarTodo();
+
+    }, [amigoForzado, store.lector_id]);
 
     return (
         <div className="container-fluid mt-4" style={{ height: '85vh' }}>
             <div className="row h-100 shadow rounded-4 overflow-hidden bg-white border">
-                
+
                 {/* COLUMNA IZQUIERDA: Lista de Amigos */}
                 <div className="col-md-4 border-end p-0 bg-light">
                     <div className="p-3 bg-white border-bottom">
@@ -64,9 +73,9 @@ const DmLector = ({ amigoForzado, setAmigoForzado }) => {
                                 style={{ transition: 'all 0.2s' }}
                             >
                                 <div className="d-flex align-items-center">
-                                    <img 
-                                        src={amigo.foto_url || "https://ui-avatars.com/api/?name=" + (amigo.nombre || "User")} 
-                                        className="rounded-circle me-3" 
+                                    <img
+                                        src={amigo.foto_url || "https://ui-avatars.com/api/?name=" + (amigo.nombre || "User")}
+                                        className="rounded-circle me-3"
                                         style={{ width: "45px", height: "45px", objectFit: "cover", border: "2px solid white" }}
                                     />
                                     <div className="text-truncate">

@@ -22,17 +22,17 @@ const ChatComunidad = ({ emisorId, receptorId, nombreReceptor, esPopUp = false }
     }, [emisorId, receptorId]);
 
     useEffect(() => {
-    obtenerMensajes();
-
-    const intervalo = setInterval(() => {
-        console.log("Revisando si hay chismes nuevos...");
         obtenerMensajes();
-    }, 4000); 
 
-    
-    return () => clearInterval(intervalo);
-    
-}, [obtenerMensajes]);
+        const intervalo = setInterval(() => {
+            console.log("Revisando si hay chismes nuevos...");
+            obtenerMensajes();
+        }, 4000);
+
+
+        return () => clearInterval(intervalo);
+
+    }, [obtenerMensajes]);
 
     useEffect(() => {
         if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -43,10 +43,19 @@ const ChatComunidad = ({ emisorId, receptorId, nombreReceptor, esPopUp = false }
         const token = localStorage.getItem("token_lector");
         try {
             const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+            // 1. Quitamos la barra final de la URL
             const response = await fetch(`${baseUrl}/api/chat/comunidad/enviar`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-                body: JSON.stringify({ contenido: nuevoMensaje, receptor_id: receptorId }),
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                // 2. Enviamos emisor_id explícitamente como en el otro chat
+                body: JSON.stringify({
+                    contenido: nuevoMensaje,
+                    emisor_id: emisorId, // <--- Esto es clave
+                    receptor_id: receptorId
+                }),
             });
             if (response.ok) {
                 setNuevoMensaje("");
