@@ -76,36 +76,36 @@ const NuevaReview = () => {
                         <div className="card shadow-lg border-0 rounded-5 overflow-hidden">
                             <div className="row g-0">
                                 
-                                {/* Lado Izquierdo: Visual del Libro CENTRADO */}
-                                <div className="col-md-5 bg-info-booked text-white p-5 d-flex flex-column align-items-center justify-content-center text-center">
+                                {/* LADO IZQUIERDO: OCUPANDO TODO EL ESPACIO */}
+                                <div className="col-md-5 bg-info-booked position-relative d-flex align-items-center justify-content-center overflow-hidden" style={{ minHeight: "450px" }}>
                                     {libroSeleccionado ? (
-                                        <div className="animate__animated animate__fadeIn w-100 d-flex flex-column align-items-center">
-                                            {/* Contenedor de imagen con flex para asegurar centrado total */}
-                                            <div className="book-cover-floating mb-4 d-flex justify-content-center w-100">
+                                        <div className="w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                                            {/* Imagen como fondo principal o centrada ocupando el máximo */}
+                                            <div className="w-100 h-100 d-flex align-items-center justify-content-center p-0">
                                                 <img 
-                                                    src={libroSeleccionado.image_url || "https://via.placeholder.com/200x300?text=No+Cover"} 
-                                                    className="img-fluid rounded-3 shadow-lg" 
-                                                    style={{ 
-                                                        maxHeight: "300px", 
-                                                        width: "auto",
-                                                        display: "block",
-                                                        objectFit: "contain"
-                                                    }} 
+                                                    src={libroSeleccionado.image_url || "https://via.placeholder.com/400x600?text=No+Cover"} 
                                                     alt="Portada"
+                                                    style={{ 
+                                                        width: "100%", 
+                                                        height: "100%", 
+                                                        objectFit: "cover", // Esto hace que ocupe todo el espacio de la columna
+                                                        position: "absolute",
+                                                        top: 0,
+                                                        left: 0
+                                                    }}
                                                 />
-                                            </div>
-                                            <div className="mt-2">
-                                                <h3 className="fw-bold mb-1">{libroSeleccionado.nombre}</h3>
-                                                <p className="opacity-75" style={{ fontStyle: 'italic' }}>{libroSeleccionado.nombre_autor}</p>
+                                                {/* Overlay para que el texto sea legible sobre la imagen si lo deseas */}
+                                                <div className="position-absolute bottom-0 w-100 p-4 text-center" style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.7))', color: 'white' }}>
+                                                    <h3 className="fw-bold mb-0">{libroSeleccionado.nombre}</h3>
+                                                    <p className="small mb-0 opacity-75">{libroSeleccionado.nombre_autor}</p>
+                                                </div>
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="p-4 d-flex flex-column align-items-center">
-                                            <div className="bg-white rounded-circle d-inline-flex align-items-center justify-content-center text-info-booked mb-4 shadow" style={{ width: '80px', height: '80px' }}>
-                                                <i className="fas fa-book-open fa-2x"></i>
-                                            </div>
-                                            <h2 className="fw-bold mb-3">Tu voz importa</h2>
-                                            <p className="lead fs-6 opacity-75">Selecciona un libro para ver su portada y comenzar tu reseña.</p>
+                                        <div className="text-white text-center p-5">
+                                            <i className="fas fa-book-open fa-3x mb-3 opacity-50"></i>
+                                            <h3 className="fw-bold">Selecciona un libro</h3>
+                                            <p className="opacity-75">La portada aparecerá aquí</p>
                                         </div>
                                     )}
                                 </div>
@@ -150,7 +150,7 @@ const NuevaReview = () => {
                                                 </span>
                                             </label>
                                             <input 
-                                                type="range" className="form-range custom-range" min="0" max="10" step="1"
+                                                type="range" className="form-range" min="0" max="10" step="1"
                                                 value={puntuacion} onChange={(e) => setPuntuacion(e.target.value)} 
                                             />
                                         </div>
@@ -170,7 +170,7 @@ const NuevaReview = () => {
                                         <div className="d-grid mt-5">
                                             <button 
                                                 type="submit" 
-                                                className="btn btn-booked-blue btn-lg rounded-pill fw-bold shadow-sm"
+                                                className="btn btn-info-booked text-white btn-lg rounded-pill fw-bold shadow-sm"
                                                 disabled={cargando || !libroId}
                                             >
                                                 {cargando ? (
