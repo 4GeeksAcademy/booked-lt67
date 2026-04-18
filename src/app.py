@@ -17,6 +17,8 @@ from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
 
+from flask_cors import CORS
+
 import os
 from werkzeug.utils import secure_filename
 
@@ -28,7 +30,8 @@ ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
 static_file_dir = os.path.join(os.path.dirname(
     os.path.realpath(__file__)), '../dist/')
 app = Flask(__name__)
-
+CORS(app)
+app.url_map.strict_slashes = False
 
 app.url_map.strict_slashes = False
 

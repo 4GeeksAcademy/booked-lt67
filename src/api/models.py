@@ -25,17 +25,19 @@ class User(db.Model):
 
 class Lector(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(
+        String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(nullable=False)
-    
+
     # Estos ahora son opcionales para el registro inicial
     username: Mapped[str] = mapped_column(String(120), nullable=False)
     nombre: Mapped[str] = mapped_column(String(120), nullable=True)
     apellido: Mapped[str] = mapped_column(String(120), nullable=True)
     pais_donde_reside: Mapped[str] = mapped_column(String(120), nullable=True)
-    
+
     # En lugar de solo nullable=True, ponle un default para que la cuenta funcione
-    is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False, default=True)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean(), nullable=False, default=True)
     foto_url: Mapped[str] = mapped_column(String(500), nullable=True)
 
     latitud: Mapped[float] = mapped_column(db.Float, nullable=True)
@@ -105,8 +107,10 @@ class Editorial(db.Model):
         back_populates="editorial",
         cascade="all, delete-orphan"
     )
+
     def __repr__(self):
         return f'<Editorial: {self.nombre}>'
+
     def serialize(self):
         return {
             "id": self.id,
@@ -117,7 +121,8 @@ class Editorial(db.Model):
             "is_verified": self.is_verified,
             "verification_status": self.verification_status
         }
-    
+
+
 class Autor(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(String(120), nullable=False)
@@ -138,8 +143,10 @@ class Autor(db.Model):
     posts: Mapped[List["PostAutor"]] = relationship(
         back_populates="autor",
         cascade="all, delete-orphan")
+
     def __repr__(self):
         return f'<Autor: {self.nombre} {self.apellido}>'
+
     def serialize(self):
         foto_final = self.foto_url
         if self.foto_url:
@@ -156,6 +163,7 @@ class Autor(db.Model):
             "is_verified": self.is_verified,
             "verification_status": self.verification_status
         }
+
 
 class Libro(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -421,13 +429,16 @@ class Mensaje(db.Model):
             "tipo_emisor": self.tipo_emisor
         }
 
+
 class DmLector(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     contenido = db.Column(db.Text, nullable=False)
     fecha_envio = db.Column(db.DateTime, default=datetime.utcnow)
 
-    emisor_id = db.Column(db.Integer, db.ForeignKey('lector.id'), nullable=False)
-    receptor_id = db.Column(db.Integer, db.ForeignKey('lector.id'), nullable=False)
+    emisor_id = db.Column(db.Integer, db.ForeignKey(
+        'lector.id'), nullable=False)
+    receptor_id = db.Column(
+        db.Integer, db.ForeignKey('lector.id'), nullable=False)
 
     emisor = db.relationship('Lector', foreign_keys=[emisor_id])
     receptor = db.relationship('Lector', foreign_keys=[receptor_id])
@@ -439,8 +450,8 @@ class DmLector(db.Model):
             "fecha_envio": self.fecha_envio.strftime("%Y-%m-%d %H:%M:%S"),
             "emisor_id": self.emisor_id,
             "receptor_id": self.receptor_id,
-            "nombre_emisor": f"{self.emisor.nombre} {self.emisor.apellido}",
-            "foto_emisor": self.emisor.foto_url,
+            "nombre_emisor": f"{self.emisor.nombre} {self.emisor.apellido}" if self.emisor else "Usuario Eliminado",
+            "foto_emisor": self.emisor.foto_url if self.emisor else None,
             "nombre_receptor": f"{self.receptor.nombre} {self.receptor.apellido}",
             "foto_receptor": self.receptor.foto_url
         }
