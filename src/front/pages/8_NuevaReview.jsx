@@ -164,13 +164,23 @@ const NuevaReview = () => {
                                         <div className="d-grid mt-5">
                                             <button 
                                                 type="submit" 
-                                                className="btn btn-info-booked text-white btn-lg rounded-pill fw-bold shadow-sm"
+                                                className="btn btn-lg rounded-pill fw-bold shadow-sm text-white"
+                                                style={{ 
+                                                    backgroundColor: "#31abc0", // El color azul de tu diseño
+                                                    border: "none" 
+                                                }}
                                                 disabled={cargando || !libroId}
                                             >
                                                 {cargando ? (
-                                                    <><span className="spinner-border spinner-border-sm me-2"></span> Publicando...</>
+                                                    <>
+                                                        <span className="spinner-border spinner-border-sm me-2"></span> 
+                                                        Publicando...
+                                                    </>
                                                 ) : (
-                                                    <><i className="fas fa-paper-plane me-2"></i> Publicar Reseña</>
+                                                    <>
+                                                        <i className="fas fa-paper-plane me-2"></i> 
+                                                        Publicar Reseña
+                                                    </>
                                                 )}
                                             </button>
                                         </div>
