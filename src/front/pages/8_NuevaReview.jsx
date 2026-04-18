@@ -16,7 +16,6 @@ const NuevaReview = () => {
     const [cargando, setCargando] = useState(false);
     const [errorMsg, setErrorMsg] = useState(null);
 
-    // FIX: Cambiamos a l.image_url para que coincida con tu API
     const libroSeleccionado = libros.find(l => String(l.id) === libroId);
 
     useEffect(() => {
@@ -77,24 +76,31 @@ const NuevaReview = () => {
                         <div className="card shadow-lg border-0 rounded-5 overflow-hidden">
                             <div className="row g-0">
                                 
-                                {/* Lado Izquierdo: Visual del Libro (Estilo HOME) */}
-                                <div className="col-md-5 bg-info-booked text-white p-5 d-flex flex-column justify-content-center align-items-center text-center position-relative">
+                                {/* Lado Izquierdo: Visual del Libro CENTRADO */}
+                                <div className="col-md-5 bg-info-booked text-white p-5 d-flex flex-column align-items-center justify-content-center text-center">
                                     {libroSeleccionado ? (
-                                        <div className="animate__animated animate__fadeIn">
-                                            {/* Aplicamos la clase de flotado similar al Home */}
-                                            <div className="book-cover-floating mb-4">
+                                        <div className="animate__animated animate__fadeIn w-100 d-flex flex-column align-items-center">
+                                            {/* Contenedor de imagen con flex para asegurar centrado total */}
+                                            <div className="book-cover-floating mb-4 d-flex justify-content-center w-100">
                                                 <img 
                                                     src={libroSeleccionado.image_url || "https://via.placeholder.com/200x300?text=No+Cover"} 
                                                     className="img-fluid rounded-3 shadow-lg" 
-                                                    style={{ maxHeight: "280px", width: "auto" }}
+                                                    style={{ 
+                                                        maxHeight: "300px", 
+                                                        width: "auto",
+                                                        display: "block",
+                                                        objectFit: "contain"
+                                                    }} 
                                                     alt="Portada"
                                                 />
                                             </div>
-                                            <h3 className="fw-bold mb-1">{libroSeleccionado.nombre}</h3>
-                                            <p className="opacity-75 italic">{libroSeleccionado.nombre_autor}</p>
+                                            <div className="mt-2">
+                                                <h3 className="fw-bold mb-1">{libroSeleccionado.nombre}</h3>
+                                                <p className="opacity-75" style={{ fontStyle: 'italic' }}>{libroSeleccionado.nombre_autor}</p>
+                                            </div>
                                         </div>
                                     ) : (
-                                        <div className="p-4">
+                                        <div className="p-4 d-flex flex-column align-items-center">
                                             <div className="bg-white rounded-circle d-inline-flex align-items-center justify-content-center text-info-booked mb-4 shadow" style={{ width: '80px', height: '80px' }}>
                                                 <i className="fas fa-book-open fa-2x"></i>
                                             </div>
