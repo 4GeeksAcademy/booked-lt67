@@ -899,9 +899,6 @@ def signup_editorial():
     nombre_ed = body.get("nombre")
     email = body.get("email")
     password = body.get("password")
-    # Nuevos campos de mapa
-    latitud = body.get("latitud")
-    longitud = body.get("longitud")
     # Otros campos
     pais = body.get("pais", "Desconocido")
     image_url = body.get("image_url")
@@ -921,8 +918,6 @@ def signup_editorial():
         editorial.email = email
         editorial.password = generate_password_hash(password)
         editorial.pais = pais
-        editorial.latitud = latitud   # Guardamos coordenadas al reclamar
-        editorial.longitud = longitud # Guardamos coordenadas al reclamar
         editorial.image_url = image_url
         editorial.is_verified = True
         msg = "Has reclamado tu perfil editorial con éxito"
@@ -933,8 +928,6 @@ def signup_editorial():
             email=email,
             password=generate_password_hash(password),
             pais=pais,
-            latitud=latitud,   # Guardamos coordenadas nuevas
-            longitud=longitud, # Guardamos coordenadas nuevas
             image_url=image_url,
             is_verified=True 
         )

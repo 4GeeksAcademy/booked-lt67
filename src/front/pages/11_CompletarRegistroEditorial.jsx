@@ -37,31 +37,32 @@ const CompletarRegistroEditorial = () => {
         return <Navigate to="/pagina_editorial" />;
     }
 
-    const handleUpload = async (e) => {
+    // NUEVA LÓGICA: Subida directa con Preset (Igual que en Lector)
+    const handleUpload = (e) => {
         e.preventDefault();
-        try {
-            const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-            const response = await fetch(`${baseUrl}/api/upload_image`);
-            const data = await response.json();
-
-            const widget = window.cloudinary.createUploadWidget({
-                cloudName: data.cloudName,
-                apiKey: data.apiKey,
-                uploadSignatureTimestamp: data.timestamp,
-                uploadSignature: data.signature,
-                folder: "editoriales_logos", // Sugerencia: crear una carpeta para logos
-                cropping: true,
-                multiple: false
-            }, (error, result) => {
-                if (!error && result && result.event === "success") {
-                    setImageUrl(result.info.secure_url);
-                }
-            });
-            widget.open();
-        } catch (error) {
-            console.error("Error al iniciar el widget de Cloudinary", error);
-            alert("No se pudo cargar la subida de imágenes. Intenta nuevamente.");
+        
+        if (!window.cloudinary) {
+            alert("El servicio de imágenes aún se está cargando. Por favor, espera un segundo.");
+            return;
         }
+
+        const widget = window.cloudinary.createUploadWidget({
+            cloudName: "dklriashm", // Tu Cloud Name verificado
+            uploadPreset: "lectores_preset", // El preset que funciona en tu cuenta
+            sources: ["local", "url", "camera"],
+            folder: "editoriales_logos",
+            cropping: true,
+            croppingAspectRatio: 1,
+            multiple: false,
+            showSkipCropButton: false
+        }, (error, result) => {
+            if (!error && result && result.event === "success") {
+                console.log("Logo subido con éxito:", result.info.secure_url);
+                setImageUrl(result.info.secure_url);
+            }
+        });
+        
+        widget.open();
     };
 
     function sendData(e) {
@@ -120,7 +121,7 @@ const CompletarRegistroEditorial = () => {
                 <div className="card shadow-lg border-0 rounded-5 overflow-hidden mx-auto" style={{ maxWidth: "950px" }}>
                     <div className="row g-0">
                         
-                        {/* PANEL IZQUIERDO: Paso 2 */}
+                        {/* PANEL IZQUIERDO */}
                         <div 
                             className="col-lg-4 d-flex flex-column align-items-center justify-content-center p-5 text-center text-white position-relative overflow-hidden"
                             style={{ backgroundColor: "#1e99bd" }} 
@@ -138,7 +139,7 @@ const CompletarRegistroEditorial = () => {
                             </div>
                         </div>
 
-                        {/* PANEL DERECHO: Formulario Paso 2 */}
+                        {/* PANEL DERECHO */}
                         <div className="col-lg-8 bg-white p-4 p-md-5 d-flex flex-column justify-content-center">
                             <div className="mb-4 pb-2 border-bottom d-flex justify-content-between align-items-end flex-wrap gap-2">
                                 <div>
@@ -156,10 +157,10 @@ const CompletarRegistroEditorial = () => {
                             <form onSubmit={sendData}>
                                 <div className="row g-3">
                                     
-                                    {/* Upload Logo */}
+                                    {/* SECCIÓN IMAGEN */}
                                     <div className="col-md-12 mb-4 d-flex flex-column align-items-center">
                                         <label className="form-label small fw-bold text-muted text-uppercase mb-3">Logotipo de la Editorial</label>
-                                        <div className="shadow-sm border d-flex align-items-center justify-content-center position-relative group-hover"
+                                        <div className="shadow-sm border d-flex align-items-center justify-content-center position-relative"
                                             style={{ width: "120px", height: "120px", borderRadius: "50%", overflow: "hidden", backgroundColor: "#f8f9fa" }}>
                                             {imageUrl ? (
                                                 <img src={imageUrl} alt="Logo Editorial" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -172,7 +173,7 @@ const CompletarRegistroEditorial = () => {
                                         </button>
                                     </div>
 
-                                    {/* País */}
+                                    {/* PAÍS */}
                                     <div className="col-md-12 mb-4">
                                         <label className="form-label small fw-bold text-muted text-uppercase mb-2">País Sede de la Editorial</label>
                                         <div className="input-group shadow-sm rounded-pill overflow-hidden">
@@ -203,7 +204,6 @@ const CompletarRegistroEditorial = () => {
                                     </button>
                                 </div>
                             </form>
-
                         </div>
                     </div>
                 </div>
