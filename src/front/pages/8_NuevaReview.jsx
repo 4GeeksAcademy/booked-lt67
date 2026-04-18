@@ -7,7 +7,7 @@ const NuevaReview = () => {
     const location = useLocation();
     const { store } = useGlobalReducer();
 
-    // Convertimos explícitamente a String para evitar problemas de compatibilidad en el select
+    // Mantenemos la referencia del ID que viene por el estado de navegación
     const libroPreseleccionado = location.state?.libroId ? String(location.state.libroId) : "";
 
     const [libroId, setLibroId] = useState(libroPreseleccionado);
@@ -16,15 +16,22 @@ const NuevaReview = () => {
     const [puntuacion, setPuntuacion] = useState(10);
     const [cargando, setCargando] = useState(false);
 
-    // Verificamos que el usuario esté logueado como lector
+    // Verificamos que el usuario esté logueado como lector y cargamos libros
     useEffect(() => {
         if (store.auth_lector) {
             fetch(import.meta.env.VITE_BACKEND_URL + "api/libro")
                 .then(response => response.json())
-                .then(data => setLibros(data))
+                .then(data => {
+                    setLibros(data);
+                    // CRÍTICO PARA DEPLOY: Si existe un ID preseleccionado, 
+                    // lo reafirmamos una vez que la lista de libros se ha cargado.
+                    if (libroPreseleccionado) {
+                        setLibroId(libroPreseleccionado);
+                    }
+                })
                 .catch(err => console.error("Error cargando libros:", err));
         }
-    }, [store.auth_lector]);
+    }, [store.auth_lector, libroPreseleccionado]);
 
     // Si no está logueado, lo mandamos al login
     if (!store.auth_lector) {
@@ -39,7 +46,7 @@ const NuevaReview = () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                "lector_id": parseInt(store.lector_id), // Tomamos el lector directo del Store
+                "lector_id": parseInt(store.lector_id),
                 "libro_id": parseInt(libroId),
                 "texto": texto,
                 "puntuacion": parseInt(puntuacion)
@@ -53,7 +60,6 @@ const NuevaReview = () => {
             })
             .then(data => {
                 console.log("Review creada:", data);
-                // Volvemos a la página del lector tras publicar
                 navigate("/pagina_lector");
             })
             .catch(error => {
@@ -110,7 +116,6 @@ const NuevaReview = () => {
                                                 >
                                                     <option value="">Selecciona un libro de la biblioteca...</option>
                                                     {libros.map(l => (
-                                                        // También forzamos a String aquí para que coincida perfectamente
                                                         <option key={l.id} value={String(l.id)}>{l.nombre}</option>
                                                     ))}
                                                 </select>
