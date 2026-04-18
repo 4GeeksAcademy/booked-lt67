@@ -1824,20 +1824,28 @@ def obtener_dm_lector(lector1_id, lector2_id):
 @api.route('/mis-contactos-comunidad', methods=['GET'])
 @jwt_required()
 def obtener_contactos():
-    id_actual = get_jwt_identity()
+    email_actual = get_jwt_identity() # Esto es el email del token
     
-    # Buscamos todos los mensajes donde el usuario fue emisor o receptor
+    # 1. PASO CLAVE: Buscamos al lector para obtener su ID numérico real
+    lector_actual = Lector.query.filter_by(email=email_actual).first()
+    
+    if not lector_actual:
+        return jsonify({"msg": "Lector no encontrado"}), 404
+        
+    id_numerico = lector_actual.id
+
+    # 2. Ahora usamos el id_numerico para filtrar
     mensajes = DmLector.query.filter(
-        (DmLector.emisor_id == id_actual) | (DmLector.receptor_id == id_actual)
+        (DmLector.emisor_id == id_numerico) | (DmLector.receptor_id == id_numerico)
     ).all()
 
-    # Extraemos los IDs de las otras personas (sin repetir)
+    # 3. Extraemos los IDs de las otras personas
     ids_contactos = set()
     for m in mensajes:
-        if m.emisor_id != id_actual: ids_contactos.add(m.emisor_id)
-        if m.receptor_id != id_actual: ids_contactos.add(m.receptor_id)
+        if m.emisor_id != id_numerico: ids_contactos.add(m.emisor_id)
+        if m.receptor_id != id_numerico: ids_contactos.add(m.receptor_id)
 
-    # Obtenemos los objetos Lector
+    # 4. Obtenemos los objetos Lector de los demás
     contactos = Lector.query.filter(Lector.id.in_(ids_contactos)).all()
     
     return jsonify([c.serialize() for c in contactos]), 200
