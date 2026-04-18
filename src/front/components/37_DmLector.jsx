@@ -20,7 +20,7 @@ const DmLector = ({ amigoForzado, setAmigoForzado }) => {
         });
 
         if (response.ok) {
-            const data = await response.json();git p
+            const data = await response.json();
             const listaServidor = data.filter(amigo => Number(amigo.id) !== Number(miId));
 
             // Si hay un amigo forzado, lo metemos en la lista SI O SI

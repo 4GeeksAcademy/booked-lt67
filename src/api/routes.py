@@ -1781,21 +1781,24 @@ def obtener_mensajes_editorial(ed_id):
 def enviar_dm_lector():
     try:
         body = request.get_json()
-        emisor_id = get_jwt_identity()
+        email_emisor = get_jwt_identity() # Esto es el email del token
         
-        # 1. Creamos el registro
+        # BUSCAMOS al objeto Lector para obtener su ID real
+        lector_emisor = Lector.query.filter_by(email=email_emisor).first()
+        if not lector_emisor:
+            return jsonify({"msg": "Lector emisor no encontrado"}), 404
+
+        # 1. Creamos el registro usando el ID numérico
         nuevo_msg = DmLector(
             contenido=body['contenido'],
-            emisor_id=emisor_id,
+            emisor_id=lector_emisor.id, # Ahora sí es un Integer
             receptor_id=body['receptor_id']
         )
         
         db.session.add(nuevo_msg)
         db.session.commit()
         
-        # 2. Refrescamos para que las relaciones (emisor/receptor) se carguen y el serialize no falle
         db.session.refresh(nuevo_msg) 
-        
         return jsonify(nuevo_msg.serialize()), 201
 
     except Exception as e:
@@ -1807,9 +1810,12 @@ def enviar_dm_lector():
 @api.route('/chat/comunidad/<int:lector1_id>/<int:lector2_id>', methods=['GET'])
 @jwt_required()
 def obtener_dm_lector(lector1_id, lector2_id):
+    # Nota: Aquí SQLAlchemy ya recibe enteros, el problema del log 
+    # venía probablemente del "enviar" o de cómo el frontend pedía la URL.
+    
     mensajes = DmLector.query.filter(
-        (DmLector.emisor_id == lector1_id) & (DmLector.receptor_id == lector2_id) |
-        (DmLector.emisor_id == lector2_id) & (DmLector.receptor_id == lector1_id)
+        ((DmLector.emisor_id == lector1_id) & (DmLector.receptor_id == lector2_id)) |
+        ((DmLector.emisor_id == lector2_id) & (DmLector.receptor_id == lector1_id))
     ).order_by(DmLector.fecha_envio.asc()).all()
     
     return jsonify([m.serialize() for m in mensajes]), 200
