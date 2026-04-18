@@ -7,7 +7,7 @@ const NuevaReview = () => {
     const location = useLocation();
     const { store } = useGlobalReducer();
 
-    // Mantenemos la referencia del ID que viene por el estado de navegación
+    // Referencia del ID que viene por el estado de navegación (ej. desde el catálogo)
     const libroPreseleccionado = location.state?.libroId ? String(location.state.libroId) : "";
 
     const [libroId, setLibroId] = useState(libroPreseleccionado);
@@ -15,57 +15,69 @@ const NuevaReview = () => {
     const [texto, setTexto] = useState("");
     const [puntuacion, setPuntuacion] = useState(10);
     const [cargando, setCargando] = useState(false);
+    const [errorMsg, setErrorMsg] = useState(null);
 
-    // Verificamos que el usuario esté logueado como lector y cargamos libros
+    // Carga de libros y validación de preselección
     useEffect(() => {
         if (store.auth_lector) {
-            fetch(import.meta.env.VITE_BACKEND_URL + "api/libro")
-                .then(response => response.json())
+            fetch(`${import.meta.env.VITE_BACKEND_URL}api/libro`)
+                .then(response => {
+                    if (!response.ok) throw new Error("No se pudieron cargar los libros.");
+                    return response.json();
+                })
                 .then(data => {
                     setLibros(data);
-                    // CRÍTICO PARA DEPLOY: Si existe un ID preseleccionado, 
-                    // lo reafirmamos una vez que la lista de libros se ha cargado.
                     if (libroPreseleccionado) {
                         setLibroId(libroPreseleccionado);
                     }
                 })
-                .catch(err => console.error("Error cargando libros:", err));
+                .catch(err => {
+                    console.error("Error:", err);
+                    setErrorMsg("Error al conectar con la biblioteca.");
+                });
         }
     }, [store.auth_lector, libroPreseleccionado]);
 
-    // Si no está logueado, lo mandamos al login
+    // Redirección si no hay sesión
     if (!store.auth_lector) {
         return <Navigate to="/login_lector" />;
     }
 
-    const sendData = (e) => {
+    const sendData = async (e) => {
         e.preventDefault();
         setCargando(true);
+        setErrorMsg(null);
 
-        const requestOptions = {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                "lector_id": parseInt(store.lector_id),
-                "libro_id": parseInt(libroId),
-                "texto": texto,
-                "puntuacion": parseInt(puntuacion)
-            })
+        const requestBody = {
+            lector_id: parseInt(store.lector_id),
+            libro_id: parseInt(libroId),
+            texto: texto,
+            puntuacion: parseInt(puntuacion)
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/reviews", requestOptions)
-            .then(response => {
-                if(response.ok) return response.json();
-                throw new Error("Error al crear la reseña");
-            })
-            .then(data => {
-                console.log("Review creada:", data);
-                navigate("/pagina_lector");
-            })
-            .catch(error => {
-                console.error(error);
-                setCargando(false);
+        try {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/reviews`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    // 'Authorization': `Bearer ${store.token}` // Descomenta si usas JWT
+                },
+                body: JSON.stringify(requestBody)
             });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log("Review exitosa:", data);
+                navigate("/pagina_lector");
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.msg || "Error al publicar la reseña");
+            }
+        } catch (error) {
+            console.error(error);
+            setErrorMsg(error.message);
+            setCargando(false);
+        }
     };
 
     return (
@@ -79,14 +91,13 @@ const NuevaReview = () => {
                                 {/* Lado Izquierdo: Visual */}
                                 <div className="col-md-5 bg-info-booked text-white p-5 d-flex flex-column justify-content-center align-items-center text-center position-relative overflow-hidden">
                                     <i className="fas fa-quote-left position-absolute opacity-10" style={{ fontSize: '15rem', top: '-20px', left: '-20px' }}></i>
-                                    
                                     <div className="position-relative z-index-1">
                                         <div className="bg-white rounded-circle d-inline-flex align-items-center justify-content-center text-info-booked mb-4 shadow" style={{ width: '80px', height: '80px' }}>
                                             <i className="fas fa-pen-nib fa-2x"></i>
                                         </div>
                                         <h2 className="fw-bold mb-3">Tu voz importa</h2>
                                         <p className="lead fs-6 opacity-75">
-                                            Comparte tu opinión con la comunidad Booked. ¿Qué te hizo sentir esta lectura? ¿La recomendarías?
+                                            Comparte tu opinión con la comunidad Booked. ¿Qué te hizo sentir esta lectura?
                                         </p>
                                     </div>
                                 </div>
@@ -94,11 +105,17 @@ const NuevaReview = () => {
                                 {/* Lado Derecho: Formulario */}
                                 <div className="col-md-7 p-5 bg-white">
                                     <div className="d-flex justify-content-between align-items-center mb-4">
-                                        <h3 className="fw-bold text-dark mb-0">Escribir Reseña</h3>
+                                        <h3 className="fw-bold text-dark mb-0">Nueva Reseña</h3>
                                         <Link to="/pagina_lector" className="btn btn-sm btn-light rounded-pill px-3 text-muted border shadow-sm">
                                             <i className="fas fa-arrow-left me-1"></i> Volver
                                         </Link>
                                     </div>
+
+                                    {errorMsg && (
+                                        <div className="alert alert-danger rounded-4 mb-4 shadow-sm" role="alert">
+                                            <i className="fas fa-exclamation-circle me-2"></i> {errorMsg}
+                                        </div>
+                                    )}
 
                                     <form onSubmit={sendData}>
                                         {/* Dropdown de Libros */}
@@ -114,7 +131,7 @@ const NuevaReview = () => {
                                                     onChange={(e) => setLibroId(e.target.value)}
                                                     required
                                                 >
-                                                    <option value="">Selecciona un libro de la biblioteca...</option>
+                                                    <option value="">Selecciona un libro...</option>
                                                     {libros.map(l => (
                                                         <option key={l.id} value={String(l.id)}>{l.nombre}</option>
                                                     ))}
@@ -124,7 +141,7 @@ const NuevaReview = () => {
 
                                         {/* Puntuación */}
                                         <div className="mb-4">
-                                            <label className="form-label fw-bold text-muted small text-uppercase">
+                                            <label className="form-label fw-bold text-muted small text-uppercase d-block">
                                                 Calificación <span className="text-warning"><i className="fas fa-star"></i></span>
                                             </label>
                                             <div className="d-flex align-items-center gap-3">
@@ -138,7 +155,7 @@ const NuevaReview = () => {
                                                     onChange={(e) => setPuntuacion(e.target.value)} 
                                                     required 
                                                 />
-                                                <span className="badge bg-info-booked text-white fs-6 rounded-pill px-3 py-2 shadow-sm" style={{ minWidth: '60px' }}>
+                                                <span className="badge bg-info-booked text-white fs-6 rounded-pill px-3 py-2 shadow-sm" style={{ minWidth: '65px' }}>
                                                     {puntuacion} / 10
                                                 </span>
                                             </div>
@@ -149,23 +166,22 @@ const NuevaReview = () => {
                                             <label className="form-label fw-bold text-muted small text-uppercase">Tu Opinión</label>
                                             <textarea 
                                                 className="form-control bg-light border-0 rounded-4 p-3 shadow-sm" 
-                                                rows="5"
-                                                placeholder="Escribe aquí tu reseña. ¡No escatimes en detalles!"
+                                                rows="4"
+                                                placeholder="¿Qué te pareció la historia?..."
                                                 value={texto} 
                                                 onChange={(e) => setTexto(e.target.value)} 
                                                 required 
                                             ></textarea>
                                         </div>
 
-                                        {/* Submit */}
                                         <div className="d-grid mt-5">
                                             <button 
                                                 type="submit" 
-                                                className="btn btn-booked-blue btn-lg rounded-pill fw-bold shadow-sm"
+                                                className="btn btn-booked-blue btn-lg rounded-pill fw-bold shadow-sm py-3"
                                                 disabled={cargando || !libroId}
                                             >
                                                 {cargando ? (
-                                                    <><span className="spinner-border spinner-border-sm me-2" aria-hidden="true"></span> Publicando...</>
+                                                    <><span className="spinner-border spinner-border-sm me-2" aria-hidden="true"></span> Enviando...</>
                                                 ) : (
                                                     <><i className="fas fa-paper-plane me-2"></i> Publicar Reseña</>
                                                 )}
@@ -173,7 +189,6 @@ const NuevaReview = () => {
                                         </div>
                                     </form>
                                 </div>
-                                
                             </div>
                         </div>
                     </div>

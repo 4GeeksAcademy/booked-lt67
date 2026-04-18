@@ -187,7 +187,13 @@ const PaginaLector = () => {
                         </div>
 
                         <div className="text-end mt-4 pt-3 border-top">
-                            <Link to="/nueva_review" state={{ libroId: libroParaReviews?.id }} className="btn btn-booked-blue rounded-pill me-2">Escribir Reseña</Link>
+                            // Busca esta línea en tu componente PaginaLector (dentro del modal de reviews)
+                            <Link 
+                            to="/nueva_review" 
+                            state={{ libroId: libroParaReviews?.id, libroNombre: libroParaReviews?.nombre }} 
+                            className="btn btn-booked-blue rounded-pill me-2">
+                            Escribir Reseña
+                            </Link>
                             <button className="btn btn-secondary rounded-pill" onClick={() => setLibroParaReviews(null)}>Cerrar</button>
                         </div>
                     </div>
