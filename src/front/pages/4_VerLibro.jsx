@@ -10,10 +10,22 @@ const VerLibro = () => {
 
     const [summary, setSummary] = useState("");
     const [loadingAI, setLoadingAI] = useState(false);
+    
+    // Estado local para las reviews de este libro específico
+    const [reviews, setReviews] = useState([]);
+
+    // =========================================================
+    // LÓGICA DE PROMEDIO (ACTUALIZADA)
+    // =========================================================
+    const promedio = reviews.length > 0
+        ? (reviews.reduce((acc, rev) => acc + Number(rev.puntuacion), 0) / reviews.length).toFixed(1)
+        : null;
 
     useEffect(() => {
         setLibro(null);
         const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+
+        // 1. Fetch de los datos del libro
         fetch(`${baseUrl}/api/libro/${theId}`)
             .then(response => {
                 if (!response.ok) throw new Error("No se encontró el libro");
@@ -24,6 +36,23 @@ const VerLibro = () => {
                 setLibro(libroData);
             })
             .catch(err => console.error(err));
+
+        // 2. FETCH DE REVIEWS (Lo que faltaba para el promedio)
+        fetch(`${baseUrl}/api/reviews`)
+            .then(response => response.json())
+            .then(data => {
+                // Filtramos las reviews que pertenecen a este libro
+                const filtered = data.filter(r => (r.libro?.id || r.libro_id) === parseInt(theId));
+                setReviews(filtered);
+                
+                // Opcional: Actualizamos el store global por si lo usas en otro lado
+                dispatch({
+                    type: "SET_REVIEWS", 
+                    payload: data
+                });
+            })
+            .catch(err => console.error("Error cargando reviews:", err));
+
     }, [theId]);
 
     const handleGenerateSummary = async () => {
@@ -105,12 +134,20 @@ const VerLibro = () => {
                             <div className="col-md-8 col-lg-8 d-flex flex-column">
                                 
                                 <div className="mb-4">
-                                    <div className="d-flex flex-wrap gap-2 mb-2">
+                                    <div className="d-flex flex-wrap gap-2 mb-2 align-items-center">
                                         <span className="badge bg-light text-info-booked border border-info px-3 py-2 rounded-pill">
                                             <i className="fas fa-bookmark me-1"></i> {libro.genero || "Género Desconocido"}
                                         </span>
+
+                                        {/* =========================================================
+                                            BADGE DE PROMEDIO (AMARILLO)
+                                        ========================================================= */}
+                                        {promedio && (
+                                            <span className="badge rounded-pill bg-warning text-dark px-3 py-2 shadow-sm border border-warning">
+                                                <i className="fas fa-star me-1"></i> {promedio} / 10
+                                            </span>
+                                        )}
                                         
-                                        {/* ENLACE A EDITORIAL */}
                                         {libro.nombre_editorial && (
                                             <Link 
                                                 to={`/ver_editorial_free/${libro.editorial_id}`} 
@@ -123,7 +160,6 @@ const VerLibro = () => {
                                     
                                     <h1 className="display-5 fw-bold text-dark mb-1">{libro.nombre}</h1>
                                     
-                                    {/* ENLACE A AUTOR */}
                                     <p className="fs-5 text-muted mb-0">
                                         Por {" "}
                                         {libro.autor_id ? (

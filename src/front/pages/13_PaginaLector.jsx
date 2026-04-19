@@ -18,10 +18,12 @@ const PaginaLector = () => {
     const [seccionActiva, setSeccionActiva] = useState("bienvenida");
     const [amigoSeleccionado, setAmigoSeleccionado] = useState(null);
 
-
     // Estado para manejar el modal de ver las reviews de un libro
     const [libroParaReviews, setLibroParaReviews] = useState(null);
 
+    // --- NUEVAS LÍNEAS: ESTADOS PARA FILTROS ---
+    const [filtroCategoria, setFiltroCategoria] = useState("");
+    const [ordenarPor, setOrdenarPor] = useState("novedades");
 
     const [db, setDb] = useState({
         usuario: null,
@@ -34,7 +36,6 @@ const PaginaLector = () => {
         reviews: [],
         loading: true
     });
-
 
     const api = `${import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "")}/api`;
 
@@ -81,11 +82,9 @@ const PaginaLector = () => {
     const location = useLocation();
 
     useEffect(() => {
-        // Si venimos redirigidos desde el perfil público con un estado de "abrirChatCon"
         if (location.state?.abrirChatCon) {
             setAmigoSeleccionado(location.state.abrirChatCon);
             setSeccionActiva("mensajes_comunidad");
-            // Limpiamos el estado para que no se abra siempre al recargar
             window.history.replaceState({}, document.title);
         }
     }, [location]);
@@ -95,15 +94,46 @@ const PaginaLector = () => {
     const exec = async (u, m, b) => { if (await request(u, m, b)) load(); };
     const irAlLibro = (id) => navigate(`/ver_libro/${id}`);
 
+    // --- NUEVAS LÍNEAS: LÓGICA DE PROCESAMIENTO (Categorías y Orden) ---
+    const categoriasExistentes = [...new Set(db.todos.map(l => l.genero).filter(g => g))];
+
+    const procesarLista = (listaRaw) => {
+        return listaRaw
+            .filter(item => {
+                const l = item.libro || item;
+                if (!filtroCategoria) return true;
+                return l.genero === filtroCategoria;
+            })
+            .sort((a, b) => {
+                const libA = a.libro || a;
+                const libB = b.libro || b;
+                if (ordenarPor === "alfabetico") return libA.nombre.localeCompare(libB.nombre);
+                if (ordenarPor === "ranking") {
+                    const getP = (id) => {
+                        const r = db.reviews.filter(rev => (rev.libro?.id || rev.libro_id) === id);
+                        return r.length ? (r.reduce((acc, curr) => acc + curr.puntuacion, 0) / r.length) : 0;
+                    };
+                    return getP(libB.id) - getP(libA.id);
+                }
+                return libB.id - libA.id;
+            });
+    };
+
     if (!store.auth_lector) return <Navigate to="/login_lector" />;
     if (db.loading) return <div className="text-center mt-5"><div className="spinner-border text-info-booked"></div></div>;
 
     // =========================================================
-    // TARJETA LIBRO
+    // TARJETA LIBRO (INTEGRADO EL PUNTAJE)
     // =========================================================
     const TarjetaLibro = ({ l }) => {
         const esFavorito = db.favoritos.some(f => (f.libro?.id || f.libro_id) === l.id);
         const loEstaLeyendo = db.leyendo.some(ley => (ley.libro?.id || ley.libro_id) === l.id);
+        
+        // --- NUEVAS LÍNEAS: CÁLCULO DE PROMEDIO ---
+        const reviewsDelLibro = db.reviews.filter(r => (r.libro?.id || r.libro_id) === l.id);
+        const promedio = reviewsDelLibro.length > 0 
+            ? (reviewsDelLibro.reduce((acc, r) => acc + r.puntuacion, 0) / reviewsDelLibro.length).toFixed(1) 
+            : null;
 
         return (
             <div className="col-md-4 col-lg-3 mb-5 shelf-item px-3">
@@ -116,6 +146,19 @@ const PaginaLector = () => {
 
                 <div className="text-center mt-3">
                     <h6 className="fw-bold text-dark mb-1 text-truncate">{l.nombre}</h6>
+                    
+                    {/* --- NUEVAS LÍNEAS: BADGE DE PUNTAJE --- */}
+                    <div className="mb-2" style={{ height: '24px' }}>
+                        {promedio ? (
+                            <span className="badge rounded-pill bg-warning text-dark shadow-sm small">
+                                <i className="fas fa-star text-black me-1"></i> {promedio} / 10
+                            </span>
+                        ) : (
+                            <span className="badge rounded-pill bg-light text-muted border shadow-sm small" style={{ fontSize: '0.7rem' }}>
+                                Sin reseñas
+                            </span>
+                        )}
+                    </div>
 
                     <div className="d-flex justify-content-center gap-1 mt-2 flex-wrap">
                         <button
@@ -153,8 +196,8 @@ const PaginaLector = () => {
                         </div>
 
                         <div className="d-flex flex-column gap-3">
-                            {db.reviews.filter(r => r.libro?.id === libroParaReviews.id).length > 0 ? (
-                                db.reviews.filter(r => r.libro?.id === libroParaReviews.id).map(rev => (
+                            {db.reviews.filter(r => (r.libro?.id || r.libro_id) === libroParaReviews.id).length > 0 ? (
+                                db.reviews.filter(r => (r.libro?.id || r.libro_id) === libroParaReviews.id).map(rev => (
                                     <div key={rev.id} className="p-3 border rounded-3 bg-light">
                                         <div className="d-flex align-items-center gap-2 mb-2">
                                             <div className="bg-info-booked rounded-circle d-flex align-items-center justify-content-center text-white fw-bold overflow-hidden"
@@ -182,19 +225,14 @@ const PaginaLector = () => {
                         </div>
 
                         <div className="text-end mt-4 pt-3 border-top">
-                            <Link
-                                to="/nueva_review"
-                                state={{ libroId: libroParaReviews?.id, libroNombre: libroParaReviews?.nombre }}
-                                className="btn btn-booked-blue rounded-pill me-2">
-                                Escribir Reseña
-                            </Link>
+                            <Link to="/nueva_review" state={{ libroId: libroParaReviews?.id, libroNombre: libroParaReviews?.nombre }} className="btn btn-booked-blue rounded-pill me-2">Escribir Reseña</Link>
                             <button className="btn btn-secondary rounded-pill" onClick={() => setLibroParaReviews(null)}>Cerrar</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* --- SIDEBAR IZQUIERDO --- */}
+            {/* SIDEBAR IZQUIERDO ORIGINAL */}
             <div className="bg-white shadow-sm border-end" style={{ width: "280px", minWidth: "280px", zIndex: 10 }}>
                 <div className="p-4 text-center border-bottom">
                     <div className="position-relative d-inline-block mb-3">
@@ -232,11 +270,11 @@ const PaginaLector = () => {
                 </div>
             </div>
 
-            {/* --- CONTENIDO PRINCIPAL --- */}
+            {/* CONTENIDO PRINCIPAL */}
             <div className="flex-grow-1 overflow-auto" style={{ background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)' }}>
                 <div className="container-fluid p-5">
 
-                    {/* SECCIÓN DASHBOARD / BIENVENIDA */}
+                    {/* SECCIÓN DASHBOARD */}
                     {seccionActiva === "bienvenida" && (
                         <div className="row align-items-center mb-5 mt-4">
                             <div className="col-lg-7">
@@ -245,7 +283,6 @@ const PaginaLector = () => {
                                     Hola, <span className="text-info-booked" style={{ fontStyle: 'italic' }}>{db.usuario?.username}.</span>
                                 </h1>
                                 <p className="lead text-muted mb-4">Gestiona tu ecosistema literario, descubre nuevos autores y mantén tu colección al día.</p>
-
                                 <div className="p-2 bg-white shadow-lg rounded-4 d-flex align-items-center border mb-4" style={{ maxWidth: '600px' }}>
                                     <div className="flex-grow-1 px-2">
                                         <BuscadorGoogleBooks onLibroAgregado={irAlLibro} />
@@ -255,32 +292,62 @@ const PaginaLector = () => {
                             <div className="col-lg-5 d-none d-lg-block text-center mb-4">
                                 <img src={booksImg} alt="Libros" className="img-fluid" style={{ maxHeight: "350px", filter: "drop-shadow(0 20px 30px rgba(0,0,0,0.1))" }} />
                             </div>
-
-                            {/* SECCIÓN ESCÁNER IA */}
                             <div className="col-12 mt-4">
                                 <BuscarLibroIA />
                             </div>
                         </div>
                     )}
 
-                    {/* SECCIONES DINÁMICAS (LEYENDO / FAV / BIBLIOTECA) */}
+                    {/* SECCIONES CON FILTROS INTEGRADOS */}
                     {(seccionActiva === "leyendo" || seccionActiva === "favoritos" || seccionActiva === "biblioteca") && (
                         <div>
-                            <div className="mb-5">
-                                <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Mi Colección</span>
-                                <h2 className="fw-bold mt-2">
-                                    {seccionActiva === "leyendo" ? "Libros en Proceso" : seccionActiva === "favoritos" ? "Tus Preferidos" : "Explorar Biblioteca"}
-                                </h2>
+                            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
+                                <div>
+                                    <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Mi Colección</span>
+                                    <h2 className="fw-bold mt-2">
+                                        {seccionActiva === "leyendo" ? "Libros en Proceso" : seccionActiva === "favoritos" ? "Tus Preferidos" : "Explorar Biblioteca"}
+                                    </h2>
+                                </div>
+                                
+                                <div className="d-flex flex-wrap gap-3">
+                                    {/* Selector de Categorías */}
+                                    <div className="flex-grow-1" style={{ minWidth: '200px' }}>
+                                        <label className="form-label ms-2 small text-muted">Filtrar por:</label>
+                                        <select 
+                                            className="form-select rounded-pill shadow-sm border-0 px-3 py-2" 
+                                            value={filtroCategoria} 
+                                            onChange={(e) => setFiltroCategoria(e.target.value)}
+                                        >
+                                            <option value="">Todas las Categorías</option>
+                                            {categoriasExistentes.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                        </select>
+                                    </div>
+
+                                    {/* Selector de Ordenamiento */}
+                                    <div className="flex-grow-1" style={{ minWidth: '200px' }}>
+                                        <label className="form-label ms-2 small text-muted">Ordenar resultados:</label>
+                                        <select 
+                                            className="form-select rounded-pill shadow-sm border-0 px-3 py-2" 
+                                            value={ordenarPor} 
+                                            onChange={(e) => setOrdenarPor(e.target.value)}
+                                        >
+                                            <option value="novedades">Novedades (Más recientes)</option>
+                                            <option value="alfabetico">Nombre (A-Z)</option>
+                                            <option value="ranking">Mejor Valorados</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
+
                             <div className="row mt-4">
-                                {seccionActiva === "leyendo" && (db.leyendo.length > 0 ? db.leyendo.map(i => <TarjetaLibro key={i.id} l={i.libro || i} />) : <div className="col-12 text-muted">Aún no estás leyendo ningún libro.</div>)}
-                                {seccionActiva === "favoritos" && (db.favoritos.length > 0 ? db.favoritos.map(f => <TarjetaLibro key={f.id} l={f.libro || f} />) : <div className="col-12 text-muted">Tu lista de favoritos está vacía.</div>)}
-                                {seccionActiva === "biblioteca" && db.todos.map(l => <TarjetaLibro key={l.id} l={l} />)}
+                                {seccionActiva === "leyendo" && (procesarLista(db.leyendo).length > 0 ? procesarLista(db.leyendo).map(i => <TarjetaLibro key={i.id} l={i.libro || i} />) : <div className="col-12 text-muted">Aún no estás leyendo ningún libro.</div>)}
+                                {seccionActiva === "favoritos" && (procesarLista(db.favoritos).length > 0 ? procesarLista(db.favoritos).map(f => <TarjetaLibro key={f.id} l={f.libro || f} />) : <div className="col-12 text-muted">Tu lista de favoritos está vacía.</div>)}
+                                {seccionActiva === "biblioteca" && (procesarLista(db.todos).length > 0 ? procesarLista(db.todos).map(l => <TarjetaLibro key={l.id} l={l} />) : <div className="col-12 text-muted">No hay libros en la biblioteca.</div>)}
                             </div>
                         </div>
                     )}
 
-                    {/* SECCIÓN MIS REVIEWS */}
+                    {/* SECCIÓN MIS REVIEWS ORIGINAL */}
                     {seccionActiva === "mis_reviews" && (
                         <div>
                             <div className="mb-5">
@@ -288,55 +355,29 @@ const PaginaLector = () => {
                                 <h2 className="fw-bold mt-2">Mis Reseñas Literarias</h2>
                             </div>
                             <div className="row">
-                                {db.reviews.filter(r => Number(r.lector_id) === Number(store.lector_id)).length > 0 ? (
-                                    db.reviews.filter(r => Number(r.lector_id) === Number(store.lector_id)).map(rev => (
-                                        <div key={rev.id} className="col-md-6 mb-4">
-                                            <div className="card shadow-sm border-0 rounded-4 p-4 h-100">
-                                                <div className="d-flex justify-content-between align-items-start mb-3">
-                                                    <div>
-                                                        <h5 className="fw-bold text-dark mb-1">{rev.libro?.nombre || "Libro Eliminado"}</h5>
-                                                        <span className="badge bg-warning text-dark">
-                                                            {rev.puntuacion} <i className="fas fa-star text-white"></i>
-                                                        </span>
-                                                    </div>
-                                                    <img
-                                                        src={rev.libro?.image_url || "https://via.placeholder.com/50x75?text=No+Cover"}
-                                                        alt={rev.libro?.nombre}
-                                                        className="rounded shadow-sm"
-                                                        style={{ width: "50px", height: "75px", objectFit: "cover" }}
-                                                    />
+                                {db.reviews.filter(r => Number(r.lector_id) === Number(store.lector_id)).map(rev => (
+                                    <div key={rev.id} className="col-md-6 mb-4">
+                                        <div className="card shadow-sm border-0 rounded-4 p-4 h-100">
+                                            <div className="d-flex justify-content-between align-items-start mb-3">
+                                                <div>
+                                                    <h5 className="fw-bold text-dark mb-1">{rev.libro?.nombre || "Libro Eliminado"}</h5>
+                                                    <span className="badge bg-warning text-dark">{rev.puntuacion} <i className="fas fa-star text-white"></i></span>
                                                 </div>
-                                                <p className="text-muted fst-italic">"{rev.texto}"</p>
-                                                <div className="mt-auto pt-3 border-top text-end">
-                                                    {/* CORRECCIÓN: Ruta actualizada para editar review */}
-                                                    <Link to={`/editar_review/${rev.id}`} className="btn btn-sm btn-outline-info rounded-pill me-2">Editar</Link>
-                                                    <button
-                                                        className="btn btn-sm btn-outline-danger rounded-pill"
-                                                        onClick={async () => {
-                                                            if (window.confirm("¿Seguro que deseas eliminar esta reseña?")) {
-                                                                await request(`reviews/${rev.id}`, "DELETE");
-                                                                load();
-                                                            }
-                                                        }}
-                                                    >
-                                                        Eliminar
-                                                    </button>
-                                                </div>
+                                                <img src={rev.libro?.image_url || "placeholder"} alt={rev.libro?.nombre} className="rounded shadow-sm" style={{ width: "50px", height: "75px", objectFit: "cover" }} />
+                                            </div>
+                                            <p className="text-muted fst-italic">"{rev.texto}"</p>
+                                            <div className="mt-auto pt-3 border-top text-end">
+                                                <Link to={`/editar_review/${rev.id}`} className="btn btn-sm btn-outline-info rounded-pill me-2">Editar</Link>
+                                                <button className="btn btn-sm btn-outline-danger rounded-pill" onClick={async () => { if (window.confirm("¿Eliminar?")) { await request(`reviews/${rev.id}`, "DELETE"); load(); } }}>Eliminar</button>
                                             </div>
                                         </div>
-                                    ))
-                                ) : (
-                                    <div className="col-12 text-center text-muted mt-5">
-                                        <i className="fas fa-pencil-alt fa-3x mb-3 text-info-booked opacity-50"></i>
-                                        <h4>Aún no has escrito ninguna reseña.</h4>
-                                        <p>Ve a tu biblioteca y comparte tu opinión sobre tus libros favoritos.</p>
                                     </div>
-                                )}
+                                ))}
                             </div>
                         </div>
                     )}
 
-                    {/* SECCIÓN AUTORES */}
+                    {/* SECCIÓN AUTORES ORIGINAL */}
                     {seccionActiva === "autores" && (
                         <div>
                             <div className="text-center mb-5">
@@ -347,23 +388,13 @@ const PaginaLector = () => {
                                 {db.todosAutores.map((autor) => (
                                     <div key={autor.id} className="col-md-3 mb-5" style={{ marginTop: '60px' }}>
                                         <div className="card-feature text-center h-100 shadow-sm border-0 bg-white d-flex flex-column">
-
-                                            <div className="foto-cover-floating bg-white d-flex align-items-center justify-content-center shadow overflow-hidden"
-                                                style={{ borderRadius: '50%', width: '100px', height: '100px', margin: '0 auto' }}>
-                                                <img
-                                                    src={autor.foto || "https://via.placeholder.com/150"}
-                                                    alt={autor.nombre}
-                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                />
+                                            <div className="foto-cover-floating bg-white d-flex align-items-center justify-content-center shadow overflow-hidden" style={{ borderRadius: '50%', width: '100px', height: '100px', margin: '0 auto' }}>
+                                                <img src={autor.foto || "https://via.placeholder.com/150"} alt={autor.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                             </div>
-
                                             <div className="flex-grow-1 d-flex flex-column mt-3">
                                                 <div className="d-flex align-items-center justify-content-center">
                                                     <h6 className="fw-bold text-dark mb-0">{autor.nombre} {autor.apellido}</h6>
-                                                    {autor.is_verified && (
-                                                        <span className="ms-2 d-flex align-items-center justify-content-center text-white shadow-sm"
-                                                            style={{ width: "18px", height: "18px", fontSize: "10px", backgroundColor: "#24b0d9", borderRadius: "50%" }}>✓</span>
-                                                    )}
+                                                    {autor.is_verified && <span className="ms-2 d-flex align-items-center justify-content-center text-white shadow-sm" style={{ width: "18px", height: "18px", fontSize: "10px", backgroundColor: "#24b0d9", borderRadius: "50%" }}>✓</span>}
                                                 </div>
                                                 <p className="small text-muted mb-4 mt-1"><i className="fas fa-map-marker-alt me-1"></i>{autor.pais}</p>
                                                 <div className="d-grid mt-auto">
@@ -381,7 +412,7 @@ const PaginaLector = () => {
                         </div>
                     )}
 
-                    {/* SECCIÓN COMUNIDAD */}
+                    {/* SECCIÓN COMUNIDAD ORIGINAL */}
                     {seccionActiva === "seguidores" && (
                         <div className="row g-4 mt-2">
                             <div className="col-lg-6">
@@ -394,8 +425,6 @@ const PaginaLector = () => {
                                             {db.otros.map(o => <option key={o.id} value={o.id}>{o.username || o.nombre}</option>)}
                                         </select>
                                         <button className="btn btn-booked-blue rounded-pill px-4" onClick={async () => { await request(`follow`, "POST", { seguidor_id: store.lector_id, seguido_id: parseInt(idASeguir) }); setIdASeguir(""); load(); }}>Seguir</button>
-
-                                        {/* Botón para "Previsualizar" antes de seguir */}
                                         {idASeguir && (
                                             <Link to={`/perfil_lector/${idASeguir}`} className="btn btn-outline-info-booked rounded-pill">
                                                 <i className="fas fa-eye"></i>
@@ -407,50 +436,33 @@ const PaginaLector = () => {
                             <div className="col-lg-6">
                                 <h4 className="fw-bold mb-4">Siguiendo</h4>
                                 <div className="bg-white p-4 rounded-4 shadow-sm border">
-                                    {db.usuario?.siguiendo?.length > 0 ? db.usuario.siguiendo.map((r, i) => (
+                                    {db.usuario?.siguiendo?.map((r, i) => (
                                         <div key={i} className="d-flex justify-content-between align-items-center py-3 border-bottom last-border-none">
                                             <div className="d-flex align-items-center gap-3">
-                                                <div className="bg-light rounded-circle p-2 text-info-booked" style={{ width: '40px', textAlign: 'center' }}>
-                                                    <i className="fas fa-user"></i>
-                                                </div>
-                                                {/* LINK AL PERFIL PÚBLICO */}
+                                                <div className="bg-light rounded-circle p-2 text-info-booked" style={{ width: '40px', textAlign: 'center' }}><i className="fas fa-user"></i></div>
                                                 <Link to={`/perfil_lector/${r.seguido_id}`} className="text-decoration-none">
                                                     <span className="fw-bold text-dark hover-info-booked">{r.nombre_seguido}</span>
                                                 </Link>
                                             </div>
                                             <div className="d-flex gap-2 align-items-center">
-                                                <button
-                                                    className="btn btn-sm btn-outline-info-booked rounded-pill"
-                                                    onClick={() => {
-                                                        setAmigoSeleccionado({ id: r.seguido_id, nombre: r.nombre_seguido });
-                                                        setSeccionActiva("mensajes_comunidad");
-                                                    }}
-                                                >
-                                                    <i className="fas fa-comment"></i>
-                                                </button>
+                                                <button className="btn btn-sm btn-outline-info-booked rounded-pill" onClick={() => { setAmigoSeleccionado({ id: r.seguido_id, nombre: r.nombre_seguido }); setSeccionActiva("mensajes_comunidad"); }}><i className="fas fa-comment"></i></button>
                                                 <button className="btn btn-sm text-danger fw-bold" onClick={() => exec(`unfollow/${r.relacion_id}`, "DELETE")}>Eliminar</button>
                                             </div>
                                         </div>
-                                    )) : <p className="text-muted small">Aún no sigues a otros lectores.</p>}
+                                    ))}
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* SECCIÓN DMs COMUNIDAD (PANEL INDEPENDIENTE) */}
+                    {/* SECCIÓN MENSAJES */}
                     {seccionActiva === "mensajes_comunidad" && (
                         <div>
                             <div className="mb-4">
                                 <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Comunidad</span>
                                 <h2 className="fw-bold mt-2">Mis Mensajes Directos</h2>
                             </div>
-                            {/* Cargamos el componente que tiene la lista y el chat */}
-                            {seccionActiva === "mensajes_comunidad" && (
-                                <DmLector
-                                    amigoForzado={amigoSeleccionado}
-                                    setAmigoForzado={setAmigoSeleccionado}
-                                />
-                            )}
+                            <DmLector amigoForzado={amigoSeleccionado} setAmigoForzado={setAmigoSeleccionado} />
                         </div>
                     )}
 
