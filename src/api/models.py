@@ -119,7 +119,8 @@ class Editorial(db.Model):
             "email": self.email,
             "image_url": self.image_url,
             "is_verified": self.is_verified,
-            "verification_status": self.verification_status
+            "verification_status": self.verification_status,
+            "libros": [l.serialize() for l in self.libros] 
         }
 
 
@@ -161,7 +162,8 @@ class Autor(db.Model):
             "email": self.email,
             "foto": foto_final,
             "is_verified": self.is_verified,
-            "verification_status": self.verification_status
+            "verification_status": self.verification_status,
+            "libros": [libro.serialize() for libro in self.libros] if self.libros else []
         }
 
 
@@ -208,6 +210,7 @@ class Libro(db.Model):
             "editorial_id": self.editorial_id,
             "nombre_autor": f"{self.autor.nombre} {self.autor.apellido}" if self.autor else "Sin autor",
             "nombre_editorial": self.editorial.nombre if self.editorial else "Sin editorial",
+            "imagen_editorial": self.editorial.image_url if self.editorial else None,
             "image_url": self.image_url,
             "resumen_ia": self.resumen_ia
         }
@@ -313,6 +316,7 @@ class Reviews(db.Model):
             "id": self.id,
             "lector_id": self.lector_id,
             "nombre_lector": f"{self.lector.nombre} {self.lector.apellido}" if self.lector else None,
+            "username_lector": self.lector.username if self.lector else "anonymous",
             "foto_lector": self.lector.foto_url,
             "libro": self.libro.serialize() if self.libro else None,
             "texto": self.texto,

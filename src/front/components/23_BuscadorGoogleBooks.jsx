@@ -10,8 +10,8 @@ const BuscadorGoogleBooks = ({ onLibroAgregado, mode = "normal", defaultValue = 
         if (defaultValue) setQuery(defaultValue);
     }, [defaultValue]);
 
-    useEffect(() => { 
-        
+    useEffect(() => {
+
         if (query.length < 2) {
             setResults([]);
             return;
@@ -33,19 +33,26 @@ const BuscadorGoogleBooks = ({ onLibroAgregado, mode = "normal", defaultValue = 
     const fetchBooks = async (searchTerm) => {
         if (!searchTerm || searchTerm.trim().length < 3) return;
 
-        const apiKey = import.meta.env.VITE_GOOGLE_BOOKS_KEY; // Traemos la llave del .env
+        const apiKey = import.meta.env.VITE_GOOGLE_BOOKS_KEY;
         setSearching(true);
 
         try {
-
             const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchTerm)}&maxResults=5&langRestrict=es&key=${apiKey}`;
 
             const response = await fetch(url);
 
-            if (response.status === 429) {
-                console.error("Incluso con API Key, Google pide un respiro.");
+            if (response.status === 503) {
+                console.error("Google Books está temporalmente fuera de servicio (503).");
+                // Opcional: podrías setear un estado de error para mostrar un mensaje pequeño
                 return;
             }
+
+            if (response.status === 429) {
+                console.error("Límite de peticiones excedido (429).");
+                return;
+            }
+
+            if (!response.ok) throw new Error("Error en la respuesta de Google");
 
             const data = await response.json();
             setResults(data.items || []);
@@ -55,7 +62,6 @@ const BuscadorGoogleBooks = ({ onLibroAgregado, mode = "normal", defaultValue = 
             setSearching(false);
         }
     };
-
     const handleSelect = async (book) => {
         const info = book.volumeInfo;
 
@@ -76,11 +82,11 @@ const BuscadorGoogleBooks = ({ onLibroAgregado, mode = "normal", defaultValue = 
             console.log("Modo asistente: Rellenando formulario...");
             setQuery("");
             setResults([]);
-            
+
             if (onLibroAgregado) {
-                onLibroAgregado(libroParaBackend); 
+                onLibroAgregado(libroParaBackend);
             }
-            return; 
+            return;
         }
 
         try {
@@ -138,16 +144,16 @@ const BuscadorGoogleBooks = ({ onLibroAgregado, mode = "normal", defaultValue = 
             {results.length > 0 && (
                 <ul className="list-group position-absolute w-100 shadow-lg mt-1"
                     style={{
-                        zIndex: 9999,         
+                        zIndex: 9999,
                         maxHeight: "300px",
                         overflowY: "auto",
-                        backgroundColor: "white" 
+                        backgroundColor: "white"
                     }}>
                     {results.map((book) => (
                         <li
                             key={book.id}
                             className="list-group-item list-group-item-action d-flex align-items-center p-2"
-                            style={{ cursor: "pointer", position: "relative", zIndex: 10000 }} 
+                            style={{ cursor: "pointer", position: "relative", zIndex: 10000 }}
                             onMouseDown={(e) => {
                                 // Truco: A veces onClick falla si el input pierde el foco rápido. 
                                 // Usar onMouseDown suele ser más efectivo en buscadores.
