@@ -180,39 +180,103 @@ body {
 }
 
 /* ==========================================================================
-   5. SECCIÓN RESEÑAS (ZONA GRIS CON MOVIMIENTO)
+   5. SECCIÓN RESEÑAS (MODO PREMIUM DARK) - FINAL FIX
    ========================================================================== */
+
 .reviews-ticker-container {
-  background-color: var(--booked-gray-light);
-  padding: 80px 0;
+  /* Transición: Gris -> Azul Glaciar -> Gris */
+  background: linear-gradient(
+    180deg, 
+    var(--booked-gray-light) 0%, 
+    #e1f5fe 50%, 
+    var(--booked-gray-light) 100%
+  ); 
+  padding: 100px 0;
   overflow: hidden;
   position: relative;
+  /* Eliminamos los bordes sólidos para que la transición de color haga el trabajo */
+  border: none;
+}
+
+.reviews-ticker-container {
+  /* Transición: Ajustamos para que el inicio sea más compacto */
+  background: linear-gradient(
+    180deg, 
+    var(--booked-gray-light) 0%, 
+    #e1f5fe 40%, /* El azul sube un poco más */
+    var(--booked-gray-light) 100%
+  ); 
+  padding: 40px 0 100px 0; /* Reducimos el padding superior drásticamente */
+  overflow: hidden;
+  position: relative;
+  border: none;
 }
 
 .ticker-wrapper {
   display: flex;
   width: fit-content;
   animation: scroll-left 40s linear infinite;
+  padding-top: 30px !important;
+  padding-bottom: 40px !important;
+  position: relative;
+  z-index: 1;
 }
 
-@keyframes scroll-left {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
+.ticker-wrapper:hover {
+  animation-play-state: paused;
 }
 
 .review-card {
-  width: 350px;
+  width: 320px;
+  height: 420px; /* Altura fija para uniformidad */
   flex-shrink: 0;
   margin: 0 15px;
-  background: var(--booked-white);
+  background: #ffffff;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: 20px;
-  padding: 25px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.03);
-  border: none !important;
+  padding: 0; 
+  box-shadow: 0 15px 30px rgba(36, 176, 217, 0.08);
+  border: 1px solid rgba(36, 176, 217, 0.1) !important;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  /* Crucial para el footer pegado */
+  display: flex;
+  flex-direction: column;
+}
+
+.review-card-footer {
+    background: rgba(36, 176, 217, 0.1); 
+    border-top: 1px solid rgba(36, 176, 217, 0.1);
+    width: 100%;
+    margin: 0;
+    padding: 15px 0;
+    /* Redondeado que abraza la tarjeta */
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    transition: all 0.3s ease;
+}
+
+.review-card:hover .review-card-footer {
+    background: rgba(36, 176, 217, 0.18);
+}
+
+.hover-up:hover {
+    transform: translateY(-20px);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.4) !important;
+}
+
+.bg-blur-dark {
+    background: rgba(0, 0, 0, 0.5) !important;
+    color: white !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 /* ==========================================================================
@@ -241,16 +305,18 @@ body {
    ========================================================================== */
 
 .testimonials-full-bg {
-    width: 100vw; /* Ocupa el 100% del ancho de la ventana */
-    position: relative;
-    left: 50%;
-    right: 50%;
-    margin-left: -50vw;
-    margin-right: -50vw;
-    
-    background-color: var(--booked-white); /* Esto es lo que se verá de borde a borde */
-    border-top: 1px solid #eee;
-    border-bottom: 1px solid #eee;
+  width: 100vw; /* Ocupa el 100% del ancho de la ventana */
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+
+  background-color: var(
+    --booked-white
+  ); /* Esto es lo que se verá de borde a borde */
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
 }
 .py-60 {
   padding: 70px 0;
@@ -276,13 +342,13 @@ body {
   width: 100%;
   height: 100%;
   /* Bajamos a 1px para que sea idéntico al borde de la card */
-  border: 1px solid var(--booked-blue); 
+  border: 1px solid var(--booked-blue);
   border-radius: 20px;
   z-index: -1;
   opacity: 0.3;
   transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
   /* Añadimos esto para asegurar que el tamaño sea idéntico */
-  box-sizing: border-box; 
+  box-sizing: border-box;
 }
 
 /* EFECTO HOVER: El borde se "pega" y la tarjeta se eleva */
@@ -320,27 +386,27 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 12px; 
+  gap: 12px;
   width: 100% !important;
-  overflow: visible !important; 
-  padding: 30px 0; 
+  overflow: visible !important;
+  padding: 30px 0;
 }
 
 /* Estilo base de los puntos */
 .mySwiper .swiper-pagination-bullet {
   width: 10px;
   height: 10px;
-  background-color: #d1d5db; 
+  background-color: #d1d5db;
   opacity: 1;
   border-radius: 20px;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   margin: 0 !important;
-  flex-shrink: 0; 
+  flex-shrink: 0;
 }
 
 /* La cápsula activa */
 .mySwiper .swiper-pagination-bullet-active {
-  width: 35px; 
+  width: 35px;
   background-color: var(--booked-blue) !important;
 }
 
@@ -348,169 +414,229 @@ body {
    8. FOOTER
    ========================================================================== */
 .footer-booked {
-    background-color: var(--booked-white);
-    border-top: 1px solid #eee;
+  background-color: var(--booked-white);
+  border-top: 1px solid #eee;
 }
 
-.pt-80 { padding-top: 80px; }
-.pb-40 { padding-bottom: 40px; }
+.pt-80 {
+  padding-top: 80px;
+}
+.pb-40 {
+  padding-bottom: 40px;
+}
 
 /* Estilo de los links */
 .footer-links li {
-    margin-bottom: 12px;
+  margin-bottom: 12px;
 }
 
 .footer-links a {
-    color: #6c757d;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    font-size: 0.95rem;
+  color: #6c757d;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
 }
 
 .footer-links a:hover {
-    color: var(--booked-blue);
-    padding-left: 5px; /* Un pequeño efecto de desplazamiento */
+  color: var(--booked-blue);
+  padding-left: 5px; /* Un pequeño efecto de desplazamiento */
 }
 
 /* Iconos de redes sociales */
 .social-icon {
-    width: 40px;
-    height: 40px;
-    background-color: var(--booked-gray-light);
-    color: var(--booked-dark);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    text-decoration: none;
-    transition: all 0.3s ease;
+  width: 40px;
+  height: 40px;
+  background-color: var(--booked-gray-light);
+  color: var(--booked-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  text-decoration: none;
+  transition: all 0.3s ease;
 }
 
 .social-icon:hover {
-    background-color: var(--booked-blue);
-    color: white;
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(36, 176, 217, 0.3);
+  background-color: var(--booked-blue);
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(36, 176, 217, 0.3);
 }
 
 /* Ajuste fino para los iconos de FontAwesome */
 .footer-booked i {
-    font-size: 1rem;
+  font-size: 1rem;
 }
 
 /* Franja final en azul Booked */
 .footer-bottom-bar {
-    background-color: var(--booked-blue);
-    /* Un pequeño degradado para que no sea un color plano aburrido */
-    background: linear-gradient(90deg, var(--booked-blue) 0%, #35c4ed 100%);
+  background-color: var(--booked-blue);
+  /* Un pequeño degradado para que no sea un color plano aburrido */
+  background: linear-gradient(90deg, var(--booked-blue) 0%, #35c4ed 100%);
 }
 
 /* Ajuste para que el corazón se vea blanco sobre el azul */
 .footer-bottom-bar i.fa-heart {
-    color: white;
-    /* Un latido sutil para darle vida */
-    animation: heartbeat 1.5s ease infinite;
+  color: white;
+  /* Un latido sutil para darle vida */
+  animation: heartbeat 1.5s ease infinite;
 }
 
 @keyframes heartbeat {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Quitamos el margen de la sección de arriba si es necesario */
 .footer-booked {
-    padding-bottom: 0 !important; /* Para que la barra azul pegue al final */
+  padding-bottom: 0 !important; /* Para que la barra azul pegue al final */
 }
 
 /* ==========================================================================
    9. HERO: PNGs FLOTANTES (ECOSISTEMA)
    ========================================================================== */
 
-/* Contenedor relativo para los PNGs */
 .hero-right-content {
-    position: relative;
-    padding: 30px; /* Un poco de aire para que no se corten al flotar */
+  position: relative;
+  /* Aseguramos que el contenedor tenga un tamaño controlado */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 450px;
 }
 
-/* La imagen principal con un poco de profundidad */
 .main-hero-img {
-    filter: drop-shadow(0 20px 30px rgba(0,0,0,0.05));
-    position: relative;
-    z-index: 5; /* Asegura que la chica esté arriba de algunos PNGs si quieres encimarlos */
+  max-width: 100%;
+  height: auto;
+  position: relative;
+  z-index: 5;
+  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.05));
 }
 
-/* Estilo base para todos los PNGs flotantes */
+/* Estilo base para todos los PNGs */
 .floating-png {
-    position: absolute;
-    opacity: 0.8; /* Un poco translúcidos para que no distraigan demasiado */
-    transition: all 0.5s ease;
-    filter: drop-shadow(0 5px 10px rgba(0,0,0,0.05));
-    z-index: 1; /* Por defecto detrás de la chica */
+  position: absolute;
+  opacity: 0.8;
+  z-index: 1; /* Por defecto detrás */
+  pointer-events: none; /* Para que no estorben al hacer click */
+  width: 60px; /* Tamaño base controlado */
+  height: auto;
 }
 
-/* === Posiciones Específicas === */
+/* NUEVA ESTRATEGIA: 
+   Usamos 'left' o 'right' con valores pequeños relativos al centro 
+   o fijamos el contenedor para que no se estire al infinito.
+*/
 
-/* PNG 1: Libro (Arriba a la izquierda) */
 .png-1 {
-    top: 21%;
-    right: 22%;
-    animation: float-1 6s ease-in-out infinite;
+  top: 10%;
+  right: 15%; /* Ajustado */
+  animation: float-1 6s ease-in-out infinite;
+  width: 70px;
 }
 
-/* PNG 2: Estrella (Abajo a la derecha, sutil) */
 .png-2 {
-    bottom: 57%;
-    right: 20%;
-    animation: float-2 7s ease-in-out infinite 1s; /* Con delay de 1s */
-    opacity: 0.6;
+  bottom: 55%;
+  right: 10%;
+  animation: float-2 7s ease-in-out infinite 1s;
+  opacity: 0.6;
+  width: 70px;
 }
-
 
 .png-3 {
-    top: 30%;
-    right: 35%;
-    animation: float-1 8s ease-in-out infinite 2s; /* Más lenta y con delay */
+  top: 30%;
+  left: 15%;
+  animation: float-1 8s ease-in-out infinite 2s;
+  width: 70px;
 }
 
 .png-4 {
-    top: 16%;
-    right: 29%;
-    animation: float-2 6s ease-in-out infinite;
-    
+  top: 8%;
+  left: 30%;
+  animation: float-2 6s ease-in-out infinite;
+  width: 95px;
 }
 
 .png-5 {
-    top: 41%;
-    right: 37%;
-    animation: float-2 9s ease-in-out infinite;
-    
+  bottom: 42%;
+  left: 20%;
+  animation: float-2 9s ease-in-out infinite;
+  width: 65px;
 }
 
+/* === RESPONSIVE: El secreto para que no se vuelvan locos === */
+@media (max-width: 992px) {
+  .floating-png {
+    width: 45px; /* Iconos más pequeños en tablet */
+  }
+}
+
+@media (max-width: 576px) {
+  /* En móvil muy pequeño, mejor esconderlos o pegarlos mucho 
+       para que no ensucien el texto */
+  .floating-png {
+    opacity: 0.4;
+    width: 35px;
+  }
+  .png-1 {
+    top: 5%;
+    right: 5%;
+  }
+  .png-3 {
+    display: none;
+  } /* Escondemos algunos para limpiar el diseño */
+}
 /* === Animaciones de Flotado (Float) === */
 
 @keyframes float-1 {
-    0% { transform: translateY(0px) rotate(0deg); }
-    50% { transform: translateY(-20px) rotate(3deg); } /* Sube 20px y rota un poco */
-    100% { transform: translateY(0px) rotate(0deg); }
+  0% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(3deg);
+  } /* Sube 20px y rota un poco */
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
 }
 
 @keyframes float-2 {
-    0% { transform: translateX(0px) translateY(0px) rotate(0deg); }
-    33% { transform: translateX(10px) translateY(-10px) rotate(-2deg); } 
-    66% { transform: translateX(-5px) translateY(10px) rotate(1deg); }
-    100% { transform: translateX(0px) translateY(0px) rotate(0deg); }
+  0% {
+    transform: translateX(0px) translateY(0px) rotate(0deg);
+  }
+  33% {
+    transform: translateX(10px) translateY(-10px) rotate(-2deg);
+  }
+  66% {
+    transform: translateX(-5px) translateY(10px) rotate(1deg);
+  }
+  100% {
+    transform: translateX(0px) translateY(0px) rotate(0deg);
+  }
 }
 
 /* === Efecto Hover en el contenedor (Mágico) === */
 .hero-right-content:hover .floating-png {
-    opacity: 1; /* Se vuelven totalmente opacos al hover */
-    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1));
+  opacity: 1; /* Se vuelven totalmente opacos al hover */
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.1));
 }
 
-.hero-right-content:hover .png-1 { transform: scale(1.1) translate(5px, -5px); }
-.hero-right-content:hover .png-2 { transform: scale(1.1) translate(-5px, 5px); }
-.hero-right-content:hover .png-3 { transform: scale(1.1) translate(10px, -10px); }
+.hero-right-content:hover .png-1 {
+  transform: scale(1.1) translate(5px, -5px);
+}
+.hero-right-content:hover .png-2 {
+  transform: scale(1.1) translate(-5px, 5px);
+}
+.hero-right-content:hover .png-3 {
+  transform: scale(1.1) translate(10px, -10px);
+}
 
 /* ==========================================================================
    WIDGET DE CHAT FLOTANTE - BOOKED STYLE
@@ -551,18 +677,24 @@ body {
   height: 500px;
   background: var(--booked-white);
   border-radius: 20px;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
   margin-bottom: 20px;
   overflow: hidden;
-  border: 1px solid rgba(0,0,0,0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   animation: slideUp 0.4s ease-out;
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Header al estilo Navbar */

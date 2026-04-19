@@ -13,6 +13,7 @@ import BuscadorGoogleBooks from "../components/23_BuscadorGoogleBooks";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 
+import "../shelfStyles.css";
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
@@ -60,11 +61,13 @@ export const Home = () => {
 
                 // --- LÓGICA PARA EDITORIALES ALEATORIAS ---
                 const editorialesMap = data.reduce((acc, current) => {
-                    const nombreEdit = current.editorial || current.nombre_editorial || current.publisher;
+                    const nombreEdit = current.nombre_editorial || current.editorial || current.publisher;
                     if (nombreEdit && !acc.find(item => item.nombre === nombreEdit)) {
                         acc.push({
                             id: current.editorial_id || current.id,
-                            nombre: nombreEdit
+                            nombre: nombreEdit,
+                            // Asegúrate de que esta llave coincida con lo que devuelve el backend en el objeto libro
+                            image_url: current.imagen_editorial || null
                         });
                     }
                     return acc;
@@ -148,72 +151,71 @@ export const Home = () => {
                             </div>
                         </div>
                         <div className="col-lg-6 d-none d-lg-block text-center">
-                            {/* Uso de tu variable local */}
-                            <img src={chicaLeyendoUrl} style={{ width: '85%' }} alt="Hero Booked" />
-                            <img
-                                src={ideaFlotanteUrl}
-                                alt="Libro Flotante"
-                                className="floating-png png-1"
-                                style={{ width: '60px' }}
-                            />
+                            {/* Contenedor Ancla para que los PNGs no se pierdan */}
+                            <div className="hero-right-content">
 
-                            <img
-                                src={explosionFlotanteUrl}
-                                alt="fenix"
-                                className="floating-png png-2"
-                                style={{ width: '60px' }}
-                            />
+                                {/* La Chica: Nuestra referencia central */}
+                                <img
+                                    src={chicaLeyendoUrl}
+                                    className="main-hero-img"
+                                    style={{ width: '85%' }}
+                                    alt="Hero Booked"
+                                />
 
-                            <img
-                                src={cosmosFlotanteUrl}
-                                alt="cosmos"
-                                className="floating-png png-3"
-                                style={{ width: '60px' }}
-                            />
+                                {/* PNGs Flotantes: Ahora heredarán su posición de 'hero-right-content' */}
+                                <img
+                                    src={ideaFlotanteUrl}
+                                    alt="Libro Flotante"
+                                    className="floating-png png-1"
+                                />
 
-                            <img
-                                src={fenixFlotanteUrl}
-                                alt="fenix"
-                                className="floating-png png-4"
-                                style={{ width: '90px' }}
-                            />
+                                <img
+                                    src={explosionFlotanteUrl}
+                                    alt="Fenix"
+                                    className="floating-png png-2"
+                                />
 
-                            <img
-                                src={mapaFlotanteUrl}
-                                alt="mapa"
-                                className="floating-png png-5"
-                                style={{ width: '70px' }}
-                            />
+                                <img
+                                    src={cosmosFlotanteUrl}
+                                    alt="Cosmos"
+                                    className="floating-png png-3"
+                                />
+
+                                <img
+                                    src={fenixFlotanteUrl}
+                                    alt="Fenix"
+                                    className="floating-png png-4"
+                                />
+
+                                <img
+                                    src={mapaFlotanteUrl}
+                                    alt="Mapa"
+                                    className="floating-png png-5"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* --- SECCIÓN 2: NOVEDADES (Portadas Rectangulares) --- */}
-            <div className="container mt-5" style={{ marginTop: '-40px' }}>
-                <div className="row">
+            <div className="container mt-5">
+                <div className="row bookshelf-grid">
                     {loading ? (
                         <div className="text-center w-100"><div className="spinner-border text-info"></div></div>
                     ) : (
                         librosRecientes.map(l => (
-                            <div key={l.id} className="col-md-3 mb-5">
-                                <div className="card-feature text-center h-100 shadow-sm border-0">
-                                    {/* Este es el div que flota */}
-                                    <div className="book-cover-floating">
-                                        <img
-                                            src={l.image_url || "https://via.placeholder.com/150x225?text=No+Cover"}
-                                            alt={l.nombre}
-                                            className="portada-full"
-                                        />
+                            <div key={l.id} className="col-md-3 mb-5 shelf-item">
+                                <div className="shelf-cubby">
+                                    <div className="book-3d" onClick={() => irAlLibro(l.id)}>
+                                        <img src={l.image_url || "placeholder"} alt={l.nombre} />
                                     </div>
-                                    {/* El contenido de abajo */}
-                                    <h6 className="fw-bold text-dark mt-2 mb-1 text-truncate px-2">{l.nombre}</h6>
-                                    <p className="small text-muted mb-3">
-                                        {l.nombre_autor}
-                                    </p>
-                                    <Link to={`/ver_libro/${l.id}`} className="btn btn-sm btn-booked-blue rounded-pill px-4">
-                                        Detalles
-                                    </Link>
+                                    <div className="shelf-floor-wood"></div>
+                                </div>
+                                {/* Texto debajo del mueble */}
+                                <div className="text-center mt-3">
+                                    <h6 className="fw-bold text-dark mb-1 text-truncate px-2">{l.nombre}</h6>
+                                    <Link to={`/ver_libro/${l.id}`} className="btn btn-sm btn-booked-blue rounded-pill px-4 mt-2">Detalles</Link>
                                 </div>
                             </div>
                         ))
@@ -273,65 +275,101 @@ export const Home = () => {
                 </div>
             </div>
 
-            <div className="reviews-ticker-container mt-5">
-                <div className="container mb-5">
-                    <h3 className="fw-bold text-center">¡Lo que nuestros lectores opinan de lo que leyeron!</h3>
+
+            <div className="reviews-ticker-container">
+                {/* ENCABEZADO UNIFICADO */}
+                <div className="text-center mb-5 position-relative" style={{ zIndex: 2 }}>
+                    <span className="text-info-booked fw-bold text-uppercase" style={{ letterSpacing: '3px', fontSize: '0.75rem' }}>
+                        — Comunidad Booked —
+                    </span>
+                    <h2 className="display-5 fw-bold text-dark mt-2">La voz de los lectores</h2>
+                    <div className="mx-auto mt-3" style={{ width: '60px', height: '4px', background: '#24b0d9', borderRadius: '10px' }}></div>
                 </div>
 
+                {/* WRAPPER DEL MOVIMIENTO */}
                 <div className="ticker-wrapper">
-                    {/* Usamos listaReviews cargada desde tu API /api/reviews */}
                     {listaReviews.length > 0 ? (
                         [...listaReviews, ...listaReviews].map((rev, index) => (
-                            <div key={index} className="review-card border shadow-sm bg-white p-3 rounded-4" style={{ minWidth: '320px' }}>
-                                <div className="d-flex align-items-center gap-2 mb-3">
-                                    {/* Avatar del Lector con Fallback de Inicial */}
-                                    <div className="bg-info-booked rounded-circle d-flex align-items-center justify-content-center text-white fw-bold overflow-hidden border border-2 border-white shadow-sm"
-                                        style={{ width: '45px', height: '45px', minWidth: '45px' }}>
-                                        {rev.foto_lector ? (
-                                            <img
-                                                src={rev.foto_lector}
-                                                alt={rev.nombre_lector}
-                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                            />
-                                        ) : (
-                                            <span>{rev.nombre_lector?.charAt(0).toUpperCase() || "L"}</span>
-                                        )}
-                                    </div>
+                            <div key={index} className="review-card hover-up">
 
-                                    <div className="text-start">
-                                        <h6 className="mb-0 fw-bold small text-dark">{rev.nombre_lector}</h6>
-                                        {/* Puntaje Numérico en lugar de estrellas */}
-                                        <div className="fw-bold text-warning" style={{ fontSize: '0.85rem' }}>
-                                            <i className="fas fa-star me-1" style={{ fontSize: '0.7rem' }}></i>
-                                            {rev.puntuacion} <span className="text-muted fw-normal" style={{ fontSize: '0.7rem' }}>/ 10</span>
-                                        </div>
-                                    </div>
+                                {/* 1. BANNER DE PORTADA (MÁS GRANDE: 55%) */}
+                                <div className="position-relative" style={{ height: '48%', width: '100%', flexShrink: 0 }}>
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            top: 0, left: 0, right: 0, bottom: 0,
+                                            backgroundImage: `url(${rev.libro?.image_url || 'https://via.placeholder.com/300x150?text=Booked+Reader'})`,
+                                            backgroundSize: 'cover',
+                                            backgroundPosition: 'center',
+                                            filter: 'brightness(0.85)'
+                                        }}
+                                    />
+                                    {/* DEGRADADO MÁS BAJO PARA MOSTRAR MÁS LIBRO */}
+                                    <div style={{
+                                        position: 'absolute',
+                                        bottom: 0, left: 0, right: 0,
+                                        height: '50%',
+                                        background: 'linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.9) 75%, #ffffff 100%)'
+                                    }} />
+
+                                    <Link to={`/ver_libro/${rev.libro?.id}`} className="position-absolute top-0 end-0 m-3 text-decoration-none" style={{ zIndex: 3 }}>
+                                        <span className="badge bg-blur-dark rounded-pill py-2 px-3 shadow-sm" style={{ fontSize: '0.65rem' }}>
+                                            <i className="fas fa-eye me-1"></i> Ver Libro
+                                        </span>
+                                    </Link>
                                 </div>
 
-                                {/* Texto de la Review con límite de 3 líneas para uniformidad */}
-                                <p className="small text-muted mb-2 text-start italic"
-                                    style={{
-                                        height: '3.6em',
-                                        lineHeight: '1.2em',
-                                        overflow: 'hidden',
-                                        display: '-webkit-box',
-                                        WebkitLineClamp: 3,
-                                        WebkitBoxOrient: 'vertical'
-                                    }}>
-                                    "{rev.texto}"
-                                </p>
+                                {/* 2. CUERPO DE LA REVIEW */}
+                                <div className="card-body pt-0 px-4 d-flex flex-column align-items-center text-center">
+                                    {/* Avatar Flotante con ajuste de margen */}
+                                    <div className="bg-white rounded-circle p-1 shadow-lg mb-2" style={{ marginTop: '-40px', zIndex: 10 }}>
+                                        <Link to={`/perfil_lector/${rev.lector_id}`}>
+                                            <div className="bg-info-booked rounded-circle overflow-hidden border border-2 border-white"
+                                                style={{ width: '60px', height: '60px' }}>
+                                                {rev.foto_lector ? (
+                                                    <img src={rev.foto_lector} alt={rev.username_lector} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                ) : (
+                                                    <div className="h-100 d-flex align-items-center justify-content-center text-white fw-bold">
+                                                        {rev.username_lector?.charAt(0).toUpperCase()}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </Link>
+                                    </div>
 
-                                {/* Referencia al Libro */}
-                                <div className="text-end border-top pt-2 mt-auto">
-                                    <small className="text-info-booked fw-bold" style={{ fontSize: '0.7rem' }}>
-                                        <i className="fas fa-book-open me-1"></i>
+                                    <h6 className="fw-bold mb-1 text-dark">@{rev.username_lector || 'lector'}</h6>
+
+                                    <div className="text-warning mb-3" style={{ fontSize: '0.75rem' }}>
+                                        {[...Array(5)].map((_, i) => (
+                                            <i key={i} className={`${i < Math.round(rev.puntuacion / 2) ? 'fas' : 'far'} fa-star`}></i>
+                                        ))}
+                                    </div>
+
+                                    <p className="small text-muted fst-italic mb-0 px-2"
+                                        style={{
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 3,
+                                            WebkitBoxOrient: 'vertical',
+                                            overflow: 'hidden',
+                                            lineHeight: '1.4'
+                                        }}>
+                                        "{rev.texto}"
+                                    </p>
+                                </div>
+
+                                {/* 3. FOOTER TOTALMENTE INTEGRADO */}
+                                <div className="review-card-footer mt-auto text-center">
+                                    <small className="text-info-booked fw-bold text-truncate d-block px-3">
+                                        <i className="fas fa-bookmark me-2 opacity-75"></i>
                                         {rev.libro?.nombre || "Lectura Booked"}
                                     </small>
                                 </div>
                             </div>
                         ))
                     ) : (
-                        <div className="text-muted p-4 w-100 text-center">Cargando la voz de la comunidad...</div>
+                        <div className="text-center w-100 py-5">
+                            <div className="spinner-border text-info-booked"></div>
+                        </div>
                     )}
                 </div>
             </div>
@@ -384,19 +422,37 @@ export const Home = () => {
                     {editorialesUnicas.map((edit, i) => (
                         <div key={`edit-${i}`} className="col-md-3 mb-5">
                             <div className="card-feature text-center h-100 shadow-sm border-0">
-                                <div className="foto-cover-floating bg-white d-flex align-items-center justify-content-center shadow"
-                                    style={{ borderRadius: '50%', width: '90px', height: '90px' }}>
-                                    <i className="fas fa-university fa-2xl text-info-booked"></i>
+                                {/* Contenedor de la imagen */}
+                                <div className="foto-cover-floating bg-white d-flex align-items-center justify-content-center shadow overflow-hidden"
+                                    style={{ borderRadius: '50%', width: '100px', height: '100px', margin: '0 auto' }}>
+
+                                    {/* CAMBIO: Usamos image_url que es como viene de tu base de datos */}
+                                    {edit.image_url ? (
+                                        <img
+                                            src={edit.image_url}
+                                            alt={edit.nombre}
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            onError={(e) => {
+                                                // Si el link falla, usamos el avatar de respaldo
+                                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(edit.nombre)}&background=24b0d9&color=fff`;
+                                            }}
+                                        />
+                                    ) : (
+                                        /* Fallback: Si no hay imagen en la DB, mostramos el icono */
+                                        <i className="fas fa-university fa-2xl text-info-booked"></i>
+                                    )}
                                 </div>
 
-                                {/* Usamos edit.nombre en lugar de edit */}
-                                <h6 className="fw-bold text-dark mt-3 mb-1 text-truncate px-2">
-                                    {edit.nombre}
-                                </h6>
+                                <div className="d-flex align-items-center justify-content-center mt-3 px-2">
+                                    <h6 className="fw-bold text-dark mb-0 text-truncate">{edit.nombre}</h6>
+                                    <span className="ms-2 d-flex align-items-center justify-content-center text-white shadow-sm"
+                                        style={{ width: "18px", height: "18px", fontSize: "10px", backgroundColor: "#1a3a4a", borderRadius: "50%" }}>
+                                        <i className="fas fa-handshake"></i>
+                                    </span>
+                                </div>
 
-                                <p className="small text-muted mb-4">Editorial Partner</p>
+                                <p className="small text-muted mb-4 mt-1">Editorial <span className="text-info-booked fw-bold">Partner</span></p>
 
-                                {/* Usamos edit.id para la navegación real */}
                                 <Link to={`/ver_editorial_free/${edit.id}`} className="btn btn-sm btn-booked-blue rounded-pill px-4">
                                     Ver Perfil
                                 </Link>

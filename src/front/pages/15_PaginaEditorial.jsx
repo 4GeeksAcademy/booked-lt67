@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import LectoresUbi from "../components/25_LectoresUbi";
 import Chat from "../components/37_Chat";
+import "../shelfStyles.css";
 
 // Assets e Imágenes
 import booksImg from "../assets/img/Books.png";
@@ -85,11 +86,11 @@ const PaginaEditorial = () => {
         try {
             const [perfil, librosGlob, posts, respFavLibros, respLeyendo, reviewsGlob] = await Promise.all([
                 request(`editorial/${editorialId}`),
-                request(`libro/editorial/${editorialId}`), 
+                request(`libro/editorial/${editorialId}`),
                 request(`posteditorial/editorial/${editorialId}`),
                 request(`lectores_fav_libros_editorial/${editorialId}`),
                 request(`lectores_leyendo_editorial/${editorialId}`),
-                request(`reviews`) 
+                request(`reviews`)
             ]);
 
             const misLibrosFiltrados = librosGlob || [];
@@ -148,33 +149,37 @@ const PaginaEditorial = () => {
 
     const TarjetaLibroEditorial = ({ l }) => {
         return (
-            <div className="col-md-4 col-lg-3 mb-5" style={{ marginTop: '110px' }}>
-                <div className="card-feature text-center h-100 shadow-sm border-0 bg-white d-flex flex-column pb-3 px-2">
-                    <div className="book-cover-floating">
+            <div className="col-12 col-sm-6 col-lg-4 col-xl-3 mb-5 shelf-item px-3">
+                {/* El nicho de madera */}
+                <div className="shelf-cubby">
+                    <div className="book-3d" onClick={() => navigate(`/ver_libro/${l.id}`)}>
                         <img
                             src={l.image_url || "https://via.placeholder.com/150x225?text=No+Cover"}
-                            className="portada-full"
                             alt={l.nombre}
                         />
                     </div>
+                    <div className="shelf-floor-wood"></div>
+                </div>
 
-                    <div className="flex-grow-1 d-flex flex-column mt-3">
-                        <h6 className="fw-bold text-dark mb-1 text-truncate px-2" title={l.nombre}>
-                            {l.nombre}
-                        </h6>
-                        <span className="badge bg-light text-info-booked border rounded-pill mx-auto mb-3">{l.genero}</span>
+                {/* Detalles y Acciones debajo de la repisa */}
+                <div className="text-center mt-3">
+                    <h6 className="fw-bold text-dark mb-1 text-truncate px-2" title={l.nombre}>
+                        {l.nombre}
+                    </h6>
+                    <div className="mb-2">
+                        <span className="badge bg-light text-info-booked border rounded-pill">{l.genero}</span>
+                    </div>
 
-                        <div className="d-flex justify-content-center gap-1 mt-auto flex-wrap">
-                            <Link to={`/ver_libro/${l.id}`} className="btn btn-sm btn-outline-info rounded-pill px-3" title="Ver Obra">
-                                <i className="fas fa-eye"></i>
-                            </Link>
-                            <Link to={`/editar_libro_editorial/${l.id}`} className="btn btn-sm btn-outline-warning rounded-pill px-3" title="Editar">
-                                <i className="fas fa-edit"></i>
-                            </Link>
-                            <button onClick={() => deletelibro(l.id)} className="btn btn-sm btn-danger rounded-pill px-3" title="Eliminar">
-                                <i className="fas fa-trash"></i>
-                            </button>
-                        </div>
+                    <div className="d-flex justify-content-center gap-2 flex-wrap">
+                        <Link to={`/ver_libro/${l.id}`} className="btn btn-sm btn-outline-info rounded-pill px-3" title="Ver Obra">
+                            <i className="fas fa-eye"></i>
+                        </Link>
+                        <Link to={`/editar_libro_editorial/${l.id}`} className="btn btn-sm btn-outline-warning rounded-pill px-3" title="Editar">
+                            <i className="fas fa-edit"></i>
+                        </Link>
+                        <button onClick={() => deletelibro(l.id)} className="btn btn-sm btn-outline-danger rounded-pill px-3" title="Eliminar">
+                            <i className="fas fa-trash"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -295,7 +300,7 @@ const PaginaEditorial = () => {
                                 </Link>
                             </div>
 
-                            <div className="row mt-4">
+                            <div className="row mt-4 bookshelf-grid">
                                 {db.misLibros.length > 0 ? (
                                     db.misLibros.map(l => <TarjetaLibroEditorial key={l.id} l={l} />)
                                 ) : (

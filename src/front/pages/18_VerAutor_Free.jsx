@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import "../shelfStyles.css";
 
 const VerAutorFree = () => {
     const { theId } = useParams();
@@ -11,13 +12,11 @@ const VerAutorFree = () => {
         fetch(`${baseUrl}/api/autor/${theId}`)
             .then(response => response.json())
             .then(data => {
-                // Si la API devuelve un objeto envuelto (ej: { autor: {...} }) o directo
                 setAutor(data.autor || data);
             })
             .catch(err => console.error("Error cargando autor:", err));
     }, [theId]);
 
-    // --- PANTALLA DE CARGA ---
     if (autor === null) {
         return (
             <div className="container-fluid min-vh-100 d-flex flex-column align-items-center justify-content-center" style={{ background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)' }}>
@@ -33,17 +32,22 @@ const VerAutorFree = () => {
     return (
         <div className="container-fluid min-vh-100 py-5" style={{ background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)' }}>
             <div className="container">
-                <div className="card shadow-lg border-0 rounded-5 overflow-hidden mx-auto" style={{ maxWidth: "850px" }}>
-                    
+                <button
+                    className="btn btn-sm btn-light border rounded-pill px-3 shadow-sm mb-4 text-muted fw-bold"
+                    onClick={() => navigate(-1)}
+                >
+                    <i className="fas fa-arrow-left me-2"></i>Volver
+                </button>
+
+                <div className="card shadow-lg border-0 rounded-5 overflow-hidden mx-auto mb-5" style={{ maxWidth: "1000px" }}>
                     {/* BANNER DE CABECERA */}
                     <div className="bg-info-booked position-relative" style={{ height: "140px", width: "100%" }}>
-                        {/* Adorno de fondo en el banner */}
                         <i className="fas fa-feather-alt position-absolute text-white opacity-25" style={{ fontSize: "8rem", right: "20px", top: "-20px", transform: "rotate(15deg)" }}></i>
                     </div>
 
                     <div className="card-body p-4 p-md-5 pt-0">
-                        <div className="row">
-                            {/* COLUMNA FOTO DE PERFIL (Flotante) */}
+                        <div className="row mb-5">
+                            {/* FOTO DE PERFIL */}
                             <div className="col-12 col-md-4 text-center text-md-start mb-4 mb-md-0" style={{ marginTop: "-70px" }}>
                                 <div className="position-relative d-inline-block">
                                     <img
@@ -53,82 +57,103 @@ const VerAutorFree = () => {
                                         style={{ width: "160px", height: "160px", objectFit: "cover", border: "4px solid white" }}
                                     />
                                     {autor.is_verified && (
-                                        <div 
-                                            className="position-absolute bg-primary text-white rounded-circle d-flex align-items-center justify-content-center border border-3 border-white shadow-sm"
-                                            style={{ width: "35px", height: "35px", bottom: "10px", right: "10px", fontSize: "16px" }}
-                                            title="Perfil Oficial Verificado"
-                                        >
+                                        <div className="position-absolute bg-primary text-white rounded-circle d-flex align-items-center justify-content-center border border-3 border-white shadow-sm"
+                                            style={{ width: "35px", height: "35px", bottom: "10px", right: "10px" }}>
                                             <i className="fas fa-check"></i>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            {/* COLUMNA DE DATOS */}
+                            {/* DATOS DEL AUTOR */}
                             <div className="col-12 col-md-8 pt-md-3 text-center text-md-start">
-                                <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-2">
-                                    <h1 className="fw-bold text-dark mb-0 display-6">
-                                        {nombreCompleto}
-                                    </h1>
-                                    
-                                    {/* ESTADOS DEL PERFIL */}
-                                    <div className="mt-2 mt-md-0">
-                                        {autor.is_verified ? (
-                                            <span className="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3 py-2">
-                                                <i className="fas fa-check-circle me-1"></i> Autor Verificado
-                                            </span>
-                                        ) : autor.verification_status === "pending" && autor.email ? (
-                                            <span className="badge bg-warning bg-opacity-10 text-warning border border-warning rounded-pill px-3 py-2 text-dark">
-                                                <i className="fas fa-clock me-1"></i> Verificación Pendiente
-                                            </span>
-                                        ) : (
-                                            <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary rounded-pill px-3 py-2">
-                                                <i className="fas fa-ghost me-1"></i> Perfil Comunitario
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-
+                                <h1 className="fw-bold text-dark mb-1 display-6">{nombreCompleto}</h1>
                                 <p className="text-info-booked fw-bold text-uppercase small mb-4" style={{ letterSpacing: "1px" }}>
-                                    <i className="fas fa-pen-nib me-2"></i>Autor en Booked
+                                    <i className="fas fa-pen-nib me-2"></i>Escritor Verificado
                                 </p>
 
                                 <div className="row g-3 bg-light p-4 rounded-4 border shadow-sm">
+                                    {/* <div className="col-sm-6 text-break">
+                                        <p className="mb-1 text-muted small fw-bold text-uppercase">Contacto</p>
+                                        <p className="fw-bold text-dark mb-0">{autor.email || "No disponible"}</p>
+                                    </div> */}
                                     <div className="col-sm-6">
-                                        <p className="mb-1 text-muted small fw-bold text-uppercase"><i className="fas fa-envelope me-2"></i>Email de Contacto</p>
-                                        <p className="fw-bold text-dark mb-0 text-break">
-                                            {autor.email ? (
-                                                <a href={`mailto:${autor.email}`} className="text-dark text-decoration-none hover-primary">{autor.email}</a>
-                                            ) : (
-                                                <span className="text-muted fst-italic">No disponible</span>
-                                            )}
-                                        </p>
-                                    </div>
-                                    <div className="col-sm-6">
-                                        <p className="mb-1 text-muted small fw-bold text-uppercase"><i className="fas fa-map-marker-alt me-2"></i>País de Origen</p>
-                                        <p className="fw-bold text-dark mb-0">
-                                            {autor.pais || <span className="text-muted fst-italic">Desconocido</span>}
-                                        </p>
+                                        <p className="mb-1 text-muted small fw-bold text-uppercase">País</p>
+                                        <p className="fw-bold text-dark mb-0">{autor.pais || "Desconocido"}</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <hr className="my-4 opacity-25" />
+                        {/* --- SECCIÓN DE LIBROS: ESTILO ESTANTERÍA 3D --- */}
+                        <div className="mt-5">
+                            <div className="mb-4">
+                                <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Mi Obra Literaria</span>
+                                <h3 className="fw-bold text-dark mt-2">Biblioteca de {autor.nombre}</h3>
+                            </div>
 
-                        {/* PIE DE TARJETA: Botones */}
-                        <div className="d-flex justify-content-center justify-content-md-start">
-                            <button
-                                className="btn btn-light border rounded-pill px-4 shadow-sm fw-bold text-muted"
-                                onClick={() => navigate(-1)}
-                            >
-                                <i className="fas fa-arrow-left me-2"></i> Volver atrás
-                            </button>
+                            <div className="row bookshelf-grid">
+                                {autor.libros && autor.libros.length > 0 ? (
+                                    autor.libros.map((libro) => (
+                                        <div key={libro.id} className="col-6 col-md-4 col-lg-3 mb-5 shelf-item px-3">
+                                            {/* NICHO DE MADERA */}
+                                            <div className="shelf-cubby">
+                                                <div className="book-3d" onClick={() => navigate(`/ver_libro/${libro.id}`)}>
+                                                    <img src={libro.image_url || "https://via.placeholder.com/200x300?text=Booked"} alt={libro.nombre} />
+                                                </div>
+                                                <div className="shelf-floor-wood"></div>
+                                            </div>
+
+                                            {/* INFO Y BOTONES (SIMETRÍA CORREGIDA) */}
+                                            <div className="text-center mt-3">
+                                                <h6 className="fw-bold text-dark mb-1 text-truncate" style={{ fontSize: '0.9rem' }}>
+                                                    {libro.nombre}
+                                                </h6>
+                                                
+                                                <div className="d-flex justify-content-center align-items-center gap-2 mt-2">
+                                                    {/* GÉNERO: ALTURA IGUALADA AL BOTÓN */}
+                                                    <span 
+                                                        className="badge bg-info-booked bg-opacity-10 text-white rounded-pill d-inline-flex align-items-center justify-content-center border border-info-booked border-opacity-25" 
+                                                        style={{ 
+                                                            padding: '0.25rem 0.75rem', 
+                                                            fontSize: '0.75rem', 
+                                                            minHeight: '31px', 
+                                                            lineHeight: '1' 
+                                                        }}
+                                                    >
+                                                        {libro.genero || "General"}
+                                                    </span>
+
+                                                    {/* BOTÓN VER */}
+                                                    <Link 
+                                                        to={`/ver_libro/${libro.id}`} 
+                                                        className="btn btn-sm btn-booked-blue rounded-pill px-3 py-1 shadow-sm d-inline-flex align-items-center"
+                                                        style={{ fontSize: '0.75rem', minHeight: '31px' }}
+                                                    >
+                                                        <i className="fas fa-eye me-1"></i> Ver
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="col-12 text-center py-5 bg-light rounded-4 border border-dashed">
+                                        <p className="text-muted mb-0">Este autor aún no tiene libros en su estantería.</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                        
                     </div>
                 </div>
             </div>
+
+            <style>
+                {`
+                .bookshelf-grid { display: flex; flex-wrap: wrap; justify-content: center; }
+                .text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                .border-dashed { border: 2px dashed rgba(0,0,0,0.1) !important; }
+                `}
+            </style>
         </div>
     );
 };

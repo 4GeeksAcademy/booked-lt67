@@ -4,10 +4,12 @@ import useGlobalReducer from "../hooks/useGlobalReducer";
 import BuscadorGoogleBooks from "../components/23_BuscadorGoogleBooks";
 import BuscarLibroIA from "../components/25_BuscarLibroIA";
 import DmLector from "../components/37_DmLector";
+import { useLocation } from "react-router-dom"
 
 // Assets e Imágenes
 import logoBookedUrl from "../assets/img/logo_booked1.png";
 import booksImg from "../assets/img/Books.png";
+import "../shelfStyles.css";
 
 const PaginaLector = () => {
     const { store } = useGlobalReducer();
@@ -32,6 +34,7 @@ const PaginaLector = () => {
         reviews: [],
         loading: true
     });
+
 
     const api = `${import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "")}/api`;
 
@@ -75,6 +78,18 @@ const PaginaLector = () => {
         }
     }, [store.lector_id]);
 
+    const location = useLocation();
+
+    useEffect(() => {
+        // Si venimos redirigidos desde el perfil público con un estado de "abrirChatCon"
+        if (location.state?.abrirChatCon) {
+            setAmigoSeleccionado(location.state.abrirChatCon);
+            setSeccionActiva("mensajes_comunidad");
+            // Limpiamos el estado para que no se abra siempre al recargar
+            window.history.replaceState({}, document.title);
+        }
+    }, [location]);
+
     useEffect(() => { if (store.auth_lector) load(); }, [store.auth_lector, load]);
 
     const exec = async (u, m, b) => { if (await request(u, m, b)) load(); };
@@ -91,54 +106,34 @@ const PaginaLector = () => {
         const loEstaLeyendo = db.leyendo.some(ley => (ley.libro?.id || ley.libro_id) === l.id);
 
         return (
-            <div className="col-md-4 col-lg-3 mb-5" style={{ marginTop: '110px' }}>
-                <div className="card-feature text-center h-100 shadow-sm border-0 bg-white d-flex flex-column">
-                    <div className="book-cover-floating">
-                        <img
-                            src={l.image_url || "https://via.placeholder.com/150x225?text=No+Cover"}
-                            className="portada-full"
-                            alt={l.nombre}
-                        />
+            <div className="col-md-4 col-lg-3 mb-5 shelf-item px-3">
+                <div className="shelf-cubby">
+                    <div className="book-3d" onClick={() => irAlLibro(l.id)}>
+                        <img src={l.image_url || "placeholder"} alt={l.nombre} />
                     </div>
+                    <div className="shelf-floor-wood"></div>
+                </div>
 
-                    <div className="flex-grow-1 d-flex flex-column mt-3">
-                        <h6 className="fw-bold text-dark mb-1 text-truncate px-2">
-                            {l.nombre}
-                        </h6>
-                        <p className="small text-muted mb-3">
-                            {l.nombre_autor || "Autor Desconocido"}
-                        </p>
+                <div className="text-center mt-3">
+                    <h6 className="fw-bold text-dark mb-1 text-truncate">{l.nombre}</h6>
 
-                        <div className="d-flex justify-content-center gap-1 mt-auto flex-wrap">
-                            <button
-                                className={`btn btn-sm rounded-pill px-2 ${loEstaLeyendo ? 'btn-warning text-white' : 'btn-outline-warning'}`}
-                                onClick={() => exec(loEstaLeyendo ? `leyendo/libros/${store.lector_id}/${l.id}` : `leyendo/libros`,
-                                    loEstaLeyendo ? "DELETE" : "POST",
-                                    loEstaLeyendo ? null : { lector_id: store.lector_id, libro_id: l.id })}
-                                title="Leyendo"
-                            >
-                                <i className="fas fa-book-open"></i>
-                            </button>
-                            <button
-                                className={`btn btn-sm rounded-pill px-2 ${esFavorito ? 'btn-danger' : 'btn-outline-danger'}`}
-                                onClick={() => exec(esFavorito ? `favoritos/libros/${store.lector_id}/${l.id}` : `favoritos/libros`,
-                                    esFavorito ? "DELETE" : "POST",
-                                    esFavorito ? null : { lector_id: store.lector_id, libro_id: l.id })}
-                                title="Favorito"
-                            >
-                                <i className={`fa${esFavorito ? 's' : 'r'} fa-heart`}></i>
-                            </button>
-
-                            <button
-                                className="btn btn-sm btn-outline-info rounded-pill px-2"
-                                onClick={() => setLibroParaReviews(l)}
-                                title="Ver Reseñas"
-                            >
-                                <i className="fas fa-star"></i>
-                            </button>
-
-                            <Link to={`/ver_libro/${l.id}`} className="btn btn-sm btn-booked-blue rounded-pill px-3">Detalles</Link>
-                        </div>
+                    <div className="d-flex justify-content-center gap-1 mt-2 flex-wrap">
+                        <button
+                            className={`btn btn-sm rounded-pill ${loEstaLeyendo ? 'btn-warning text-white' : 'btn-outline-warning'}`}
+                            onClick={() => exec(loEstaLeyendo ? `leyendo/libros/${store.lector_id}/${l.id}` : `leyendo/libros`, loEstaLeyendo ? "DELETE" : "POST", loEstaLeyendo ? null : { lector_id: store.lector_id, libro_id: l.id })}
+                        >
+                            <i className="fas fa-book-open"></i>
+                        </button>
+                        <button
+                            className={`btn btn-sm rounded-pill ${esFavorito ? 'btn-danger' : 'btn-outline-danger'}`}
+                            onClick={() => exec(esFavorito ? `favoritos/libros/${store.lector_id}/${l.id}` : `favoritos/libros`, esFavorito ? "DELETE" : "POST", esFavorito ? null : { lector_id: store.lector_id, libro_id: l.id })}
+                        >
+                            <i className={`fa${esFavorito ? 's' : 'r'} fa-heart`}></i>
+                        </button>
+                        <button className="btn btn-sm btn-outline-info rounded-pill" onClick={() => setLibroParaReviews(l)}>
+                            <i className="fas fa-star"></i>
+                        </button>
+                        <Link to={`/ver_libro/${l.id}`} className="btn btn-sm btn-booked-blue rounded-pill">Detalles</Link>
                     </div>
                 </div>
             </div>
@@ -187,11 +182,11 @@ const PaginaLector = () => {
                         </div>
 
                         <div className="text-end mt-4 pt-3 border-top">
-                            <Link 
-                            to="/nueva_review" 
-                            state={{ libroId: libroParaReviews?.id, libroNombre: libroParaReviews?.nombre }} 
-                            className="btn btn-booked-blue rounded-pill me-2">
-                            Escribir Reseña
+                            <Link
+                                to="/nueva_review"
+                                state={{ libroId: libroParaReviews?.id, libroNombre: libroParaReviews?.nombre }}
+                                className="btn btn-booked-blue rounded-pill me-2">
+                                Escribir Reseña
                             </Link>
                             <button className="btn btn-secondary rounded-pill" onClick={() => setLibroParaReviews(null)}>Cerrar</button>
                         </div>
@@ -399,6 +394,13 @@ const PaginaLector = () => {
                                             {db.otros.map(o => <option key={o.id} value={o.id}>{o.username || o.nombre}</option>)}
                                         </select>
                                         <button className="btn btn-booked-blue rounded-pill px-4" onClick={async () => { await request(`follow`, "POST", { seguidor_id: store.lector_id, seguido_id: parseInt(idASeguir) }); setIdASeguir(""); load(); }}>Seguir</button>
+
+                                        {/* Botón para "Previsualizar" antes de seguir */}
+                                        {idASeguir && (
+                                            <Link to={`/perfil_lector/${idASeguir}`} className="btn btn-outline-info-booked rounded-pill">
+                                                <i className="fas fa-eye"></i>
+                                            </Link>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -408,17 +410,19 @@ const PaginaLector = () => {
                                     {db.usuario?.siguiendo?.length > 0 ? db.usuario.siguiendo.map((r, i) => (
                                         <div key={i} className="d-flex justify-content-between align-items-center py-3 border-bottom last-border-none">
                                             <div className="d-flex align-items-center gap-3">
-                                                <div className="bg-light rounded-circle p-2 text-info-booked"><i className="fas fa-user"></i></div>
-                                                <span className="fw-bold text-dark">{r.nombre_seguido}</span>
+                                                <div className="bg-light rounded-circle p-2 text-info-booked" style={{ width: '40px', textAlign: 'center' }}>
+                                                    <i className="fas fa-user"></i>
+                                                </div>
+                                                {/* LINK AL PERFIL PÚBLICO */}
+                                                <Link to={`/perfil_lector/${r.seguido_id}`} className="text-decoration-none">
+                                                    <span className="fw-bold text-dark hover-info-booked">{r.nombre_seguido}</span>
+                                                </Link>
                                             </div>
-                                            <div className="d-flex gap-2">
-                                                {/* NUEVO BOTÓN: Enviar Mensaje */}
+                                            <div className="d-flex gap-2 align-items-center">
                                                 <button
                                                     className="btn btn-sm btn-outline-info-booked rounded-pill"
                                                     onClick={() => {
-                                                        // 1. Guardamos los datos del amigo para que DmLector sepa a quién abrir
                                                         setAmigoSeleccionado({ id: r.seguido_id, nombre: r.nombre_seguido });
-                                                        // 2. Cambiamos a la sección de mensajes
                                                         setSeccionActiva("mensajes_comunidad");
                                                     }}
                                                 >
