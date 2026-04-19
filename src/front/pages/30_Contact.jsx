@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import logoBookedUrl from "../assets/img/logo_booked.png";
 import FotoRodolfo from "../assets/img/RodolfoImage.jpg";
+import FotoDaniel from "../assets/img/daniel.jpeg";
 
 const Contact = () => {
     const team = [
@@ -18,9 +19,9 @@ const Contact = () => {
             name: "Daniel",
             role: "Full Stack Developer",
             description: "Experto en desarrollo frontend y diseño de interfaces de usuario. Enfocado en crear experiencias digitales intuitivas.",
-            image: logoBookedUrl, // Corregido: pasamos la variable directamente
-            linkedin: "#",
-            github: "#"
+            image: FotoDaniel, // Corregido: pasamos la variable directamente
+            linkedin: "https://www.linkedin.com/in/daniel-gonz%C3%A1lez-simpson-945034154/",
+            github: "https://github.com/DanielGoSi97"
         }
     ];
 

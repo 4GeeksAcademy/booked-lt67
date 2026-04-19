@@ -16,6 +16,11 @@ const Biblioteca = () => {
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    // --- NUEVAS LÍNEAS AGREGADAS PARA FILTROS ---
+    const [filtroCategoria, setFiltroCategoria] = useState("");
+    const [ordenarPor, setOrdenarPor] = useState("novedades");
+    // --------------------------------------------
+
     const api = `${import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "")}/api`;
 
     const loadData = useCallback(async () => {
@@ -47,6 +52,30 @@ const Biblioteca = () => {
 
     const irAlLibro = (id) => navigate(`/ver_libro/${id}`);
 
+    // --- LÓGICA DE FILTRADO Y ORDENADO (SIN MODIFICAR SETLIBROS ORIGINAL) ---
+    const categoriasExistentes = [...new Set(libros.map(l => l.genero).filter(g => g))];
+
+    const librosAMostrar = libros
+        .filter(l => {
+            if (!filtroCategoria) return true;
+            return l.genero === filtroCategoria;
+        })
+        .sort((a, b) => {
+            if (ordenarPor === "alfabetico") {
+                return a.nombre.localeCompare(b.nombre);
+            }
+            if (ordenarPor === "ranking") {
+                const getPromedio = (id) => {
+                    const revs = reviews.filter(r => (r.libro?.id || r.libro_id) === id);
+                    return revs.length > 0 ? (revs.reduce((acc, curr) => acc + curr.puntuacion, 0) / revs.length) : 0;
+                };
+                return getPromedio(b.id) - getPromedio(a.id);
+            }
+            // Por defecto (Novedades) usamos el ID
+            return b.id - a.id;
+        });
+    // -----------------------------------------------------------------------
+
     if (loading) {
         return (
             <div className="d-flex justify-content-center align-items-center min-vh-100" style={{ background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)' }}>
@@ -59,6 +88,11 @@ const Biblioteca = () => {
     // COMPONENTE: TARJETA DE LIBRO (ESTILO NICHO DE MADERA)
     // =========================================================
     const LibroEnNichoRealista = ({ l }) => {
+        // --- LINEAS AGREGADAS PARA CÁLCULO DE PROMEDIO ---
+        const revs = reviews.filter(r => r.libro?.id === l.id);
+        const promedio = revs.length > 0 ? (revs.reduce((acc, curr) => acc + curr.puntuacion, 0) / revs.length).toFixed(1) : null;
+        // ------------------------------------------------
+
         return (
             <div className="col-12 col-sm-6 col-lg-4 col-xl-3 mb-5 shelf-item px-3 position-relative z-index-1">
                 
@@ -85,6 +119,17 @@ const Biblioteca = () => {
 
                 {/* Detalles y botones integrados sobre la tarjeta de estante individual */}
                 <div className="book-details-text pt-3 text-center position-relative z-index-4 px-2">
+                    {/* --- LINEAS AGREGADAS PARA MOSTRAR PROMEDIO --- */}
+                    <div className="mb-1" style={{ height: '24px' }}>
+                        {promedio ? (
+                            <span className="badge rounded-pill bg-warning text-dark shadow-sm small">
+                                <i className="fas fa-star me-1"></i> {promedio} / 10
+                            </span>
+                        ) : (
+                            <span className="badge rounded-pill bg-light text-muted border shadow-sm small" style={{ fontSize: '0.7rem' }}>Sin reseñas</span>
+                        )}
+                    </div>
+                    {/* --------------------------------------------- */}
                     <h6 className="fw-bold text-dark mb-1 text-truncate" style={{ fontSize: '0.95rem' }} title={l.nombre}>
                         {l.nombre}
                     </h6>
@@ -168,25 +213,74 @@ const Biblioteca = () => {
 
             <div className="container">
                 {/* --- ENCABEZADO Y HERRAMIENTAS --- */}
-                <div className="row align-items-center mb-5">
-                    <div className="col-lg-6 text-center text-lg-start mb-4 mb-lg-0">
+                {/* 1. Cambiamos align-items-center por align-items-end y mb-5 por mb-4 */}
+                <div className="row align-items-end mb-4">
+                    
+                    <div className="col-lg-5 text-center text-lg-start mb-4 mb-lg-0">
                         <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Catálogo Global</span>
                         <h1 className="display-4 fw-bold text-dark mt-2 mb-3">Biblioteca Booked</h1>
                         <p className="lead text-muted mb-0">Explora todos los títulos de la comunidad, lee reseñas y encuentra tu próxima gran lectura.</p>
                     </div>
+
+                    {/* 2. Añadimos pb-1 para que respiren apenas un milímetro sobre la línea */}
+                    <div className="col-lg-7 d-flex flex-row flex-wrap flex-md-nowrap gap-2 justify-content-center justify-content-lg-end align-items-center pb-1">
+                        
+                        {/* Contenedor Categoría */}
+                        <div className="d-flex align-items-center gap-2" style={{ flex: '1 1 auto', minWidth: '0' }}>
+                            <span className="text-muted small fw-bold d-none d-xl-inline text-nowrap">Filtrar:</span>
+                            <select 
+                                className="form-select rounded-pill shadow-sm border-0"
+                                style={{ 
+                                    height: '40px', 
+                                    fontSize: '0.85rem', 
+                                    minWidth: '160px', 
+                                    paddingLeft: '1rem'
+                                }}
+                                value={filtroCategoria}
+                                onChange={(e) => setFiltroCategoria(e.target.value)}
+                            >
+                                <option value="">Todas las Categorías</option>
+                                {categoriasExistentes.map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Contenedor Ordenamiento */}
+                        <div className="d-flex align-items-center gap-2" style={{ flex: '1 1 auto', minWidth: '0' }}>
+                            <span className="text-muted small fw-bold d-none d-xl-inline text-nowrap">Orden:</span>
+                            <select 
+                                className="form-select rounded-pill shadow-sm border-0"
+                                style={{ 
+                                    height: '40px', 
+                                    fontSize: '0.85rem', 
+                                    minWidth: '160px',
+                                    paddingLeft: '1rem'
+                                }}
+                                value={ordenarPor}
+                                onChange={(e) => setOrdenarPor(e.target.value)}
+                            >
+                                <option value="novedades">Novedades</option>
+                                <option value="alfabetico">A-Z (Nombre)</option>
+                                <option value="ranking">Mejores Valorados</option>
+                            </select>
+                        </div>
+                    </div>
+                    
                 </div>
 
-                <hr className="mb-5 opacity-25" />
+                {/* 3. Reducimos la opacidad de la línea y el margen para que se vea más elegante */}
+                <hr className="mb-5 text-muted opacity-25" />
 
                 {/* --- GRILLA DE LIBROS ESTILO MUEBLE REALISTA INDIVIDUAL --- */}
                 <div className="row bookshelf-realism-grid justify-content-center px-2">
-                    {libros.length > 0 ? (
-                        libros.map(l => <LibroEnNichoRealista key={l.id} l={l} />)
+                    {librosAMostrar.length > 0 ? (
+                        librosAMostrar.map(l => <LibroEnNichoRealista key={l.id} l={l} />)
                     ) : (
                         <div className="col-12 text-center text-muted py-5 my-5 bg-white rounded-5 shadow-sm">
                             <i className="fas fa-books fa-3x mb-3 text-info-booked opacity-50"></i>
-                            <h4>La biblioteca está vacía.</h4>
-                            <p className="mb-0">Utiliza el buscador superior para añadir el primer libro al catálogo.</p>
+                            <h4>No se encontraron libros.</h4>
+                            <p className="mb-0">Prueba ajustando los filtros o categorías.</p>
                         </div>
                     )}
                 </div>
