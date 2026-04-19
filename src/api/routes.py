@@ -1529,6 +1529,7 @@ def buscar_editorial():
 
     return jsonify([e.serialize() for e in editoriales]), 200
 
+
 @api.route('/reconocer_portada', methods=['POST'])
 def reconocer_portada():
     if 'portada' not in request.files:
@@ -1538,91 +1539,101 @@ def reconocer_portada():
     image_data = file.read()
 
     try:
-        # 1. Cargamos AMBAS llaves desde el .env
         api_key_gemini = os.getenv("GEMINI_API_KEY")
         api_key_books = os.getenv("GOOGLE_BOOKS_API_KEY")
-
-        # Le pasamos la llave de Gemini a la IA
         ai_client = genai.Client(api_key=api_key_gemini)
 
-        prompt = """
-        Mira la imagen de esta portada de libro. Extrae la información y devuelve un JSON.
-        Si conoces el libro, completa los datos con tu conocimiento de experto bibliotecario.
+        # 1. IA analiza la imagen
+        prompt = """Mira esta portada de libro. Extrae la información y devuelve un JSON con:
+        'titulo', 'autor', 'editorial', 'descripcion', 'paginas', 'categoria'"""
         
-        Campos requeridos en el JSON:
-        'titulo', 'autor', 'editorial', 'descripcion', 'paginas', 'categoria'
-        
-        Si no reconoces el libro, devuelve {"titulo": "Error", "autor": "No detectado"}.
-        """
-
-        # Forzamos a la IA a responder en JSON puro
         response = ai_client.models.generate_content(
             model='gemini-2.5-flash',
-            contents=[
-                prompt,
-                types.Part.from_bytes(data=image_data, mime_type=file.mimetype)
-            ],
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json"
-            )
+            contents=[prompt, types.Part.from_bytes(data=image_data, mime_type=file.mimetype)],
+            config=types.GenerateContentConfig(response_mime_type="application/json")
         )
-
-        # Ahora ia_data ya viene como un diccionario gracias al response_mime_type
         ia_data = json.loads(response.text)
 
         if ia_data.get("titulo") == "Error":
             return jsonify({"message": "No se pudo identificar el libro"}), 200
 
-        # 1. Búsqueda MEJORADA en Google Books usando intitle e inauthor + API KEY de Books
-        titulo_limpio = ia_data.get('titulo', '').replace(' ', '+')
-        autor_limpio = ia_data.get('autor', '').replace(' ', '+')
-
-        # Formato exacto que le gusta a Google: intitle:Cien+Años+de+Soledad+inauthor:Gabriel+García
-        query = f"intitle:{titulo_limpio}+inauthor:{autor_limpio}"
-
-        # 👇 AQUÍ USAMOS LA NUEVA LLAVE DE BOOKS 👇
-        google_books_url = f"https://www.googleapis.com/books/v1/volumes?q={query}&maxResults=5&key={api_key_books}"
-
-        # ESTO IMPRIMIRÁ LA URL EN TU TERMINAL DE FLASK
-        print(f"--- URL DE GOOGLE BOOKS: {google_books_url} ---")
-
+        # 2. Buscamos en Google Books para asegurar la mejor portada
+        query = f"intitle:{ia_data.get('titulo')}+inauthor:{ia_data.get('autor')}"
+        google_books_url = f"https://www.googleapis.com/books/v1/volumes?q={query.replace(' ', '+')}&maxResults=1&key={api_key_books}"
         res_books = requests.get(google_books_url).json()
 
-        # ESTO IMPRIMIRÁ SI GOOGLE BOOKS DA UN ERROR
-        if "error" in res_books:
-            print(f"--- ERROR DE GOOGLE BOOKS: {res_books['error']} ---")
-
         portada_url = "https://placehold.co/400x600/e2e8f0/475569.png?text=Sin+Portada"
+        google_id = None
 
         if "items" in res_books:
-            # Buscar la primera imagen disponible
-            for item in res_books["items"]:
-                info = item.get("volumeInfo", {})
-                if "imageLinks" in info and "thumbnail" in info["imageLinks"]:
-                    portada_url = info["imageLinks"]["thumbnail"].replace(
-                        "http://", "https://")
-                    break
-
-            # Rellenar textos
-            info_principal = res_books["items"][0]["volumeInfo"]
-            ia_data["editorial"] = ia_data.get(
-                "editorial") or info_principal.get("publisher", "Desconocida")
-            ia_data["descripcion"] = ia_data.get("descripcion") or info_principal.get(
-                "description", "Sin descripción.")
-            ia_data["paginas"] = ia_data.get(
-                "paginas") or info_principal.get("pageCount", "N/A")
-            ia_data["categoria"] = info_principal.get(
-                "categories", ["General"])[0]
-        else:
-            print("--- GOOGLE BOOKS NO DEVOLVIÓ NINGÚN LIBRO ('items' no encontrado) ---")
-
+            item = res_books["items"][0]
+            google_id = item.get("id")
+            info = item.get("volumeInfo", {})
+            portada_url = info.get("imageLinks", {}).get("thumbnail", portada_url).replace("http://", "https://")
+            ia_data["editorial"] = ia_data.get("editorial") or info.get("publisher", "Editorial Genérica")
+        
         ia_data["portada_url"] = portada_url
 
-        # ESTO IMPRIMIRÁ EL JSON FINAL QUE SE ENVÍA A REACT
-        print(f"--- JSON ENVIADO AL FRONTEND: {ia_data} ---")
+        # --- 3. LÓGICA DE RELACIONES (AUTOR Y EDITORIAL) ---
+        
+        # A. Procesar Autor
+        nombre_completo_autor = ia_data.get("autor", "Autor Desconocido")
+        autor_clean = nombre_completo_autor.lower().replace(" ", "").replace(".", "")
+        
+        autor = Autor.query.filter(
+            func.lower(func.replace(func.replace(func.concat(Autor.nombre, Autor.apellido), " ", ""), ".", "")) == autor_clean
+        ).first()
+
+        if not autor:
+            partes = nombre_completo_autor.split(" ", 1)
+            autor = Autor(
+                nombre=partes[0], 
+                apellido=partes[1] if len(partes) > 1 else "", 
+                is_verified=False
+            )
+            db.session.add(autor)
+            db.session.commit()
+
+        # B. Procesar Editorial
+        nombre_ed = ia_data.get("editorial", "Editorial Genérica")
+        ed_clean = nombre_ed.lower().replace("editorial", "").replace(" ", "").strip()
+        
+        editorial = Editorial.query.filter(
+            func.lower(func.replace(Editorial.nombre, " ", "")).ilike(f"%{ed_clean}%")
+        ).first()
+
+        if not editorial:
+            editorial = Editorial(nombre=nombre_ed, pais="Desconocido", is_active=True, is_verified=False)
+            db.session.add(editorial)
+            db.session.commit()
+
+        # C. Guardar Libro final vinculado
+        libro_existente = Libro.query.filter((Libro.nombre == ia_data.get("titulo")) | (Libro.google_id == google_id)).first()
+
+        if not libro_existente:
+            nuevo_libro = Libro(
+                nombre=ia_data.get("titulo"),
+                genero=ia_data.get("categoria", "General"),
+                google_id=google_id,
+                descripcion=ia_data.get("descripcion", ""),
+                image_url=ia_data.get("portada_url"),
+                autor_id=autor.id,      # ID REAL vinculado
+                editorial_id=editorial.id # ID REAL vinculado
+            )
+            db.session.add(nuevo_libro)
+            db.session.commit()
+            ia_data["id"] = nuevo_libro.id
+        else:
+            ia_data["id"] = libro_existente.id
 
         return jsonify({"message": "¡Éxito!", "libro": ia_data}), 200
 
+    except Exception as e:
+        db.session.rollback()
+        print(f"ERROR CRÍTICO: {str(e)}")
+        return jsonify({"message": "Error interno", "error": str(e)}), 500
+
+    
     except Exception as e:
         error_msg = str(e)
         print(f"--- ERROR CRÍTICO --- \n{error_msg}")

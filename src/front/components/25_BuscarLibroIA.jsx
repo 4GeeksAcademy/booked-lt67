@@ -1,9 +1,17 @@
 import React, { useState } from 'react';
+import successSound from "../assets/sounds/BookedAudioLogov2.mp3"
+import { Link } from "react-router-dom";
 
 const EscanerLibro = () => {
     const [cargando, setCargando] = useState(false);
     const [resultado, setResultado] = useState(null);
     const [error, setError] = useState(null);
+
+    const playSuccess = () => {
+        const audio = new Audio(successSound);
+        audio.volume = 0.4; // Ajustamos el volumen para que no asuste al usuario
+        audio.play().catch(e => console.log("Audio bloqueado por el navegador"));
+    };
 
     const analizarPortada = async (e) => {
         const file = e.target.files[0];
@@ -36,6 +44,7 @@ const EscanerLibro = () => {
                     data.libro.portada_url = data.libro.portada_url.replace("http://", "https://");
                 }
                 setResultado(data.libro);
+                playSuccess();
             } else {
                 setError(data.message || "No se pudo reconocer el libro.");
             }
@@ -52,7 +61,7 @@ const EscanerLibro = () => {
         <div className="bg-white p-4 p-md-5 rounded-4 shadow-sm border position-relative overflow-hidden w-100" style={{ borderTop: '5px solid #24b0d9' }}>
             {/* Ícono de fondo decorativo */}
             <i className="fas fa-camera-retro position-absolute opacity-10" style={{ fontSize: '10rem', right: '-20px', bottom: '-20px', color: '#24b0d9' }}></i>
-            
+
             <div className="position-relative z-index-1">
                 <div className="d-flex align-items-center gap-3 mb-3">
                     <div className="bg-light p-3 rounded-circle text-info-booked">
@@ -103,9 +112,9 @@ const EscanerLibro = () => {
                                     alt={resultado.titulo}
                                     className="img-fluid rounded shadow-sm"
                                     style={{ maxHeight: '200px', objectFit: 'contain' }}
-                                    onError={(e) => { 
-                                        e.target.onerror = null; 
-                                        e.target.src = "https://placehold.co/400x600/666/fff?text=Error+Imagen"; 
+                                    onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = "https://placehold.co/400x600/666/fff?text=Error+Imagen";
                                     }}
                                 />
                             </div>
@@ -133,9 +142,18 @@ const EscanerLibro = () => {
                                     }}>
                                         {resultado.descripcion}
                                     </p>
+                                    <div className="mt-3 text-center">
+                                        <Link 
+                                            to={`/ver_libro/${resultado.id}`} 
+                                            className="btn btn-booked-blue rounded-pill px-4 shadow-sm w-25 w-md-auto"
+                                        >
+                                            <i className="fas fa-info-circle me-2"></i>
+                                            Ver detalles
+                                        </Link>
+                                    </div>
 
                                     {/* Botón de acción integrado (Asegúrate de conectarlo a tu lógica de agregar libros) */}
-                                    
+
                                 </div>
                             </div>
                         </div>
