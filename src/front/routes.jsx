@@ -76,6 +76,10 @@ import CompletarRegistroAutor from "./pages/10_CompletarRegistroAutor";
 import CompletarRegistroEditorial from "./pages/11_CompletarRegistroEditorial";
 import Biblioteca from "./pages/30_Biblioteca";
 import VerLectorPublico from "./pages/39_VerLectorPublico";
+import LimitacionesIA from "./pages/41_LimitacionesIA";
+import Terminos from "./pages/41_Terminos";
+import Privacidad from "./pages/41_Privacidad";
+import ComoFunciona from "./pages/41_ComoFunciona";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -188,6 +192,13 @@ export const router = createBrowserRouter(
 
       <Route path="/perfil_lector/:theId" element={<VerLectorPublico />} />
 
+      <Route path="/ayuda/limitaciones" element={<LimitacionesIA />} />
+      <Route path="/ayuda/preguntas-frecuentes" element={<ComoFunciona />} />
+
+      <Route path="/legal/terminos" element={<Terminos />} />
+      <Route path="/legal/privacidad" element={<Privacidad />} />
+
+      
       </Route>
     )
 );
