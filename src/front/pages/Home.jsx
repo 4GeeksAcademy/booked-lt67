@@ -474,16 +474,19 @@ export const Home = () => {
 
                     <div className="row">
                         {postsRecientes.map((post, index) => {
-                            // Si tiene nombre_autor y no está vacío, es un Autor. Si no, es Editorial.
+                            // 1. Identificamos si es Autor o Editorial
                             const esAutor = post.nombre_autor && post.nombre_autor.trim() !== "";
 
+                            // 2. Construimos la ruta (Asegúrate de que el backend envíe estos IDs)
+                            const rutaPerfil = esAutor
+                                ? `/ver_autor_free/${post.autor_id}`
+                                : `/ver_editorial_free/${post.editorial_id}`;
 
                             return (
                                 <div key={index} className="col-md-3 mb-4">
                                     <div className="card border-0 shadow-sm rounded-4 overflow-hidden h-100">
                                         <div className="card-body p-3 d-flex flex-column">
                                             <div className="mb-2">
-                                                {/* Badge corregido con el color de Booked para Editorial */}
                                                 <span
                                                     className={`badge rounded-pill ${esAutor ? 'bg-success' : 'bg-info-booked'}`}
                                                     style={{ fontSize: '10px' }}
@@ -492,60 +495,52 @@ export const Home = () => {
                                                 </span>
                                             </div>
 
-                                            {/* <h6 className="fw-bold mb-2 text-dark" style={{ fontSize: '0.9rem' }}>
-                                                {post.texto ? post.texto.substring(0, 50) + "..." : "Publicación"}
-                                            </h6> */}
-
                                             <p className="small text-muted mb-3 flex-grow-1">
                                                 {post.texto}
                                             </p>
 
-                                            <div className="d-flex align-items-center gap-2 pt-2 border-top">
-                                                <div className="bg-light rounded-circle d-flex align-items-center justify-content-center text-muted overflow-hidden"
-                                                    style={{ width: '30px', height: '30px' }}>
+                                            {/* --- LINK AL PERFIL --- */}
+                                            <Link to={rutaPerfil} className="text-decoration-none border-top pt-2">
+                                                <div className="d-flex align-items-center gap-2 pt-1">
+                                                    <div className="bg-light rounded-circle d-flex align-items-center justify-content-center text-muted overflow-hidden border"
+                                                        style={{ width: '35px', height: '35px' }}>
 
-                                                    {/* Lógica unificada para Autor y Editorial con Fallback */}
-                                                    {esAutor ? (
-                                                        // ES AUTOR
-                                                        post.foto_autor ? (
-                                                            // Tiene foto
-                                                            <img
-                                                                src={post.foto_autor}
-                                                                alt={post.nombre_autor}
-                                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                            />
+                                                        {esAutor ? (
+                                                            post.foto_autor ? (
+                                                                <img
+                                                                    src={post.foto_autor}
+                                                                    alt={post.nombre_autor}
+                                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                                />
+                                                            ) : (
+                                                                <i className="fas fa-user small"></i>
+                                                            )
                                                         ) : (
-                                                            // No tiene foto -> Icono fa-user
-                                                            <i className="fas fa-user small"></i>
-                                                        )
-                                                    ) : (
-                                                        // ES EDITORIAL
-                                                        post.foto_editorial ? (
-                                                            // Tiene logo/imagen
-                                                            <img
-                                                                src={post.foto_editorial}
-                                                                alt={post.nombre_editorial}
-                                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                            />
-                                                        ) : (
-                                                            // No tiene logo -> Icono fa-university
-                                                            <i className="fas fa-university small"></i>
-                                                        )
-                                                    )}
-                                                </div>
+                                                            post.foto_editorial ? (
+                                                                <img
+                                                                    src={post.foto_editorial}
+                                                                    alt={post.nombre_editorial}
+                                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                                />
+                                                            ) : (
+                                                                <i className="fas fa-university small"></i>
+                                                            )
+                                                        )}
+                                                    </div>
 
-                                                <div className="text-start">
-                                                    <p className="very-small fw-bold mb-0 text-dark">
-                                                        {esAutor
-                                                            ? `${post.nombre_autor} ${post.apellido_autor || ""}`
-                                                            : (post.nombre_editorial || "Editorial Booked")
-                                                        }
-                                                    </p>
-                                                    <p className="text-muted mb-0" style={{ fontSize: '0.6rem' }}>
-                                                        {post.fecha}
-                                                    </p>
+                                                    <div className="text-start">
+                                                        <p className="very-small fw-bold mb-0 text-dark hover-info-booked">
+                                                            {esAutor
+                                                                ? `${post.nombre_autor} ${post.apellido_autor || ""}`
+                                                                : (post.nombre_editorial || "Editorial Booked")
+                                                            }
+                                                        </p>
+                                                        <p className="text-muted mb-0" style={{ fontSize: '0.6rem' }}>
+                                                            {post.fecha}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            </Link>
                                         </div>
                                     </div>
                                 </div>
