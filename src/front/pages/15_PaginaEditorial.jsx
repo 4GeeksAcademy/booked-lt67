@@ -17,6 +17,10 @@ const PaginaEditorial = () => {
     const [lectorSeleccionado, setLectorSeleccionado] = useState(null);
     const [listaChats, setListaChats] = useState([]);
 
+    // --- NUEVOS ESTADOS PARA FILTROS (Igual que en Lector) ---
+    const [filtroCategoria, setFiltroCategoria] = useState("");
+    const [ordenarPor, setOrdenarPor] = useState("novedades");
+
     const [db, setDb] = useState({
         perfil: null,
         misLibros: [],
@@ -24,7 +28,6 @@ const PaginaEditorial = () => {
         todasLasReviews: [],
         loading: true
     });
-
 
     const [mapaViews, setMapaViews] = useState({ favLibros: [], leyendo: [] });
     const [vistaMapaActual, setVistaMapaActual] = useState('favLibros');
@@ -95,7 +98,8 @@ const PaginaEditorial = () => {
 
             const misLibrosFiltrados = librosGlob || [];
             const idsMisLibros = misLibrosFiltrados.map(l => l.id);
-            const misReviewsFiltradas = reviewsGlob?.filter(r => idsMisLibros.includes(r.libro?.id)) || [];
+            // Filtramos solo las reviews que pertenecen a los libros de ESTA editorial
+            const misReviewsFiltradas = reviewsGlob?.filter(r => idsMisLibros.includes(r.libro?.id || r.libro_id)) || [];
 
             setDb({
                 perfil: perfil,
@@ -121,6 +125,32 @@ const PaginaEditorial = () => {
         }
     }, [loadData, store.auth_editorial]);
 
+    // =========================================================
+    // LÓGICA DE FILTRADO Y PROMEDIO (NUEVA)
+    // =========================================================
+    
+    const getPromedio = (libroId) => {
+        const revs = db.todasLasReviews.filter(r => (r.libro?.id || r.libro_id) === libroId);
+        if (revs.length === 0) return null;
+        const suma = revs.reduce((acc, curr) => acc + Number(curr.puntuacion), 0);
+        return (suma / revs.length).toFixed(1);
+    };
+
+    const categoriasUnicas = [...new Set(db.misLibros.map(l => l.genero))].filter(Boolean);
+
+    const librosAMostrar = db.misLibros
+        .filter(l => !filtroCategoria || l.genero === filtroCategoria)
+        .sort((a, b) => {
+            if (ordenarPor === "novedades") return b.id - a.id;
+            if (ordenarPor === "alfabetico") return a.nombre.localeCompare(b.nombre);
+            if (ordenarPor === "mejor_valorados") {
+                const promA = parseFloat(getPromedio(a.id) || 0);
+                const promB = parseFloat(getPromedio(b.id) || 0);
+                return promB - promA;
+            }
+            return 0;
+        });
+
     const deletelibro = async (idToDelete) => {
         if (window.confirm("¿De verdad quieres eliminar este libro de tu catálogo?")) {
             const res = await request(`libro/${idToDelete}`, "DELETE");
@@ -141,50 +171,69 @@ const PaginaEditorial = () => {
 
     if (db.loading) return <div className="text-center mt-5"><div className="spinner-border text-info-booked"></div></div>;
 
-    // CORRECCIÓN AQUÍ: Se cambia foto_url por image_url según tu JSON
     const fotoPerfil = db.perfil?.image_url
         ? (db.perfil.image_url.startsWith("http") ? db.perfil.image_url : `${baseUrl}${db.perfil.image_url.startsWith('/') ? '' : '/'}${db.perfil.image_url}`)
         : `https://ui-avatars.com/api/?name=${db.perfil?.nombre || "Editorial"}&background=24b0d9&color=fff`;
 
 
     const TarjetaLibroEditorial = ({ l }) => {
-        return (
-            <div className="col-12 col-sm-6 col-lg-4 col-xl-3 mb-5 shelf-item px-3">
-                {/* El nicho de madera */}
-                <div className="shelf-cubby">
-                    <div className="book-3d" onClick={() => navigate(`/ver_libro/${l.id}`)}>
-                        <img
-                            src={l.image_url || "https://via.placeholder.com/150x225?text=No+Cover"}
-                            alt={l.nombre}
-                        />
-                    </div>
-                    <div className="shelf-floor-wood"></div>
+    const promedio = getPromedio(l.id);
+
+    return (
+        <div className="col-12 col-sm-6 col-lg-4 col-xl-3 mb-5 shelf-item px-3">
+            {/* Contenedor del estante con margen negativo para subir el libro */}
+            <div className="shelf-cubby" style={{ marginTop: '-20px' }}>
+                <div className="book-3d" onClick={() => navigate(`/ver_libro/${l.id}`)}>
+                    <img
+                        src={l.image_url || "https://via.placeholder.com/150x225?text=No+Cover"}
+                        alt={l.nombre}
+                    />
+                    
+                    {/* Badge de puntuación solo si existe promedio */}
+                    {promedio && (
+                        <div className="position-absolute top-0 end-0 m-2">
+                            <span className="badge rounded-pill bg-warning text-dark shadow-sm">
+                                <i className="fas fa-star me-1"></i>{promedio}
+                            </span>
+                        </div>
+                    )}
+                </div>
+                <div className="shelf-floor-wood"></div>
+            </div>
+
+            <div className="text-center mt-3">
+                <h6 className="fw-bold text-dark mb-1 text-truncate px-2" title={l.nombre}>
+                    {l.nombre}
+                </h6>
+                
+                {/* Categoría y "Sin reseñas" en la misma línea */}
+                <div className="mb-2 d-flex justify-content-center align-items-center gap-2">
+                    <span className="badge bg-light text-info-booked border rounded-pill">
+                        {l.genero}
+                    </span>
+                    
+                    {!promedio && (
+                        <span className="text-muted small" style={{ fontSize: '0.75rem' }}>
+                            • Sin reseñas
+                        </span>
+                    )}
                 </div>
 
-                {/* Detalles y Acciones debajo de la repisa */}
-                <div className="text-center mt-3">
-                    <h6 className="fw-bold text-dark mb-1 text-truncate px-2" title={l.nombre}>
-                        {l.nombre}
-                    </h6>
-                    <div className="mb-2">
-                        <span className="badge bg-light text-info-booked border rounded-pill">{l.genero}</span>
-                    </div>
-
-                    <div className="d-flex justify-content-center gap-2 flex-wrap">
-                        <Link to={`/ver_libro/${l.id}`} className="btn btn-sm btn-outline-info rounded-pill px-3" title="Ver Obra">
-                            <i className="fas fa-eye"></i>
-                        </Link>
-                        <Link to={`/editar_libro_editorial/${l.id}`} className="btn btn-sm btn-outline-warning rounded-pill px-3" title="Editar">
-                            <i className="fas fa-edit"></i>
-                        </Link>
-                        <button onClick={() => deletelibro(l.id)} className="btn btn-sm btn-outline-danger rounded-pill px-3" title="Eliminar">
-                            <i className="fas fa-trash"></i>
-                        </button>
-                    </div>
+                <div className="d-flex justify-content-center gap-2 flex-wrap">
+                    <Link to={`/ver_libro/${l.id}`} className="btn btn-sm btn-outline-info rounded-pill px-3" title="Ver Obra">
+                        <i className="fas fa-eye"></i>
+                    </Link>
+                    <Link to={`/editar_libro_editorial/${l.id}`} className="btn btn-sm btn-outline-warning rounded-pill px-3" title="Editar">
+                        <i className="fas fa-edit"></i>
+                    </Link>
+                    <button onClick={() => deletelibro(l.id)} className="btn btn-sm btn-outline-danger rounded-pill px-3" title="Eliminar">
+                        <i className="fas fa-trash"></i>
+                    </button>
                 </div>
             </div>
-        );
-    };
+        </div>
+    );
+};
 
     return (
         <div className="d-flex position-relative" style={{ minHeight: "100vh" }}>
@@ -290,24 +339,57 @@ const PaginaEditorial = () => {
 
                     {seccionActiva === "libros" && (
                         <div>
-                            <div className="d-flex justify-content-between align-items-end mb-5">
+                            <div className="d-flex justify-content-between align-items-end mb-4">
                                 <div>
                                     <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Tu Catálogo</span>
-                                    <h2 className="fw-bold mt-2 mb-0">Libros Publicados ({db.misLibros.length})</h2>
+                                    <h2 className="fw-bold mt-2 mb-0">Libros Publicados ({librosAMostrar.length})</h2>
                                 </div>
                                 <Link to={`/nuevo_libro_editorial/${editorialId}`} className="btn btn-booked-blue rounded-pill px-4 shadow-sm">
                                     <i className="fas fa-plus me-2"></i>Registrar Obra
                                 </Link>
                             </div>
 
+                            {/* BARRA DE FILTROS (COMO EN PAGINA LECTOR) */}
+                            <div className="row g-3 mb-5">
+                                <div className="col-md-6 col-lg-4">
+                                    <div className="input-group shadow-sm rounded-pill overflow-hidden bg-white border-0">
+                                        <span className="input-group-text bg-white border-0 ps-3 text-muted"><i className="fas fa-filter"></i></span>
+                                        <select 
+                                            className="form-select border-0 ps-2" 
+                                            value={filtroCategoria} 
+                                            onChange={(e) => setFiltroCategoria(e.target.value)}
+                                            style={{ boxShadow: 'none' }}
+                                        >
+                                            <option value="">Todos los géneros</option>
+                                            {categoriasUnicas.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="col-md-6 col-lg-4">
+                                    <div className="input-group shadow-sm rounded-pill overflow-hidden bg-white border-0">
+                                        <span className="input-group-text bg-white border-0 ps-3 text-muted"><i className="fas fa-sort-amount-down"></i></span>
+                                        <select 
+                                            className="form-select border-0 ps-2" 
+                                            value={ordenarPor} 
+                                            onChange={(e) => setOrdenarPor(e.target.value)}
+                                            style={{ boxShadow: 'none' }}
+                                        >
+                                            <option value="novedades">Novedades</option>
+                                            <option value="mejor_valorados">Mejor Valorados</option>
+                                            <option value="alfabetico">Título (A-Z)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="row mt-4 bookshelf-grid">
-                                {db.misLibros.length > 0 ? (
-                                    db.misLibros.map(l => <TarjetaLibroEditorial key={l.id} l={l} />)
+                                {librosAMostrar.length > 0 ? (
+                                    librosAMostrar.map(l => <TarjetaLibroEditorial key={l.id} l={l} />)
                                 ) : (
                                     <div className="col-12 text-center text-muted mt-5">
                                         <i className="fas fa-book fa-3x mb-3 text-info-booked opacity-50"></i>
-                                        <h4>Tu catálogo está vacío.</h4>
-                                        <p>Comienza a registrar las obras de tu editorial para que el mundo las descubra.</p>
+                                        <h4>No se encontraron libros.</h4>
+                                        <p>Intenta ajustar tus filtros o registra una nueva obra.</p>
                                     </div>
                                 )}
                             </div>

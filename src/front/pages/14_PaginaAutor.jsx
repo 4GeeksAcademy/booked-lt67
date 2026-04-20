@@ -1,21 +1,22 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useNavigate } from "react-router-dom"; // Añadí useNavigate por si la TarjetaLibroPropio lo usa
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import LectoresUbi from "../components/25_LectoresUbi";
 import "../shelfStyles.css";
 
-// Assets e Imágenes (Puedes cambiarlas si quieres unas específicas para el dashboard de autor)
+// Assets e Imágenes
 import logoBookedUrl from "../assets/img/logo_booked1.png";
 import booksImg from "../assets/img/Books.png";
 
 const PaginaAutor = () => {
     const { store } = useGlobalReducer();
+    const navigate = useNavigate();
     const [db, setDb] = useState({
         perfil: null,
         misLibros: [],
         misSeguidores: [],
         noticias: [],
-        todasLasReviews: [], // NUEVO: Estado para almacenar las reviews
+        todasLasReviews: [],
         loading: true
     });
 
@@ -23,6 +24,10 @@ const PaginaAutor = () => {
     const [mapaViews, setMapaViews] = useState({ fansAutor: [], favLibros: [], leyendo: [] });
     const [vistaMapaActual, setVistaMapaActual] = useState('fansAutor');
     const [seccionActiva, setSeccionActiva] = useState("inicio"); // 'inicio' es el Dashboard
+
+    // NUEVO: Estados para los filtros de la biblioteca
+    const [filtroCategoria, setFiltroCategoria] = useState("");
+    const [ordenarPor, setOrdenarPor] = useState("novedades");
 
     const [editando, setEditando] = useState(null);
     const [nuevoTexto, setNuevoTexto] = useState("");
@@ -53,7 +58,7 @@ const PaginaAutor = () => {
             request(`lectores_por_autor/${autorId}`),
             request(`lectores_fav_libros_autor/${autorId}`),
             request(`lectores_leyendo_autor/${autorId}`),
-            request(`reviews`) // NUEVO: Pedimos todas las reviews
+            request(`reviews`)
         ]);
 
         const datosLimpios = perfil?.autor || perfil;
@@ -64,7 +69,7 @@ const PaginaAutor = () => {
             // Filtramos solo los libros que pertenecen a este autor
             const misLibrosFiltrados = libros?.filter(l => Number(l.autor_id) === id) || [];
 
-            // NUEVO: Filtramos las reviews para que solo muestre las de los libros de este autor
+            // Filtramos las reviews para que solo muestre las de los libros de este autor
             const idsMisLibros = misLibrosFiltrados.map(l => l.id);
             const misReviewsFiltradas = reviewsGlob?.filter(r => idsMisLibros.includes(r.libro?.id)) || [];
 
@@ -73,7 +78,7 @@ const PaginaAutor = () => {
                 misLibros: misLibrosFiltrados,
                 misSeguidores: favs?.filter(f => Number(f.autor_id) === id) || [],
                 noticias: posts || [],
-                todasLasReviews: misReviewsFiltradas, // Guardamos las reviews filtradas
+                todasLasReviews: misReviewsFiltradas,
                 loading: false
             });
 
@@ -111,47 +116,99 @@ const PaginaAutor = () => {
         : `https://ui-avatars.com/api/?name=${db.perfil?.nombre || "Autor"}+${db.perfil?.apellido || ""}&background=24b0d9&color=fff`;
 
     // =========================================================
+    // LÓGICA DE FILTROS Y PROMEDIO DE REVIEWS PARA "MIS OBRAS"
+    // =========================================================
+    const categoriasExistentes = [...new Set(db.misLibros.map(l => l.genero).filter(Boolean))];
+
+    const promedioReviews = db.todasLasReviews.length > 0
+        ? (db.todasLasReviews.reduce((acc, rev) => acc + Number(rev.puntuacion), 0) / db.todasLasReviews.length).toFixed(1)
+        : "0.0";
+
+    let librosMostrar = [...db.misLibros];
+
+    if (filtroCategoria) {
+        librosMostrar = librosMostrar.filter(l => l.genero === filtroCategoria);
+    }
+
+    if (ordenarPor === "alfabetico") {
+        librosMostrar.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    } else if (ordenarPor === "ranking") {
+        librosMostrar.sort((a, b) => {
+            const getAvg = (idLibro) => {
+                const revs = db.todasLasReviews.filter(r => r.libro?.id === idLibro);
+                return revs.length ? revs.reduce((sum, r) => sum + Number(r.puntuacion), 0) / revs.length : 0;
+            };
+            return getAvg(b.id) - getAvg(a.id); // Descendente
+        });
+    } else {
+        // Novedades (por ID descendente)
+        librosMostrar.sort((a, b) => b.id - a.id);
+    }
+
+
+    // =========================================================
     // TARJETA LIBRO (Estilo Booked - Igual al del Lector)
     // =========================================================
+    // =========================================================
+    // TARJETA LIBRO (Estilo Booked con Promedio Individual)
+    // =========================================================
     const TarjetaLibroPropio = ({ l }) => {
-        return (
-            <div className="col-12 col-sm-6 col-lg-4 col-xl-3 mb-5 shelf-item px-3">
-                {/* El nicho de madera */}
-                <div className="shelf-cubby">
-                    <div className="book-3d" onClick={() => navigate(`/ver_libro/${l.id}`)}>
-                        <img
-                            src={l.image_url || "https://via.placeholder.com/150x225?text=No+Cover"}
-                            alt={l.nombre}
-                        />
-                    </div>
-                    <div className="shelf-floor-wood"></div>
+    // 1. Calculamos el promedio específico
+    const reviewsEsteLibro = db.todasLasReviews.filter(r => r.libro?.id === l.id);
+    const promedio = reviewsEsteLibro.length > 0
+        ? (reviewsEsteLibro.reduce((acc, rev) => acc + Number(rev.puntuacion), 0) / reviewsEsteLibro.length).toFixed(1)
+        : null;
+
+    return (
+        <div className="col-12 col-sm-6 col-lg-4 col-xl-3 mb-5 shelf-item px-3">
+            {/* El nicho de madera */}
+            <div className="shelf-cubby">
+                <div className="book-3d" onClick={() => navigate(`/ver_libro/${l.id}`)}>
+                    <img
+                        src={l.image_url || "https://via.placeholder.com/150x225?text=No+Cover"}
+                        alt={l.nombre}
+                    />
+                </div>
+                <div className="shelf-floor-wood"></div>
+            </div>
+
+            {/* Info debajo de la repisa */}
+            <div className="text-center mt-3">
+                <h6 className="fw-bold text-dark mb-1 text-truncate px-2" title={l.nombre}>
+                    {l.nombre}
+                </h6>
+                
+                {/* Contenedor de Género y Promedio */}
+                <div className="d-flex justify-content-center align-items-center gap-2 mb-3">
+                    <span className="badge bg-light text-info-booked rounded-pill border px-3">
+                        {l.genero}
+                    </span>
+                    
+                    {promedio ? (
+                        <span className="badge rounded-pill bg-warning text-dark d-flex align-items-center shadow-sm">
+                            <i className="fas fa-star me-1 small"></i>
+                            {promedio}
+                        </span>
+                    ) : (
+                        <small className="text-muted" style={{ fontSize: '0.7rem' }}>Sin notas</small>
+                    )}
                 </div>
 
-                {/* Info debajo de la repisa */}
-                <div className="text-center mt-3">
-                    <h6 className="fw-bold text-dark mb-1 text-truncate px-2" title={l.nombre}>
-                        {l.nombre}
-                    </h6>
-                    <div className="mb-3">
-                        <span className="badge bg-light text-info-booked rounded-pill border">{l.genero}</span>
-                    </div>
-
-                    <div className="d-flex justify-content-center gap-2 flex-wrap">
-                        <Link to={`/ver_libro/${l.id}`} className="btn btn-sm btn-outline-info rounded-pill px-3">
-                            <i className="fas fa-eye me-1"></i> Ver
-                        </Link>
-                        <button
-                            className="btn btn-sm btn-booked-blue rounded-pill px-3"
-                            onClick={() => setSeccionActiva("reviews")}
-                            title="Ver Reseñas"
-                        >
-                            <i className="fas fa-star me-1"></i> Reseñas
-                        </button>
-                    </div>
+                <div className="d-flex justify-content-center gap-2 flex-wrap">
+                    <Link to={`/ver_libro/${l.id}`} className="btn btn-sm btn-outline-info rounded-pill px-3">
+                        <i className="fas fa-eye me-1"></i> Ver
+                    </Link>
+                    <button
+                        className="btn btn-sm btn-booked-blue rounded-pill px-3 shadow-sm"
+                        onClick={() => setSeccionActiva("reviews")}
+                    >
+                        <i className="fas fa-star me-1"></i> Reseñas
+                    </button>
                 </div>
             </div>
-        );
-    };
+        </div>
+    );
+};
 
 
     return (
@@ -167,7 +224,6 @@ const PaginaAutor = () => {
                             style={{ width: "80px", height: "80px", objectFit: "cover" }}
                             alt="Perfil"
                         />
-                        {/* Pequeño badge para identificar que es una cuenta de autor */}
                         <div className="bg-warning position-absolute bottom-0 end-0 rounded-circle d-flex align-items-center justify-content-center text-white border border-2 border-white" style={{ width: '25px', height: '25px' }} title="Cuenta de Autor">
                             <i className="fas fa-feather-alt fa-xs"></i>
                         </div>
@@ -180,7 +236,7 @@ const PaginaAutor = () => {
                     {[
                         { id: "inicio", icon: "house", label: "Dashboard" },
                         { id: "libros", icon: "book", label: "Mis Obras" },
-                        { id: "reviews", icon: "star", label: "Reseñas de Lectores" }, // NUEVA SECCIÓN
+                        { id: "reviews", icon: "star", label: "Reseñas de Lectores" },
                         { id: "audiencia", icon: "users", label: "Mi Comunidad" },
                         { id: "mapa", icon: "map-marked-alt", label: "Mapa de Impacto" },
                     ].map(item => (
@@ -210,7 +266,6 @@ const PaginaAutor = () => {
                                 </h1>
                                 <p className="lead text-muted mb-4">Gestiona tu presencia literaria, conecta con tus lectores y comparte tus últimas novedades.</p>
 
-                                {/* CAJA RÁPIDA PARA NUEVA NOTICIA */}
                                 <div className="p-3 bg-white shadow-sm rounded-4 border mb-4 d-flex align-items-center justify-content-between" style={{ maxWidth: '600px', borderLeft: '5px solid #24b0d9' }}>
                                     <div className="d-flex align-items-center gap-3">
                                         <div className="bg-light p-3 rounded-circle text-info-booked">
@@ -228,7 +283,6 @@ const PaginaAutor = () => {
                                 <img src={booksImg} alt="Libros" className="img-fluid" style={{ maxHeight: "350px", filter: "drop-shadow(0 20px 30px rgba(0,0,0,0.1))" }} />
                             </div>
 
-                            {/* LISTA DE NOTICIAS DEL AUTOR */}
                             <div className="col-12 mt-5">
                                 <div className="d-flex justify-content-between align-items-center mb-4">
                                     <h4 className="fw-bold text-dark mb-0">Tus Publicaciones Recientes</h4>
@@ -276,25 +330,73 @@ const PaginaAutor = () => {
                     {/* SECCIÓN MIS OBRAS (GRILLA ESTILO BOOKED) */}
                     {seccionActiva === "libros" && (
                         <div>
-                            <div className="mb-5">
-                                <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Tu Catálogo</span>
-                                <h2 className="fw-bold mt-2">Mis Obras Publicadas</h2>
+                            {/* --- ENCABEZADO Y HERRAMIENTAS NUEVO --- */}
+                            <div className="row align-items-end mb-4">
+                                <div className="col-lg-5 text-center text-lg-start mb-4 mb-lg-0">
+                                    <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Tu Catálogo</span>
+                                    <h2 className="fw-bold mt-2 mb-2">Mis Obras Publicadas</h2>
+                                    
+                                    {/* PROMEDIO DE REVIEWS GENERAL */}
+                                    <div className="d-flex align-items-center justify-content-center justify-content-lg-start gap-2 mt-2">
+                                        <div className="d-flex text-warning">
+                                            <i className="fas fa-star fs-5"></i>
+                                        </div>
+                                        <span className="fw-bold text-dark fs-5">{promedioReviews}</span>
+                                        <span className="text-muted small">({db.todasLasReviews.length} reseñas globales)</span>
+                                    </div>
+                                </div>
+
+                                <div className="col-lg-7 d-flex flex-row flex-wrap flex-md-nowrap gap-2 justify-content-center justify-content-lg-end align-items-center pb-1">
+                                    {/* Contenedor Categoría */}
+                                    <div className="d-flex align-items-center gap-2" style={{ flex: '1 1 auto', minWidth: '0' }}>
+                                        <span className="text-muted small fw-bold d-none d-xl-inline text-nowrap">Filtrar:</span>
+                                        <select 
+                                            className="form-select rounded-pill shadow-sm border-0"
+                                            style={{ height: '40px', fontSize: '0.85rem', minWidth: '160px', paddingLeft: '1rem' }}
+                                            value={filtroCategoria}
+                                            onChange={(e) => setFiltroCategoria(e.target.value)}
+                                        >
+                                            <option value="">Todas las Categorías</option>
+                                            {categoriasExistentes.map(cat => (
+                                                <option key={cat} value={cat}>{cat}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Contenedor Ordenamiento */}
+                                    <div className="d-flex align-items-center gap-2" style={{ flex: '1 1 auto', minWidth: '0' }}>
+                                        <span className="text-muted small fw-bold d-none d-xl-inline text-nowrap">Orden:</span>
+                                        <select 
+                                            className="form-select rounded-pill shadow-sm border-0"
+                                            style={{ height: '40px', fontSize: '0.85rem', minWidth: '160px', paddingLeft: '1rem' }}
+                                            value={ordenarPor}
+                                            onChange={(e) => setOrdenarPor(e.target.value)}
+                                        >
+                                            <option value="novedades">Novedades</option>
+                                            <option value="alfabetico">A-Z (Nombre)</option>
+                                            <option value="ranking">Mejores Valorados</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
+
+                            <hr className="mb-5 text-muted opacity-25" />
+
                             <div className="row mt-4 bookshelf-grid">
-                                {db.misLibros.length > 0 ? (
-                                    db.misLibros.map(l => <TarjetaLibroPropio key={l.id} l={l} />)
+                                {librosMostrar.length > 0 ? (
+                                    librosMostrar.map(l => <TarjetaLibroPropio key={l.id} l={l} />)
                                 ) : (
                                     <div className="col-12 text-center text-muted mt-5">
                                         <i className="fas fa-book fa-3x mb-3 text-info-booked opacity-50"></i>
-                                        <h4>Aún no has agregado obras.</h4>
-                                        <p>Contacta con el administrador para vincular tus libros a tu perfil.</p>
+                                        <h4>Aún no has agregado obras o no hay coincidencias.</h4>
+                                        <p>Prueba limpiando los filtros o contacta con el administrador.</p>
                                     </div>
                                 )}
                             </div>
                         </div>
                     )}
 
-                    {/* SECCIÓN REVIEWS (NUEVO) */}
+                    {/* SECCIÓN REVIEWS */}
                     {seccionActiva === "reviews" && (
                         <div>
                             <div className="mb-5">
@@ -398,7 +500,6 @@ const PaginaAutor = () => {
                                 </div>
                             </div>
                             <div className="card shadow-lg border-0 rounded-5 overflow-hidden p-3 bg-white" style={{ height: "600px" }}>
-                                {/* Asumimos que LectoresUbi es compatible con este espacio */}
                                 <LectoresUbi lectores={mapaViews[vistaMapaActual]} />
                             </div>
                         </div>
