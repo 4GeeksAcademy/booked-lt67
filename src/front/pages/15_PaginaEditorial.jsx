@@ -301,7 +301,7 @@ const PaginaEditorial = () => {
                                     </div>
                                     <div className="d-flex gap-2">
                                         <Link to={`/nuevo_libro_editorial/${editorialId}`} className="btn btn-sm btn-outline-info rounded-pill px-3 shadow-sm"><i className="fas fa-book me-1"></i> Añadir Libro</Link>
-                                        <Link to={`/nueva_publicacion_editorial/${editorialId}`} className="btn btn-sm btn-booked-blue rounded-pill px-3 shadow-sm"><i className="fas fa-plus me-1"></i> Publicar</Link>
+                                        <Link to={`/nueva_publicacion_editorial/${editorialId}`} className="btn btn-sm btn-booked-blue rounded-pill px-3 py-1 shadow-sm d-inline-flex align-items-center"><i className="fas fa-plus me-1"></i> Publicar</Link>
                                     </div>
                                 </div>
                             </div>

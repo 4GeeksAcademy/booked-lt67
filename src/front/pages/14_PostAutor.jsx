@@ -6,7 +6,7 @@ const CrearPostAutor = () => {
     const { store } = useGlobalReducer();
     const navigate = useNavigate();
     const [texto, setTexto] = useState("");
-    
+
     const autorId = store.autor_id || localStorage.getItem("autor_id");
 
     const sendData = (e) => {
@@ -17,34 +17,34 @@ const CrearPostAutor = () => {
             return;
         }
 
+        // 1. Limpiamos la URL base (quita la barra si existe)
+        const base = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+
+        // 2. Construimos la URL final con la ruta de AUTOR
+        const urlFinal = `${base}/api/postautor`; 
+
+        console.log("🔥 URL de disparo (Autor):", urlFinal);
+
         const requestOptions = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                "autor_id": parseInt(autorId),
+                "autor_id": parseInt(autorId), // <-- Usamos autor_id
                 "texto": texto,
             })
         };
 
-        // --- SOLUCIÓN BLINDADA ---
-        // 1. Limpiamos la URL base de cualquier barra final extra
-        const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-        
-        // 2. Construimos la ruta asegurándonos de que solo haya una barra entre el dominio y la API
-        const urlFinal = `${baseUrl}/api/postautor`;
-
         fetch(urlFinal, requestOptions)
             .then(response => {
-                if (response.ok) return response.json();
-                throw new Error("Error al crear el post");
+                if (!response.ok) throw new Error("Error en el servidor");
+                return response.json();
             })
             .then(data => {
-                console.log("Post creado:", data);
-                navigate("/pagina_autor");
+                console.log("Publicado con éxito:", data);
+                navigate("/pagina_autor"); // <-- Volvemos a la página de autor
             })
             .catch(error => {
-                console.error("Error en la publicación:", error);
-                // Opcional: alert("Hubo un problema al conectar con el servidor.");
+                console.error("Incendio en el fetch de Autor:", error);
             });
     };
 
