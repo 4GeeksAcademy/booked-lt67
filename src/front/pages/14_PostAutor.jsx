@@ -26,7 +26,7 @@ const CrearPostAutor = () => {
             })
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/postautor", requestOptions)
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/postautor`, requestOptions)
             .then(response => {
                 if (response.ok) return response.json();
                 throw new Error("Error al crear el post");

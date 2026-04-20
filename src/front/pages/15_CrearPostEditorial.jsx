@@ -28,7 +28,7 @@ const CrearPostEditorial = () => {
             })
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/posteditorial", requestOptions)
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/posteditorial`, requestOptions)
             .then(response => response.json())
             .then(data => {
                 console.log(data)
