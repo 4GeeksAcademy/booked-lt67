@@ -26,7 +26,14 @@ const CrearPostAutor = () => {
             })
         };
 
-        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/postautor`, requestOptions)
+        // --- SOLUCIÓN BLINDADA ---
+        // 1. Limpiamos la URL base de cualquier barra final extra
+        const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+        
+        // 2. Construimos la ruta asegurándonos de que solo haya una barra entre el dominio y la API
+        const urlFinal = `${baseUrl}/api/postautor`;
+
+        fetch(urlFinal, requestOptions)
             .then(response => {
                 if (response.ok) return response.json();
                 throw new Error("Error al crear el post");
@@ -35,7 +42,10 @@ const CrearPostAutor = () => {
                 console.log("Post creado:", data);
                 navigate("/pagina_autor");
             })
-            .catch(error => console.error(error));
+            .catch(error => {
+                console.error("Error en la publicación:", error);
+                // Opcional: alert("Hubo un problema al conectar con el servidor.");
+            });
     };
 
     return (

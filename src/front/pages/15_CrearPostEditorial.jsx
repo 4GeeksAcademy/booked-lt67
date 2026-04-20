@@ -3,21 +3,28 @@ import { useNavigate, Link } from "react-router-dom";
 
 const CrearPostEditorial = () => {
 
-    const navigate = useNavigate()
+    const navigate = useNavigate();
 
-    const [editorialId, setEditorialId] = useState("")
-    const [editoriales, setEditoriales] = useState([])
-    const [texto, setTexto] = useState([""])
+    const [editorialId, setEditorialId] = useState("");
+    const [editoriales, setEditoriales] = useState([]);
+    const [texto, setTexto] = useState(""); // Corregido: inicializado como string vacío, no array
 
     useEffect(() => {
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/editorial")
+        // Limpiamos la URL para el GET inicial
+        const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+        fetch(`${baseUrl}/api/editorial`)
             .then(response => response.json())
             .then(data => setEditoriales(data))
-
-    }, [])
+            .catch(error => console.error("Error cargando editoriales:", error));
+    }, []);
 
     function sendData(e) {
-        e.preventDefault()
+        e.preventDefault();
+
+        if (!editorialId) {
+            alert("Por favor selecciona una editorial");
+            return;
+        }
 
         const requestOptions = {
             method: 'POST',
@@ -28,12 +35,23 @@ const CrearPostEditorial = () => {
             })
         };
 
-        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/posteditorial`, requestOptions)
-            .then(response => response.json())
-            .then(data => {
-                console.log(data)
-                navigate("/editorial")
+        // --- SOLUCIÓN BLINDADA ---
+        // 1. Tomamos la URL y le quitamos cualquier barra al final con un Regex
+        const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+        
+        // 2. Construimos la ruta manualmente poniendo nosotros la barra
+        const urlFinal = `${baseUrl}/api/posteditorial`;
+
+        fetch(urlFinal, requestOptions)
+            .then(response => {
+                if (response.ok) return response.json();
+                throw new Error("Error en el servidor");
             })
+            .then(data => {
+                console.log("Post creado:", data);
+                navigate("/pagina_editorial"); // Asegúrate de que esta ruta sea la correcta en tu App
+            })
+            .catch(error => console.error("Error al publicar:", error));
     }
 
     return (
