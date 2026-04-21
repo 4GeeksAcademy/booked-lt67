@@ -2,14 +2,17 @@ import React, { useEffect, useState } from "react";
 import { Link, Navigate, useParams, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
-// IMPORTAMOS EL MAPA (Ajusta la ruta según dónde esté guardado)
-import SelectorUbicacion from "./24_Georreferenciacion"; 
+// IMPORTAMOS EL MAPA
+import SelectorUbicacion from "./24_Georreferenciacion";
 
 const EditarLector = () => {
     const { theId } = useParams();
     const navigate = useNavigate();
-    const { store, dispatch } = useGlobalReducer();
-    
+    const { store } = useGlobalReducer();
+
+    // --- 1. Definimos la base limpia una sola vez ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
+
     if (!store.auth_admin) {
         return <Navigate to="/login_admin" />;
     }
@@ -19,13 +22,12 @@ const EditarLector = () => {
     const [nombre, setNombre] = useState("");
     const [apellido, setApellido] = useState("");
     const [paisdondereside, setPaisDondeReside] = useState("");
-    
-    // NUEVOS ESTADOS PARA EL MAPA
     const [ubicacion, setUbicacion] = useState(null);
     const [cargando, setCargando] = useState(true);
 
+    // --- 2. GET Blindado ---
     useEffect(() => {
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/lector/" + theId)
+        fetch(`${API_BASE}/lector/${theId}`)
             .then(response => {
                 if (!response.ok) throw new Error("Error al cargar datos");
                 return response.json();
@@ -36,27 +38,27 @@ const EditarLector = () => {
                 setNombre(data.nombre || "");
                 setApellido(data.apellido || "");
                 setPaisDondeReside(data.pais_donde_reside || "");
-                
-                // Cargamos las coordenadas actuales del usuario para el mapa
+
                 if (data.latitud && data.longitud) {
                     setUbicacion({ lat: data.latitud, lng: data.longitud });
                 } else {
-                    setUbicacion({ lat: -33.4489, lng: -70.6693 }); // Santiago por defecto
+                    setUbicacion({ lat: -33.4489, lng: -70.6693 });
                 }
-                
+
                 setCargando(false);
             })
             .catch(err => {
                 console.error(err);
                 setCargando(false);
             });
-    }, [theId]);
+    }, [theId, API_BASE]); // Añadimos API_BASE a las dependencias por buena práctica
 
+    // --- 3. PUT Blindado ---
     const updateData = (e) => {
         e.preventDefault();
-        
+
         const requestOptions = {
-            method: 'PUT', 
+            method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 "email": email,
@@ -64,20 +66,19 @@ const EditarLector = () => {
                 "nombre": nombre,
                 "apellido": apellido,
                 "pais donde reside": paisdondereside,
-                // ENVIAMOS LAS COORDENADAS
                 "latitud": ubicacion.lat,
                 "longitud": ubicacion.lng
             })
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/lector/" + theId, requestOptions)
+        fetch(`${API_BASE}/lector/${theId}`, requestOptions)
             .then(response => {
                 if (response.status === 409) {
                     throw new Error("Ese username o email ya está en uso por otro lector");
                 }
                 if (response.ok) {
                     alert("¡Lector actualizado con éxito!");
-                    navigate("/lector"); 
+                    navigate("/lector");
                 } else {
                     throw new Error("Ocurrió un error al actualizar");
                 }
@@ -91,7 +92,7 @@ const EditarLector = () => {
         <div className="container mt-5 mb-5">
             <h2 className="mb-4">Editar Lector #{theId}</h2>
             <form onSubmit={updateData} className="col-md-8 border p-4 shadow-sm bg-white rounded">
-                
+
                 <div className="row">
                     <div className="col-md-6 mb-3">
                         <label className="form-label">Email</label>
@@ -114,7 +115,7 @@ const EditarLector = () => {
                         <input type="text" className="form-control" value={apellido} onChange={(e) => setApellido(e.target.value)} required />
                     </div>
                 </div>
-                
+
                 <div className="mb-4">
                     <label className="form-label">País donde reside</label>
                     <input type="text" className="form-control" value={paisdondereside} onChange={(e) => setPaisDondeReside(e.target.value)} required />
@@ -124,9 +125,9 @@ const EditarLector = () => {
                 {ubicacion && (
                     <div className="mb-4">
                         <label className="form-label fw-bold">Ubicación del Lector</label>
-                        <SelectorUbicacion 
-                            ubicacionInicial={ubicacion} 
-                            onLocationSelect={setUbicacion} 
+                        <SelectorUbicacion
+                            ubicacionInicial={ubicacion}
+                            onLocationSelect={setUbicacion}
                         />
                     </div>
                 )}

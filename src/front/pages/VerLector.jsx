@@ -5,19 +5,26 @@ import useGlobalReducer from "../hooks/useGlobalReducer";
 const VerLector = () => {
     const { theId } = useParams();
     const [lector, setLector] = useState(null);
-    const { store, dispatch } = useGlobalReducer()
+    const { store, dispatch } = useGlobalReducer();
 
     if (!store.auth_admin) {
         return <Navigate to="/login_admin" />;
     }
 
-
     useEffect(() => {
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/lector/" + theId)
+        // 1. Limpiamos la base
+        const base = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+
+        // 2. Construimos la URL completa para el detalle del lector
+        const urlFinal = `${base}/api/lector/${theId}`;
+
+        fetch(urlFinal)
             .then(response => {
+                if (!response.ok) throw new Error("No se pudo obtener el lector");
                 return response.json();
             })
             .then(data => setLector(data))
+            .catch(err => console.error("Error cargando detalle:", err));
     }, [theId]);
 
     if (lector === null) {

@@ -1,86 +1,87 @@
 import React, { useEffect, useState } from "react";
-import { Link, Navigate } from "react-router-dom"
+import { Link, Navigate, useNavigate } from "react-router-dom"
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const NuevoLibro = () => {
+    const navigate = useNavigate();
 
-    const navigate = useNavigate()
+    // --- 1. Definimos la base limpia para los 4 fetches de este archivo ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
 
     const [nombre, setNombre] = useState("");
     const [genero, setGenero] = useState("");
     const [autorId, setAutorId] = useState("");
     const [editorialId, setEditorialId] = useState("");
-
     const [imageUrl, setImageUrl] = useState("");
 
     const [autores, setAutores] = useState([]);
     const [editoriales, setEditoriales] = useState([]);
-    const { store, dispatch } = useGlobalReducer()
+    const { store } = useGlobalReducer();
                 
-    if (!store.auth_admin) {return <Navigate to="/login_admin" />;}
+    if (!store.auth_admin) { return <Navigate to="/login_admin" />; }
 
     useEffect(() => {
-
         const scriptId = "cloudinary-upload-widget-script";
-
         if (!document.getElementById(scriptId)) {
             const script = document.createElement("script");
             script.id = scriptId;
             script.src = "https://upload-widget.cloudinary.com/global/all.js";
             script.type = "text/javascript";
             script.async = true;
-            script.onload = () => console.log("Cloudinary Widget cargado con éxito");
+            script.onload = () => console.log("Cloudinary Widget cargado");
             document.body.appendChild(script);
-    }
+        }
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/autor")
+        // --- 2. GET Autores (Select) blindado ---
+        fetch(`${API_BASE}/autor`)
             .then(res => res.json())
             .then(data => setAutores(data))
-            
+            .catch(err => console.error("Error autores:", err));
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/editorial")
+        // --- 3. GET Editoriales (Select) blindado ---
+        fetch(`${API_BASE}/editorial`)
             .then(res => res.json())
             .then(data => setEditoriales(data))
+            .catch(err => console.error("Error editoriales:", err));
             
-    }, []);
+    }, [API_BASE]);
 
     const handleUpload = async (e) => {
         e.preventDefault();
-
         if (!window.cloudinary) {
-            alert("El cargador de imágenes aún se está preparando. Intenta de nuevo en 2 segundos.");
+            alert("El cargador aún se está preparando.");
             return;
         }
 
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + "api/upload_image");
-        const data = await response.json();
+        // --- 4. Firma de Cloudinary blindada ---
+        try {
+            const response = await fetch(`${API_BASE}/upload_image`);
+            const data = await response.json();
 
-        const widget = window.cloudinary.createUploadWidget({
-            cloudName: data.cloudName,
-            apiKey: data.apiKey,
-            uploadSignatureTimestamp: data.timestamp,
-            uploadSignature: data.signature,
-            folder: "libros_portadas",
-            cropping: true
-        }, (error, result) => {
-            if (!error && result && result.event === "success") {
-                console.log("Imagen subida con éxito:", result.info.secure_url);
-                setImageUrl(result.info.secure_url);
-            }
-        });
-
-        widget.open();
+            const widget = window.cloudinary.createUploadWidget({
+                cloudName: data.cloudName,
+                apiKey: data.apiKey,
+                uploadSignatureTimestamp: data.timestamp,
+                uploadSignature: data.signature,
+                folder: "libros_portadas",
+                cropping: true
+            }, (error, result) => {
+                if (!error && result && result.event === "success") {
+                    setImageUrl(result.info.secure_url);
+                }
+            });
+            widget.open();
+        } catch (error) {
+            console.error("Error Cloudinary:", error);
+        }
     };
 
     function sendData(e) {
-        e.preventDefault()
+        e.preventDefault();
         
-        console.log("send data")
-        console.log(nombre, genero, autorId, editorialId)
-
         if (!autorId || !editorialId) {
-        alert("Por favor, selecciona un autor y una editorial de la lista.");
-        return;
+            alert("Por favor, selecciona un autor y una editorial.");
+            return;
         }
 
         const requestOptions = {
@@ -91,11 +92,12 @@ const NuevoLibro = () => {
                 "genero": genero,
                 "autor_id": parseInt(autorId), 
                 "editorial_id": parseInt(editorialId),
-                "image_url":imageUrl
+                "image_url": imageUrl
             })
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/libro", requestOptions)
+        // --- 5. POST Final blindado ---
+        fetch(`${API_BASE}/libro`, requestOptions)
             .then(response => {
                 if (response.ok) return response.json();
                 throw new Error("Error al crear el libro");
@@ -104,8 +106,9 @@ const NuevoLibro = () => {
                 alert("¡Libro agregado exitosamente!");
                 navigate("/libro");
             })
+            .catch(err => alert(err.message));
     }
-
+    
     return (
         <>
             <div className="container mt-5">

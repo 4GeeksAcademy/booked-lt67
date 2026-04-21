@@ -5,20 +5,26 @@ import useGlobalReducer from "../hooks/useGlobalReducer";
 const VerAutor = () => {
     const { theId } = useParams();
     const [autor, setautor] = useState(null);
-    const { store, dispatch } = useGlobalReducer()
+    const { store } = useGlobalReducer();
     const navigate = useNavigate();
+
+    // --- 1. Definimos la base limpia ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
 
     if (!store.auth_admin) {
         return <Navigate to="/login_admin" />;
     }
 
     useEffect(() => {
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/autor/" + theId)
+        // --- 2. Fetch con URL blindada ---
+        fetch(`${API_BASE}/autor/${theId}`)
             .then(response => {
+                if (!response.ok) throw new Error("No se pudo cargar el autor");
                 return response.json();
             })
             .then(data => setautor(data))
-    }, [theId]);
+            .catch(err => console.error("Error en VerAutor:", err));
+    }, [theId, API_BASE]);
 
     if (autor === null) {
         return (
@@ -31,8 +37,8 @@ const VerAutor = () => {
         );
     }
 
+    // Usamos el objeto "autor" que ya cargamos con la URL correcta
     const imagenFinal = autor.foto || `https://ui-avatars.com/api/?name=${autor.nombre}+${autor.apellido}&background=random`;
-
 
 
     return (

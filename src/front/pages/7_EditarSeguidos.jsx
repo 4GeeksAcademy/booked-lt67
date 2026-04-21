@@ -1,27 +1,34 @@
-import React, { useEffect, useState, } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, Navigate, useParams, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const EditarSeguidos = () => {
-
     const navigate = useNavigate();
     const { segId } = useParams();
+
+    // --- 1. Definimos la base limpia ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
 
     const [lectores, setLectores] = useState([]);
     const [nuevoSeguidoId, setNuevoSeguidoId] = useState("");
     const [mensaje, setMensaje] = useState("");
 
-    const { store, dispatch } = useGlobalReducer()
+    const { store } = useGlobalReducer();
         
-            if (!store.auth_admin) {
-                return <Navigate to="/login_admin" />;
-            }
+    if (!store.auth_admin) {
+        return <Navigate to="/login_admin" />;
+    }
 
+    // --- 2. GET Lectores blindado para el Select ---
     useEffect(() => {
-        fetch(`${import.meta.env.VITE_BACKEND_URL}api/lector`)
-            .then(res => res.json())
+        fetch(`${API_BASE}/lector`)
+            .then(res => {
+                if (!res.ok) throw new Error("No se pudieron cargar los lectores");
+                return res.json();
+            })
             .then(data => setLectores(data))
-    }, []);
+            .catch(err => console.error("Error cargando lectores:", err));
+    }, [API_BASE]);
 
 
     const actualizarLectorSeguido = (e) => {
@@ -40,13 +47,19 @@ const EditarSeguidos = () => {
             })
         };
 
-        fetch(`${import.meta.env.VITE_BACKEND_URL}api/seguidores/${segId}`, requestOptions)
+        // --- 3. PUT de actualización blindado ---
+        fetch(`${API_BASE}/seguidores/${segId}`, requestOptions)
             .then(response => {
+                if (!response.ok) throw new Error("Error al actualizar la relación");
                 return response.json();
             })
             .then(() => {
                 alert("Cambio de lector seguido completado");
                 navigate(`/ver_seguidores`);
+            })
+            .catch(err => {
+                console.error("Error al actualizar:", err);
+                setMensaje("No se pudo completar la actualización.");
             });
     };
 

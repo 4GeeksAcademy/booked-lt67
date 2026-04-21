@@ -1,42 +1,66 @@
 import React, { useEffect, useState } from "react";
-import { Link, Navigate } from "react-router-dom"
+import { Link, Navigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
-const Reviews = () => {
+const Seguidores = () => {
+    const [lectores, setLectores] = useState([]);
+    const [cargando, setCargando] = useState(true);
 
-    const [reviews, setReviews] = useState([])
-    const { store, dispatch } = useGlobalReducer()
-    
-/*         if (!store.auth_admin) {
-            return <Navigate to="/login_admin" />;
-        }
- */
-    function getReviews() {
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/reviews/")
-            .then((response) => response.json())
-            .then((data) => setReviews(data))
+    const { store } = useGlobalReducer();
+
+    // --- 1. Definimos la base limpia ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
+
+   /*  if (!store.auth_admin) {
+        return <Navigate to="/login_admin" />;
     }
-    
+ */
+    // --- 2. Función de carga blindada ---
+    const cargarTodo = () => {
+        fetch(`${API_BASE}/lector/`)
+            .then(res => {
+                if (!res.ok) throw new Error("Error al cargar la red de seguidores");
+                return res.json();
+            })
+            .then(data => {
+                setLectores(data);
+                setCargando(false);
+            })
+            .catch(error => {
+                console.error("Error en cargarTodo:", error);
+                setCargando(false);
+            });
+    };
 
     useEffect(() => {
-        console.log("se cargaron las reviews")
-        getReviews()
-    }, [])
+        cargarTodo();
+    }, [API_BASE]); // Añadimos API_BASE a dependencias
 
-    function deleteReviews(idToDelete) {
-        console.log("se va a eliminar la review" + idToDelete)
-        const requestOptions = {
-            method: "DELETE",
-            redirect: "follow"
-        };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/reviews/" + idToDelete, requestOptions)
-            .then((response) => response.text())
-            .then((result) => {
-                console.log(result)
-                getReviews()
+    // --- 3. Borrado de relación blindado ---
+    const handleUnfollow = (idRelacion) => {
+        if (!window.confirm("¿Seguro que quieres eliminar este seguimiento?")) return;
+
+        fetch(`${API_BASE}/unfollow/${idRelacion}`, { method: "DELETE" })
+            .then(res => {
+                if (res.ok) {
+                    console.log("Relación eliminada");
+                    cargarTodo();
+                } else {
+                    throw new Error("No se pudo realizar el unfollow");
+                }
             })
+            .catch(error => console.error("Error al eliminar relación:", error));
+    };
 
+    if (cargando) {
+        return (
+            <div className="container mt-5 text-center">
+                <div className="spinner-border" role="status">
+                    <span className="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+        );
     }
 
     return (

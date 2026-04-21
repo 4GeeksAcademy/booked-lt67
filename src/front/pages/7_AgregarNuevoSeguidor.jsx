@@ -1,26 +1,34 @@
 import React, { useEffect, useState } from "react";
-import { Link, Navigate, useNavigate  } from "react-router-dom"
+import { Link, Navigate, useNavigate } from "react-router-dom"
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const AgregarNuevoSeguidor = () => {
     const navigate = useNavigate();
+
+    // --- 1. Definimos la base limpia para los fetches del archivo ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
 
     const [lectores, setLectores] = useState([]);
     const [seguidorId, setSeguidorId] = useState(""); 
     const [seguidoId, setSeguidoId] = useState("");    
     const [mensaje, setMensaje] = useState("");
 
-    const { store, dispatch } = useGlobalReducer()
+    const { store } = useGlobalReducer();
         
-            if (!store.auth_admin) {
-                return <Navigate to="/login_admin" />;
-            }
+    if (!store.auth_admin) {
+        return <Navigate to="/login_admin" />;
+    }
 
+    // --- 2. GET Lectores blindado para llenar ambos Selects ---
     useEffect(() => {
-        fetch(`${import.meta.env.VITE_BACKEND_URL}api/lector`)
-            .then(res => res.json())
+        fetch(`${API_BASE}/lector`)
+            .then(res => {
+                if (!res.ok) throw new Error("Error al cargar lectores");
+                return res.json();
+            })
             .then(data => setLectores(data))
-    }, []);
+            .catch(err => console.error("Error:", err));
+    }, [API_BASE]);
 
     const guardarRelacion = (e) => {
         e.preventDefault();
@@ -31,18 +39,18 @@ const AgregarNuevoSeguidor = () => {
         }
 
         if (seguidorId === seguidoId) {
-            setMensaje("El lector no puede seguirse a si mismo");
+            setMensaje("El lector no puede seguirse a sí mismo");
             return;
         }
 
-    const lectorActual = lectores.find(l => l.id === parseInt(seguidorId));
-    const yaLoSigue = lectorActual?.siguiendo?.some(relacion => relacion.seguido_id === parseInt(seguidoId));
-    
-    if (yaLoSigue) {
-        setMensaje("Ya estos lectores se siguen");
-        return;
-    }
-
+        // Lógica de validación local
+        const lectorActual = lectores.find(l => l.id === parseInt(seguidorId));
+        const yaLoSigue = lectorActual?.siguiendo?.some(relacion => relacion.seguido_id === parseInt(seguidoId));
+        
+        if (yaLoSigue) {
+            setMensaje("Ya estos lectores se siguen");
+            return;
+        }
 
         const requestOptions = {
             method: 'POST',
@@ -53,7 +61,8 @@ const AgregarNuevoSeguidor = () => {
             })
         };
 
-        fetch(`${import.meta.env.VITE_BACKEND_URL}api/follow`, requestOptions)
+        // --- 3. POST de seguimiento blindado ---
+        fetch(`${API_BASE}/follow`, requestOptions)
             .then(response => {
                 if (response.status === 400) throw new Error("Ya existe esa relación");
                 if (!response.ok) throw new Error("Error al procesar el seguimiento");

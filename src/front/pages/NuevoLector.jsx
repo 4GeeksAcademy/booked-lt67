@@ -2,12 +2,15 @@ import React, { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
-// IMPORTAMOS EL MAPA (Ajusta la ruta si es necesario)
+// IMPORTAMOS EL MAPA
 import SelectorUbicacion from "./24_Georreferenciacion"; 
 
 const NuevoLector = () => {
     const { store } = useGlobalReducer();
     const navigate = useNavigate();
+
+    // 1. Definimos la base limpia una sola vez para este componente
+    const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
 
     // Protección de ruta para Admin
     if (!store.auth_admin) {
@@ -20,8 +23,6 @@ const NuevoLector = () => {
     const [apellido, setApellido] = useState("");
     const [paisdondereside, setPaisDondeReside] = useState("");
     const [password, setPassword] = useState("");
-
-    // NUEVO ESTADO PARA EL MAPA
     const [ubicacion, setUbicacion] = useState(null);
 
     function sendData(e) {
@@ -37,15 +38,14 @@ const NuevoLector = () => {
                 "apellido": apellido,
                 "pais donde reside": paisdondereside,
                 "password": password,
-                // ENVIAMOS LAS COORDENADAS (Si no tocó el mapa, se envían como null)
                 "latitud": ubicacion ? ubicacion.lat : null,
                 "longitud": ubicacion ? ubicacion.lng : null
             })
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/lector", requestOptions)
+        // 2. Usamos la API_URL blindada aquí
+        fetch(`${API_URL}/lector`, requestOptions)
             .then(async response => {
-                // Manejo de errores que vienen del backend (ej. email repetido)
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.message || "Error al crear el lector");

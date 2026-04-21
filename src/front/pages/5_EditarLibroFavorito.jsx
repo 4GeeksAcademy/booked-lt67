@@ -1,4 +1,4 @@
-import React, { useEffect, useState, } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, Navigate, useParams, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
@@ -6,24 +6,35 @@ const EditarLibroFavorito = () => {
     const { lectorId, favId } = useParams();
     const navigate = useNavigate();
 
+    // --- 1. Definimos la base limpia para los fetches del archivo ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
+
     const [libros, setLibros] = useState([]);
     const [libroSeleccionado, setLibroSeleccionado] = useState("");
-    const [mensaje, setMensaje] = useState("");
-    const { store, dispatch } = useGlobalReducer()
+    const { store } = useGlobalReducer();
 
     if (!store.auth_admin) {
         return <Navigate to="/login_admin" />;
     }
 
-
     useEffect(() => {
-        fetch(`${import.meta.env.VITE_BACKEND_URL}api/libro`)
-            .then(res => res.json())
+        // --- 2. GET Libros (para el Select) blindado ---
+        fetch(`${API_BASE}/libro`)
+            .then(res => {
+                if (!res.ok) throw new Error("Error al cargar libros");
+                return res.json();
+            })
             .then(data => setLibros(data))
-    }, []);
+            .catch(err => console.error(err));
+    }, [API_BASE]);
 
     const actualizarLibroFavorito = (e) => {
         e.preventDefault();
+
+        if (!libroSeleccionado) {
+            alert("Por favor, selecciona un libro.");
+            return;
+        }
 
         const requestOptions = {
             method: 'PUT',
@@ -34,15 +45,18 @@ const EditarLibroFavorito = () => {
             })
         };
 
-
-        fetch(`${import.meta.env.VITE_BACKEND_URL}api/favoritos/libros/${favId}`, requestOptions)
+        // --- 3. PUT de actualización blindado ---
+        // Usamos favId para identificar la relación específica
+        fetch(`${API_BASE}/favoritos/libros/${favId}`, requestOptions)
             .then(response => {
+                if (!response.ok) throw new Error("No se pudo actualizar el favorito");
                 return response.json();
             })
             .then(() => {
                 alert("Favorito actualizado correctamente");
                 navigate(`/lector/${lectorId}/favoritos`);
-            });
+            })
+            .catch(err => alert(err.message));
     };
 
     return (

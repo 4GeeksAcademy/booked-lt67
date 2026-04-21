@@ -1,36 +1,46 @@
 import React, { useEffect, useState } from "react";
-import { Link, Navigate, useNavigate  } from "react-router-dom"
+import { Link, Navigate, useNavigate } from "react-router-dom"
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
-
 const NuevoLectorAutoresFavoritos = () => {
+    const navigate = useNavigate();
 
-    const navigate = useNavigate()
+    // --- 1. Definimos la base limpia para evitar el error .comapi ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
 
-    const [lectorId, setLectorId] = useState("")
-    const [autorId, setAutorId] = useState("")
+    const [lectorId, setLectorId] = useState("");
+    const [autorId, setAutorId] = useState("");
 
-    const [lectores, setLectores] = useState([])
-    const [autores, setAutores] = useState([])
+    const [lectores, setLectores] = useState([]);
+    const [autores, setAutores] = useState([]);
     
-    const { store, dispatch } = useGlobalReducer()
+    const { store } = useGlobalReducer();
     
-        if (!store.auth_admin) {
-            return <Navigate to="/login_admin" />;
-        }
+    if (!store.auth_admin) {
+        return <Navigate to="/login_admin" />;
+    }
 
     useEffect(() => {
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/lector")
+        // --- 2. GET Lectores blindado ---
+        fetch(`${API_BASE}/lector`)
             .then(response => response.json())
             .then(data => setLectores(data))
+            .catch(err => console.error("Error cargando lectores:", err));
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/autor")
+        // --- 3. GET Autores blindado ---
+        fetch(`${API_BASE}/autor`)
             .then(response => response.json())
             .then(data => setAutores(data))
-    }, [])
+            .catch(err => console.error("Error cargando autores:", err));
+    }, [API_BASE]);
     
     function sendData(e){
-        e.preventDefault()
+        e.preventDefault();
+
+        if (!lectorId || !autorId) {
+            alert("Por favor, selecciona un lector y un autor.");
+            return;
+        }
 
         const requestOptions = {
             method: 'POST',
@@ -41,12 +51,17 @@ const NuevoLectorAutoresFavoritos = () => {
             })
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/lector_autores_favoritos", requestOptions)
-            .then(response => response.json())
+        // --- 4. POST Final blindado ---
+        fetch(`${API_BASE}/lector_autores_favoritos`, requestOptions)
+            .then(response => {
+                if (!response.ok) throw new Error("Error al crear la relación de favorito");
+                return response.json();
+            })
             .then(data => {
-                console.log(data)
-                navigate("/lector_autores_favoritos") 
-            }) 
+                console.log("Relación creada:", data);
+                navigate("/lector_autores_favoritos");
+            })
+            .catch(err => console.error("Error en sendData:", err));
     }
     
     return (

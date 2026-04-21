@@ -6,20 +6,29 @@ const Libro = () => {
     const [libros, setLibros] = useState([])
     const { store } = useGlobalReducer()
 
+    // --- 1. Blindamos la base de la API ---
+    const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
+
     if (!store.auth_admin) {
         return <Navigate to="/login_admin" />;
     }
 
+    // --- 2. GET Libros blindado ---
     function getLibros() {
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/libro/")
-            .then((response) => response.json())
+        fetch(`${API_URL}/libro/`)
+            .then((response) => {
+                if (!response.ok) throw new Error("Error al obtener libros");
+                return response.json();
+            })
             .then((data) => setLibros(data))
+            .catch(error => console.error("Error en getLibros:", error));
     }
 
     useEffect(() => {
         getLibros()
     }, [])
 
+    // --- 3. DELETE Libro blindado ---
     function deletelibro(idToDelete) {
         if (!window.confirm("¿Seguro que deseas eliminar este libro? Esta acción no se puede deshacer.")) return;
         
@@ -28,9 +37,14 @@ const Libro = () => {
             redirect: "follow"
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/libro/" + idToDelete, requestOptions)
-            .then((response) => response.text())
-            .then(() => getLibros())
+        fetch(`${API_URL}/libro/${idToDelete}`, requestOptions)
+            .then((response) => {
+                if (response.ok) {
+                    getLibros(); // Refrescamos la lista
+                } else {
+                    throw new Error("No se pudo eliminar el libro");
+                }
+            })
             .catch(error => console.error("Error al eliminar:", error));
     }
 

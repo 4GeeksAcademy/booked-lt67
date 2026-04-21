@@ -6,31 +6,42 @@ const Editorial = () => {
     const [editoriales, setEditoriales] = useState([])
     const { store } = useGlobalReducer()
 
+    // --- 1. Definimos la base limpia una sola vez ---
+    const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
+
     if (!store.auth_admin) {
         return <Navigate to="/login_admin" />;
     }
 
+    // --- 2. GET Editoriales ---
     function getEditoriales() {
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/editorial/")
+        fetch(`${API_URL}/editorial/`)
             .then((response) => response.json())
             .then((data) => setEditoriales(data))
+            .catch(error => console.error("Error cargando editoriales:", error));
     }
 
     useEffect(() => {
         getEditoriales()
     }, [])
 
+    // --- 3. DELETE Editorial ---
     function deleteEditorial(idToDelete) {
         if (!window.confirm("¿Estás seguro? Se eliminarán también los libros y posts vinculados.")) return;
-        
+
         const requestOptions = {
             method: "DELETE",
             redirect: "follow"
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/editorial/" + idToDelete, requestOptions)
-            .then((response) => response.text())
-            .then(() => getEditoriales())
+        fetch(`${API_URL}/editorial/${idToDelete}`, requestOptions)
+            .then((response) => {
+                if (response.ok) {
+                    getEditoriales();
+                } else {
+                    throw new Error("No se pudo eliminar la editorial");
+                }
+            })
             .catch(error => console.error("Error al eliminar:", error));
     }
 
@@ -64,7 +75,7 @@ const Editorial = () => {
                                         style={{ width: "100px", height: "100px", objectFit: "contain", backgroundColor: "#fff" }}
                                     />
                                     {editorial.is_verified && (
-                                        <span 
+                                        <span
                                             className="position-absolute translate-middle badge rounded-pill bg-primary"
                                             style={{ top: "85%", left: "65%", border: "2px white solid" }}
                                             title="Verificada"
