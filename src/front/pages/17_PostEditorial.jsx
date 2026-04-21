@@ -1,102 +1,107 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import useGlobalReducer from "../hooks/useGlobalReducer"; // Importamos el reducer por si acaso
+import React, { useEffect, useState, useCallback } from "react";
+import useGlobalReducer from "../hooks/useGlobalReducer";
+import { Link } from "react-router-dom";
 
 const PostEditorial = () => {
     const { store } = useGlobalReducer();
-    const navigate = useNavigate();
-    const [texto, setTexto] = useState("");
-    const [editoriales, setEditoriales] = useState([]);
-    const [editorialId, setEditorialId] = useState("");
+    const [postsEditorial, setPostsEditorial] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Efecto para cargar la lista de editoriales (usando la misma lógica de URL)
-    useEffect(() => {
-        const base = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-        fetch(`${base}/api/editorial`)
-            .then(response => response.json())
-            .then(data => setEditoriales(data))
-            .catch(error => console.error("Error cargando editoriales:", error));
+    const fetchPosts = useCallback(async () => {
+        try {
+            const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+            const response = await fetch(`${baseUrl}/api/posteditorial`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                // Ordenamos los posts para que los más nuevos salgan arriba (suponiendo que el ID mayor es el más nuevo)
+                const postsOrdenados = data.sort((a, b) => b.id - a.id);
+                setPostsEditorial(postsOrdenados);
+            }
+        } catch (error) {
+            console.error("Error cargando posts de editoriales:", error);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    const sendData = (e) => {
-        e.preventDefault();
+    useEffect(() => {
+        fetchPosts();
+    }, [fetchPosts]);
 
-        if (!editorialId) {
-            alert("Error: Por favor selecciona una editorial");
-            return;
-        }
-
-        // 1. Limpiamos la URL base (quita la barra si existe) - EXACTAMENTE IGUAL QUE AUTOR
-        const base = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-
-        // 2. Construimos la URL final con la ruta de EDITORIAL
-        const urlFinal = `${base}/api/posteditorial`; 
-
-        console.log("🔥 URL de disparo (Editorial):", urlFinal);
-
-        const requestOptions = {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                "editorial_id": parseInt(editorialId), // Usamos editorial_id
-                "texto": texto,
-            })
-        };
-
-        fetch(urlFinal, requestOptions)
-            .then(response => {
-                if (!response.ok) throw new Error("Error en el servidor");
-                return response.json();
-            })
-            .then(data => {
-                console.log("Publicado con éxito:", data);
-                navigate("/pagina_editorial"); // Volvemos a la página de editorial
-            })
-            .catch(error => {
-                console.error("Incendio en el fetch de Editorial:", error);
-            });
-    };
+    if (loading) {
+        return (
+            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)' }}>
+                <div className="spinner-border text-info-booked" role="status"></div>
+            </div>
+        );
+    }
 
     return (
-        <div className="card shadow-sm border-0 mb-4 bg-light">
-            <div className="card-body">
-                <h5 className="card-title fw-bold text-info-booked mb-3">Nuevo Post de Editorial</h5>
-                <form onSubmit={sendData}>
-                    {/* Select de Editoriales */}
-                    <div className="mb-3">
-                        <select 
-                            className="form-select border-0 shadow-sm"
-                            value={editorialId}
-                            onChange={(e) => setEditorialId(e.target.value)}
-                            required
-                        >
-                            <option value="">Selecciona tu Editorial...</option>
-                            {editoriales.map(ed => (
-                                <option key={ed.id} value={ed.id}>{ed.nombre}</option>
-                            ))}
-                        </select>
-                    </div>
+        <div className="min-vh-100 py-5" style={{ background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)' }}>
+            <div className="container">
+                
+                {/* --- ENCABEZADO DEL FORO --- */}
+                <div className="text-center mb-5 mt-3">
+                    <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Novedades y Anuncios</span>
+                    <h1 className="display-5 fw-bold text-dark mt-2 mb-3">Foro de Editoriales</h1>
+                    <p className="lead text-muted mx-auto" style={{ maxWidth: '700px' }}>
+                        Mantente al día con los últimos lanzamientos, comunicados y eventos publicados directamente por las casas editoriales de nuestra comunidad.
+                    </p>
+                </div>
 
-                    <div className="mb-3">
-                        <textarea 
-                            className="form-control border-0 shadow-sm" 
-                            rows="4" 
-                            placeholder="Anuncios, lanzamientos o noticias..." 
-                            value={texto} 
-                            onChange={(e) => setTexto(e.target.value)} 
-                            required 
-                        />
+                {/* --- FEED DE PUBLICACIONES --- */}
+                <div className="row justify-content-center">
+                    <div className="col-lg-8"> 
+                        {postsEditorial.length === 0 ? (
+                            <div className="text-center bg-white p-5 rounded-5 shadow-sm border-0">
+                                <i className="fas fa-newspaper fa-3x mb-3 text-info-booked opacity-50"></i>
+                                <h4 className="fw-bold text-dark">Sin publicaciones recientes</h4>
+                                <p className="text-muted mb-0">Las editoriales aún no han publicado anuncios. ¡Vuelve más tarde!</p>
+                            </div>
+                        ) : (
+                            postsEditorial.map((post) => (
+                                <div key={post.id} className="card shadow-sm border-0 rounded-4 mb-4 bg-white overflow-hidden">
+                                    <div className="card-body p-4 p-md-5">
+                                        
+                                        {/* Cabecera del Post (Avatar, Nombre y Fecha) */}
+                                        <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
+                                            <div className="bg-light rounded-circle d-flex align-items-center justify-content-center border shadow-sm flex-shrink-0"
+                                                 style={{ width: "55px", height: "55px", overflow: "hidden" }}>
+                                                {post.foto_editorial ? (
+                                                    <img src={post.foto_editorial} alt={post.nombre_editorial} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                ) : (
+                                                    <i className="fas fa-university text-info-booked fs-4"></i>
+                                                )}
+                                            </div>
+                                            
+                                            <div className="ms-3">
+                                                <h6 className="fw-bold mb-0 text-dark fs-5">{post.nombre_editorial || "Editorial Booked"}</h6>
+                                                <small className="text-muted d-flex align-items-center fw-bold" style={{ fontSize: '0.8rem' }}>
+                                                    <i className="far fa-clock me-2 text-info-booked"></i> {post.fecha}
+                                                </small>
+                                            </div>
+                                            
+                                            {/* Badge en la esquina superior derecha */}
+                                            <div className="ms-auto d-none d-sm-block">
+                                                <span className="badge bg-info-booked text-white rounded-pill px-3 py-2 small shadow-sm">
+                                                    Editorial
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Cuerpo del Mensaje */}
+                                        <p className="card-text text-dark" style={{ whiteSpace: 'pre-wrap', fontSize: '1.1rem', lineHeight: '1.6' }}>
+                                            {post.texto}
+                                        </p>
+                                        
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
-                    
-                    <div className="d-flex justify-content-end gap-2">
-                        <button type="button" className="btn btn-outline-secondary px-4" onClick={() => navigate("/pagina_editorial")}>
-                            Volver al panel
-                        </button>
-                        <button type="submit" className="btn btn-info-booked text-white px-4 shadow-sm">
-                            Publicar Anuncio
-                        </button>
-                    </div>
-                </form>
+                </div>
+
             </div>
         </div>
     );
