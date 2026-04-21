@@ -137,7 +137,7 @@ const ActualizarAutor = () => {
             })
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/autor/" + theId, requestOptions)
+        fetch(import.meta.env.VITE_BACKEND_URL + "/api/autor/" + theId, requestOptions)
             .then(response => {
                 if (response.status === 409) {
                     throw new Error("Ese username o email ya está en uso por otra autor");
