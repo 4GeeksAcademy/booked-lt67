@@ -18,6 +18,7 @@ const NuevaReview = () => {
     const [puntuacion, setPuntuacion] = useState(10);
     const [cargando, setCargando] = useState(false);
     const [errorMsg, setErrorMsg] = useState(null);
+    const libroSeleccionado = libros.find(l => String(l.id) === String(libroId));
 
     // --- 2. Carga de libros (GET) blindada ---
     useEffect(() => {
