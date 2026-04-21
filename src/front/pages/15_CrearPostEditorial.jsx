@@ -2,20 +2,24 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
 const CrearPostEditorial = () => {
-
     const navigate = useNavigate();
 
     const [editorialId, setEditorialId] = useState("");
     const [editoriales, setEditoriales] = useState([]);
-    const [texto, setTexto] = useState(""); // Corregido: inicializado como string vacío, no array
+    const [texto, setTexto] = useState("");
 
     useEffect(() => {
-        // Limpiamos la URL para el GET inicial
-        const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-        fetch(`${baseUrl}/api/editorial`)
-            .then(response => response.json())
+        // --- GET BLINDADO ---
+        const base = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+        const urlGet = `${base}/api/editorial`;
+        
+        fetch(urlGet)
+            .then(response => {
+                if (!response.ok) throw new Error("Error al cargar editoriales");
+                return response.json();
+            })
             .then(data => setEditoriales(data))
-            .catch(error => console.error("Error cargando editoriales:", error));
+            .catch(error => console.error("Error inicial:", error));
     }, []);
 
     function sendData(e) {
@@ -26,6 +30,12 @@ const CrearPostEditorial = () => {
             return;
         }
 
+        // --- POST BLINDADO ---
+        const base = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+        const urlFinal = `${base}/api/posteditorial`;
+
+        console.log("🚀 Disparando POST Editorial a:", urlFinal);
+
         const requestOptions = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -35,23 +45,20 @@ const CrearPostEditorial = () => {
             })
         };
 
-        // --- SOLUCIÓN BLINDADA ---
-        // 1. Tomamos la URL y le quitamos cualquier barra al final con un Regex
-        const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-        
-        // 2. Construimos la ruta manualmente poniendo nosotros la barra
-        const urlFinal = `${baseUrl}/api/posteditorial`;
-
         fetch(urlFinal, requestOptions)
             .then(response => {
-                if (response.ok) return response.json();
-                throw new Error("Error en el servidor");
+                if (!response.ok) throw new Error("Error en el servidor al crear post");
+                return response.json();
             })
             .then(data => {
-                console.log("Post creado:", data);
-                navigate("/pagina_editorial"); // Asegúrate de que esta ruta sea la correcta en tu App
+                console.log("Post creado con éxito:", data);
+                // Ajustamos la navegación según lo que necesites
+                navigate("/pagina_editorial"); 
             })
-            .catch(error => console.error("Error al publicar:", error));
+            .catch(error => {
+                console.error("Fallo total en el POST:", error);
+                alert("No se pudo publicar. Revisa la consola para más detalles.");
+            });
     }
 
     return (
@@ -88,3 +95,4 @@ const CrearPostEditorial = () => {
 };
 
 export default CrearPostEditorial;
+
