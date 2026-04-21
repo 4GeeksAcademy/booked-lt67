@@ -14,6 +14,7 @@ const AdminHome = () => {
     }
 
     // Array de rutas de administración para renderizar el menú dinámicamente
+    // NOTA: Asegúrate de que estas rutas coincidan con tus Routes en Layout.jsx
     const adminModules = [
         { path: "/lector", title: "Lectores", icon: "users" },
         { path: "/autor", title: "Autores", icon: "feather-alt" },
@@ -87,8 +88,8 @@ const AdminHome = () => {
                         </div>
                     </div>
 
-                    {/* MENSAJE DE INDICACIÓN (Opcional, para que no quede vacío abajo) */}
-                    <div className="text-center mt-5 p-5 bg-white rounded-4 shadow-sm border border-light" style={{ borderStyle: 'dashed !important' }}>
+                    {/* MENSAJE DE INDICACIÓN */}
+                    <div className="text-center mt-5 p-5 bg-white rounded-4 shadow-sm border border-light" style={{ borderStyle: 'dashed' }}>
                         <i className="fas fa-hand-pointer fa-3x text-muted mb-3 opacity-50"></i>
                         <h4 className="fw-bold text-muted">Selecciona una opción del menú</h4>
                         <p className="text-muted">Utiliza el menú lateral para navegar entre las diferentes secciones administrativas.</p>
