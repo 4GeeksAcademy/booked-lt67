@@ -8,7 +8,7 @@ const CrearPostEditorialbyId = () => {
 
     const handlePublish = async (e) => {
         e.preventDefault();
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/posteditorial`, {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/posteditorial`, {
             method: "POST",
             body: JSON.stringify({
                 texto: texto,
