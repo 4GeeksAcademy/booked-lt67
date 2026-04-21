@@ -839,21 +839,31 @@ def login_lector():
 
 @api.route("/login_editorial", methods=["POST"])
 def login_editorial():
-    email = request.json.get("email", None)
-    password = request.json.get("password", None)
-    editorial = Editorial.query.filter_by(email=email).first()
-    if editorial is None:
-        return jsonify({"msg": "Bad username or password"}), 401
-    if password != editorial.password:
-        return jsonify({"msg": "Bad username or password"}), 401
 
-    access_token = create_access_token(identity=email)
+    body = request.get_json()
+    email = body.get("email", None)
+    password = body.get("password", None)
+
+    if email is None or password is None:
+        return jsonify({"msg": "Email y contraseña requeridos"}), 400
+
+    editorial = Editorial.query.filter_by(email=email).first()
+
+    if editorial is None:
+        return jsonify({"msg": "La editorial no existe"}), 401
+
+    es_valida = check_password_hash(editorial.password, password)
+
+    if not es_valida:
+        return jsonify({"msg": "Credenciales incorrectas"}), 401
+
+    access_token = create_access_token(identity=str(editorial.id))
+    
     return jsonify({
         "access_token": access_token,
         "editorial_id": editorial.id,
         "nombre": editorial.nombre
     }), 200
-
 
 @api.route("/signup_lector", methods=["POST"])
 def signup_lector():
