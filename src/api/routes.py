@@ -395,16 +395,37 @@ def create_libro():
 
 @api.route('/libro/<int:libro_id>', methods=['DELETE'])
 def delete_libro(libro_id):
-
+    # Buscamos el libro
     libro = Libro.query.get(libro_id)
 
     if libro is None:
         return jsonify({"msg": f"El libro con ID {libro_id} no existe"}), 404
 
-    db.session.delete(libro)
-    db.session.commit()
-    return jsonify({"msg": "Libro eliminado con éxito"}), 200
+    try:
+        # 1. Borramos las reviews asociadas (usando Reviews en plural como tu import)
+        Reviews.query.filter_by(libro_id=libro_id).delete()
+        
+        # 2. Borramos los favoritos asociados (usando LibrosFavoritos como tu import)
+        LibrosFavoritos.query.filter_by(libro_id=libro_id).delete()
 
+        LecturaActual.query.filter_by(libro_id=libro_id).delete()
+
+        # 3. Borramos el libro
+        db.session.delete(libro)
+        
+        # 4. Guardamos todos los cambios en una sola transacción
+        db.session.commit()
+        
+        return jsonify({"msg": "Libro y sus registros asociados eliminados con éxito"}), 200
+
+    except Exception as e:
+        # Si algo falla, revertimos para no dejar la base de datos en un estado extraño
+        db.session.rollback()
+        print(f"Error detectado: {str(e)}")
+        return jsonify({
+            "msg": "No se pudo eliminar el libro",
+            "error": str(e)
+        }), 500
 
 @api.route('/libro/<int:libro_id>', methods=['PUT'])
 def update_libros(libro_id):
