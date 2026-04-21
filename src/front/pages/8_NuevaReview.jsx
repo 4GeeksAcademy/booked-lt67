@@ -7,6 +7,9 @@ const NuevaReview = () => {
     const location = useLocation();
     const { store } = useGlobalReducer();
 
+    // --- 1. Definimos la base limpia para evitar el error .comapi ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
+
     const libroPreseleccionado = location.state?.libroId ? String(location.state.libroId) : "";
 
     const [libroId, setLibroId] = useState(libroPreseleccionado);
@@ -16,11 +19,10 @@ const NuevaReview = () => {
     const [cargando, setCargando] = useState(false);
     const [errorMsg, setErrorMsg] = useState(null);
 
-    const libroSeleccionado = libros.find(l => String(l.id) === libroId);
-
+    // --- 2. Carga de libros (GET) blindada ---
     useEffect(() => {
         if (store.auth_lector) {
-            fetch(`${import.meta.env.VITE_BACKEND_URL}/api/libro`)
+            fetch(`${API_BASE}/libro`)
                 .then(response => {
                     if (!response.ok) throw new Error("Error al cargar biblioteca");
                     return response.json();
@@ -36,17 +38,18 @@ const NuevaReview = () => {
                     setErrorMsg("No se pudo conectar con la base de datos.");
                 });
         }
-    }, [store.auth_lector, libroPreseleccionado]);
+    }, [store.auth_lector, libroPreseleccionado, API_BASE]);
 
     if (!store.auth_lector) return <Navigate to="/login_lector" />;
 
+    // --- 3. Envío de reseña (POST) blindado ---
     const sendData = async (e) => {
         e.preventDefault();
         setCargando(true);
         setErrorMsg(null);
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reviews`, {
+            const response = await fetch(`${API_BASE}/reviews`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

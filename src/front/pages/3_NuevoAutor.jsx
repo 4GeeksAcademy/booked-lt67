@@ -2,21 +2,21 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const NuevoAutor = () => {
+    const navigate = useNavigate();
 
-    const navigate = useNavigate()
+    // --- 1. Definimos la base limpia ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
 
-    const [email, setEmail] = useState("")
-    const [password, setPassword] = useState("")
-    const [nombre, setNombre] = useState("")
-    const [apellido, setApellido] = useState("")
-    const [pais, setPais] = useState("")
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [nombre, setNombre] = useState("");
+    const [apellido, setApellido] = useState("");
+    const [pais, setPais] = useState("");
     const [foto, setFoto] = useState(null);
 
     function sendData(e) {
-        e.preventDefault()
-        console.log("send data")
-        console.log(email, password, nombre, apellido, pais)
-
+        e.preventDefault();
+        
         const requestOptions = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -28,35 +28,49 @@ const NuevoAutor = () => {
                 "pais": pais,
             })
         };
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/autor/", requestOptions)
-            .then(response => response.json())
+
+        // --- 2. POST de creación blindado ---
+        fetch(`${API_BASE}/autor/`, requestOptions)
+            .then(response => {
+                if (!response.ok) throw new Error("Error al crear el autor");
+                return response.json();
+            })
             .then(data => {
-                console.log(data)
-                if (foto && data.autor && data.autor.id) {
-                    subirFoto(data.autor.id);
+                console.log("Autor creado:", data);
+                // Verificamos si el backend devolvió el ID (ajusta según tu respuesta de Flask)
+                const newId = data.autor?.id || data.id;
+                
+                if (foto && newId) {
+                    subirFoto(newId);
                 } else {
                     navigate("/autor");
                 }
             })
+            .catch(err => console.error("Error en sendData:", err));
     }
 
     const subirFoto = (autorId) => {
         const formData = new FormData();
         formData.append("foto", foto);
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/upload_foto/" + autorId, {
+        // --- 3. POST de foto blindado ---
+        fetch(`${API_BASE}/upload_foto/${autorId}`, {
             method: "POST",
             body: formData,
         })
             .then(response => {
                 if (response.ok) {
-                    console.log("Foto subida");
+                    console.log("Foto subida con éxito");
                     navigate("/autor");
+                } else {
+                    throw new Error("Error al subir la foto");
                 }
             })
-            .catch(err => console.error("Error al subir foto:", err));
+            .catch(err => {
+                console.error("Error al subir foto:", err);
+                navigate("/autor"); // Navegamos igual aunque falle la foto para no trabar al admin
+            });
     };
-;
 
 
 return (

@@ -3,39 +3,47 @@ import { Link, Navigate } from "react-router-dom"
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const LectorAutoresFavoritos = () => {
-
     const [lectorAutoresFavoritos, setLectorAutoresFavoritos] = useState([])
-    const { store, dispatch } = useGlobalReducer()
+    const { store } = useGlobalReducer()
     
-        if (!store.auth_admin) {
-            return <Navigate to="/login_admin" />;
-        }
+    // --- 1. Definimos la base limpia una sola vez ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
 
+    if (!store.auth_admin) {
+        return <Navigate to="/login_admin" />;
+    }
+
+    // --- 2. GET Relaciones blindado ---
     function getLectorAutoresFavoritos() {
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/lector_autores_favoritos/")
+        fetch(`${API_BASE}/lector_autores_favoritos/`)
             .then((response) => response.json())
             .then((data) => setLectorAutoresFavoritos(data))
+            .catch(error => console.error("Error cargando relaciones:", error));
     }
 
     useEffect(() => {
-        console.log("se cargaron las autores")
         getLectorAutoresFavoritos()
     }, [])
 
+    // --- 3. DELETE Relación blindado ---
     function deleteLectorAutoresFavoritos(idToDelete) {
-        console.log("se va a eliminar la autor" + idToDelete)
+        if (!window.confirm("¿Estás seguro de que deseas eliminar esta relación?")) return;
+
         const requestOptions = {
             method: "DELETE",
             redirect: "follow"
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/lector_autores_favoritos/" + idToDelete, requestOptions)
-            .then((response) => response.text())
-            .then((result) => {
-                console.log(result)
-                getLectorAutoresFavoritos()
+        fetch(`${API_BASE}/lector_autores_favoritos/${idToDelete}`, requestOptions)
+            .then((response) => {
+                if (response.ok) {
+                    console.log("Relación eliminada");
+                    getLectorAutoresFavoritos(); // Refrescar la lista
+                } else {
+                    throw new Error("No se pudo eliminar la relación");
+                }
             })
-
+            .catch(error => console.error("Error al eliminar:", error));
     }
 
     return (

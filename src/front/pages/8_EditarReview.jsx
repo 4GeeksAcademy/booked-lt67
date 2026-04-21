@@ -7,39 +7,40 @@ const EditarReview = () => {
     const navigate = useNavigate();
     const { store } = useGlobalReducer();
 
+    // --- 1. Definimos la base limpia para los 3 fetches del componente ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
+
     const [lectorId, setLectorId] = useState("");
     const [libroId, setLibroId] = useState("");
     const [texto, setTexto] = useState("");
     const [puntuacion, setPuntuacion] = useState(10);
-    
-    // Necesitamos cargar los libros para el select (aunque esté deshabilitado, es buena práctica mostrar el título)
     const [libros, setLibros] = useState([]);
     const [cargando, setCargando] = useState(false);
 
-    // Carga inicial de datos
     useEffect(() => {
-        if (!store.auth_lector) return;
+        if (!store.auth_lector && !store.auth_admin ) return;
 
-        // 1. Cargar todos los libros disponibles
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/libro")
+        // 2. Cargar libros con URL blindada
+        fetch(`${API_BASE}/libro`)
             .then(res => res.json())
             .then(data => setLibros(data))
             .catch(err => console.error("Error cargando libros:", err));
 
-        // 2. Cargar los datos de la reseña actual
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/reviews/" + theId)
+        // 3. Cargar datos de la reseña con URL blindada
+        fetch(`${API_BASE}/reviews/${theId}`)
             .then(res => res.json())
             .then(data => {
                 setLectorId(String(data.lector_id));
-                setLibroId(String(data.libro?.id));
-                setTexto(data.texto);
-                setPuntuacion(data.puntuacion);
+                // Aseguramos que libroId sea string para el select
+                setLibroId(String(data.libro?.id || data.libro_id));
+                setTexto(data.texto || "");
+                setPuntuacion(data.puntuacion || 10);
             })
             .catch(err => console.error("Error cargando la reseña:", err));
 
-    }, [theId, store.auth_lector]);
+    }, [theId, store.auth_lector, API_BASE]);
 
-    if (!store.auth_lector) {
+    if (!store.auth_lector && !store.auth_admin) {
         return <Navigate to="/login_lector" />;
     }
 
@@ -48,7 +49,7 @@ const EditarReview = () => {
         setCargando(true);
 
         if (!lectorId || !libroId) {
-            alert("Debes seleccionar lector y libro");
+            alert("Información incompleta");
             setCargando(false);
             return;
         }
@@ -64,7 +65,8 @@ const EditarReview = () => {
             })
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/reviews/" + theId, requestOptions)
+        // 4. PUT de actualización blindado
+        fetch(`${API_BASE}/reviews/${theId}`, requestOptions)
             .then(response => {
                 if (response.ok) {
                     navigate("/pagina_lector");

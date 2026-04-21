@@ -6,20 +6,26 @@ const Autor = () => {
     const [autores, setautores] = useState([])
     const { store } = useGlobalReducer()
 
+    // --- 1. Definimos la base limpia una sola vez ---
+    const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
+
     if (!store.auth_admin) {
         return <Navigate to="/login_admin" />;
     }
 
+    // --- 2. GET Autores con URL blindada ---
     function getAutores() {
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/autor/")
+        fetch(`${API_URL}/autor/`)
             .then((response) => response.json())
             .then((data) => setautores(data))
+            .catch(error => console.error("Error cargando autores:", error));
     }
 
     useEffect(() => {
         getAutores()
     }, [])
 
+    // --- 3. DELETE Autor con URL blindada ---
     function deleteautor(idToDelete) {
         if (!window.confirm("¿Estás seguro de que deseas eliminar este autor?")) return;
         
@@ -28,9 +34,14 @@ const Autor = () => {
             redirect: "follow"
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/autor/" + idToDelete, requestOptions)
-            .then((response) => response.text())
-            .then(() => getAutores())
+        fetch(`${API_URL}/autor/${idToDelete}`, requestOptions)
+            .then((response) => {
+                if (response.ok) {
+                    getAutores(); // Refrescamos la lista tras eliminar
+                } else {
+                    throw new Error("No se pudo eliminar el autor");
+                }
+            })
             .catch(error => console.error("Error al eliminar:", error));
     }
 

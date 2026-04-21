@@ -2,24 +2,30 @@ import React, { useEffect, useState, } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
-
 const VerReviews = () => {
     const { theId } = useParams();
     const [review, setReview] = useState(null);
-    const { store, dispatch } = useGlobalReducer()
+    const { store } = useGlobalReducer();
 
-/*     if (!store.auth_admin) {
+    // --- 1. Definimos la base limpia ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
+
+    
+    /* if (!store.auth_admin) {
         return <Navigate to="/login_admin" />;
-    }
- */
+    } */
+   
 
     useEffect(() => {
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/reviews/" + theId)
+        // --- 2. Fetch con URL blindada ---
+        fetch(`${API_BASE}/reviews/${theId}`)
             .then(response => {
+                if (!response.ok) throw new Error("No se pudo cargar la review");
                 return response.json();
             })
             .then(data => setReview(data))
-    }, [theId]);
+            .catch(err => console.error("Error cargando review:", err));
+    }, [theId, API_BASE]);
 
     if (review === null) {
         return (

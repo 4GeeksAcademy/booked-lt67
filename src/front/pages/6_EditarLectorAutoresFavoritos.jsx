@@ -1,4 +1,4 @@
-import React, { useEffect, useState, } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, Navigate, useParams, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
@@ -6,34 +6,43 @@ const EditarLectorAutoresFavoritos = () => {
     const { theId } = useParams();
     const navigate = useNavigate();
 
+    // --- 1. Definimos la base limpia para los 4 fetches ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
+
     const [lectorId, setLectorId] = useState("");
     const [autorId, setAutorId] = useState("");
 
     const [lectores, setLectores] = useState([]);
     const [autores, setAutores] = useState([]);
-    const { store, dispatch } = useGlobalReducer()
+    const { store } = useGlobalReducer();
 
     if (!store.auth_admin) {
         return <Navigate to="/login_admin" />;
     }
 
     useEffect(() => {
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/lector_autores_favoritos/" + theId)
+        // --- 2. GET Datos de la relación específica ---
+        fetch(`${API_BASE}/lector_autores_favoritos/${theId}`)
             .then(res => res.json())
             .then(data => {
-                setAutorId(data.autor_id);
-                setLectorId(data.lector_id);
-            });
+                setAutorId(data.autor_id || "");
+                setLectorId(data.lector_id || "");
+            })
+            .catch(err => console.error("Error cargando favorito:", err));
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/lector")
+        // --- 3. GET Lectores (para el Select) ---
+        fetch(`${API_BASE}/lector`)
             .then(res => res.json())
-            .then(data => setLectores(data));
+            .then(data => setLectores(data))
+            .catch(err => console.error("Error cargando lectores:", err));
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/autor")
+        // --- 4. GET Autores (para el Select) ---
+        fetch(`${API_BASE}/autor`)
             .then(res => res.json())
-            .then(data => setAutores(data));
+            .then(data => setAutores(data))
+            .catch(err => console.error("Error cargando autores:", err));
 
-    }, [theId]);
+    }, [theId, API_BASE]);
 
 
     const updateData = (e) => {
@@ -53,13 +62,17 @@ const EditarLectorAutoresFavoritos = () => {
             })
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/lector_autores_favoritos/" + theId, requestOptions)
+        // --- 5. PUT de actualización blindado ---
+        fetch(`${API_BASE}/lector_autores_favoritos/${theId}`, requestOptions)
             .then(response => {
                 if (response.ok) {
                     alert("¡Actualizado con éxito!");
                     navigate("/lector_autores_favoritos");
+                } else {
+                    throw new Error("Error al actualizar la relación");
                 }
-            });
+            })
+            .catch(err => alert(err.message));
     };
 
     return (

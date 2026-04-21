@@ -1,36 +1,48 @@
 import React, { useEffect, useState } from "react";
-import { Link, Navigate } from "react-router-dom"
+import { Link, Navigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const Lector = () => {
-    const { store } = useGlobalReducer()
-    const [lectores, setLectores] = useState([])
+    const { store } = useGlobalReducer();
+    const [lectores, setLectores] = useState([]);
+
+    // --- 1. Definimos la base limpia una sola vez ---
+    // Esto quita la barra si existe y añade /api de forma segura
+    const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
 
     if (!store.auth_admin) {
         return <Navigate to="/login_admin" />;
     }
 
+    // --- 2. GET Lectores ---
     function getLectores() {
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/lector/")
+        // Usamos la variable API_URL que ya está limpia
+        fetch(`${API_URL}/lector/`)
             .then((response) => response.json())
             .then((data) => setLectores(data))
+            .catch(error => console.error("Error cargando lectores:", error));
     }
 
     useEffect(() => {
-        getLectores()
-    }, [])
+        getLectores();
+    }, []);
 
+    // --- 3. DELETE Lector ---
     function deleteLector(idToDelete) {
         if (!window.confirm("¿Estás seguro de eliminar este lector? Perderá sus favoritos y progreso de lectura.")) return;
-        
+
         const requestOptions = {
             method: "DELETE",
             redirect: "follow"
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/lector/" + idToDelete, requestOptions)
-            .then((response) => response.text())
-            .then(() => getLectores())
+        // Aquí también usamos la API_URL blindada
+        fetch(`${API_URL}/lector/${idToDelete}`, requestOptions)
+            .then((response) => {
+                if (response.ok) {
+                    getLectores(); // Refrescamos la lista
+                }
+            })
             .catch(error => console.error("Error al eliminar:", error));
     }
 

@@ -1,45 +1,43 @@
-import React, { useEffect, useState, } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, Navigate, useParams, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const EditarLibro = () => {
     const { theId } = useParams();
     const navigate = useNavigate();
 
+    // --- 1. Definimos la base limpia para los 5 fetches de este archivo ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
+
     const [nombre, setNombre] = useState("");
     const [genero, setGenero] = useState("");
     const [autorId, setAutorId] = useState("");
     const [editorialId, setEditorialId] = useState("");
-
     const [imageUrl, setImageUrl] = useState("");
-
     const [originalData, setOriginalData] = useState(null);
 
     const [autores, setAutores] = useState([]); 
     const [editoriales, setEditoriales] = useState([]);
 
-    const { store, dispatch } = useGlobalReducer()
+    const { store } = useGlobalReducer();
             
-                if (!store.auth_admin) {
-                                return <Navigate to="/login_admin" />;
-                            }
-
+    if (!store.auth_admin) {
+        return <Navigate to="/login_admin" />;
+    }
 
     useEffect(() => {
-
         const scriptId = "cloudinary-upload-widget-script";
-            if (!document.getElementById(scriptId)) {
-                const script = document.createElement("script");
-                script.id = scriptId;
-                script.src = "https://upload-widget.cloudinary.com/global/all.js";
-                script.async = true;
-                document.body.appendChild(script);
-            }
+        if (!document.getElementById(scriptId)) {
+            const script = document.createElement("script");
+            script.id = scriptId;
+            script.src = "https://upload-widget.cloudinary.com/global/all.js";
+            script.async = true;
+            document.body.appendChild(script);
+        }
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/libro/" + theId)
-            .then(response => {
-                return response.json();
-            })
+        // --- 2. GET Datos del Libro ---
+        fetch(`${API_BASE}/libro/${theId}`)
+            .then(response => response.json())
             .then(data => {
                 const libroData = {
                     nombre: data.nombre || "",
@@ -48,31 +46,32 @@ const EditarLibro = () => {
                     editorial_id: data.editorial_id || "",
                     image_url: data.image_url || ""
                 };
-
-                // Seteamos todos los estados del formulario usando el objeto
                 setNombre(libroData.nombre);
                 setGenero(libroData.genero);
                 setAutorId(libroData.autor_id);
                 setEditorialId(libroData.editorial_id);
                 setImageUrl(libroData.image_url);
-                
-                // Guardamos la copia original para la comparación posterior
                 setOriginalData(libroData);
             });
 
-        fetch(`${import.meta.env.VITE_BACKEND_URL}api/autor`)
+        // --- 3. GET Autores (Para el Select) ---
+        fetch(`${API_BASE}/autor`)
             .then(res => res.json())
-            .then(data => setAutores(data));
+            .then(data => setAutores(data))
+            .catch(err => console.error("Error cargando autores:", err));
 
-        fetch(`${import.meta.env.VITE_BACKEND_URL}api/editorial`)
+        // --- 4. GET Editoriales (Para el Select) ---
+        fetch(`${API_BASE}/editorial`)
             .then(res => res.json())
-            .then(data => setEditoriales(data));
+            .then(data => setEditoriales(data))
+            .catch(err => console.error("Error cargando editoriales:", err));
 
-    }, [theId]);
+    }, [theId, API_BASE]);
 
     const handleUpload = async (e) => {
         e.preventDefault();
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + "api/upload_image");
+        // --- 5. Firma de Cloudinary ---
+        const response = await fetch(`${API_BASE}/upload_image`);
         const data = await response.json();
 
         const widget = window.cloudinary.createUploadWidget({
@@ -94,28 +93,29 @@ const EditarLibro = () => {
         e.preventDefault();
 
         const hasChanged = 
-            nombre !== originalData.nombre ||
-            genero !== originalData.genero ||
-            autorId !== originalData.autor_id ||
-            editorialId !== originalData.editorial_id ||
-            imageUrl !== originalData.image_url;
+            nombre !== originalData?.nombre ||
+            genero !== originalData?.genero ||
+            autorId !== originalData?.autor_id ||
+            editorialId !== originalData?.editorial_id ||
+            imageUrl !== originalData?.image_url;
 
         const requestOptions = {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 "nombre": nombre,
-                "genero":genero ,
+                "genero": genero ,
                 "autor_id": autorId,
                 "editorial_id": editorialId,
                 "image_url": imageUrl
             })
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/libro/" + theId, requestOptions)
+        // --- 6. PUT Final ---
+        fetch(`${API_BASE}/libro/${theId}`, requestOptions)
             .then(response => {
                 if (response.status === 409) {
-                    throw new Error("Ese nombre o genero ya está en uso por otro lector");
+                    throw new Error("Ese nombre ya está en uso");
                 }
                 if (response.ok) {
                     if (hasChanged) {
@@ -124,6 +124,7 @@ const EditarLibro = () => {
                     navigate("/libro");
                 }
             })
+            .catch(err => alert(err.message));
     };
 
     return (

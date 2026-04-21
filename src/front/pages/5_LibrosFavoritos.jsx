@@ -1,49 +1,57 @@
-import React, { useEffect, useState, } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const LibrosFavoritos = () => {
-
     const { lectorId } = useParams();
-    const [librosFavoritos, setLibrosFavoritos] = useState([])
-    const { store, dispatch } = useGlobalReducer()
+    const [librosFavoritos, setLibrosFavoritos] = useState([]);
+    const { store } = useGlobalReducer();
+
+    // --- 1. Definimos la base limpia para las rutas de favoritos ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
 
     if (!store.auth_admin) {
         return <Navigate to="/login_admin" />;
     }
 
+    // --- 2. GET Favoritos blindado ---
     function getLibrosFavoritos() {
-        fetch(`${import.meta.env.VITE_BACKEND_URL}api/lector/${lectorId}/favoritos`)
+        // Usamos la plantilla literal para evitar el error de concatenación
+        fetch(`${API_BASE}/lector/${lectorId}/favoritos`)
             .then((response) => response.json())
             .then((data) => {
                 if (Array.isArray(data)) setLibrosFavoritos(data);
                 else setLibrosFavoritos([]);
-            });
+            })
+            .catch(err => console.error("Error cargando favoritos:", err));
     }
 
     useEffect(() => {
-        console.log("se cargaron los libros favoritos")
-        getLibrosFavoritos()
-    }, [])
+        getLibrosFavoritos();
+    }, [lectorId]); // Añadimos lectorId por si cambia el parámetro
 
+    // --- 3. DELETE Favorito blindado ---
     function deleteLibroFavorito(idToDelete) {
-        console.log("se va a eliminar el LibroFavorito" + idToDelete)
+        if (!window.confirm("¿Quitar este libro de favoritos?")) return;
+
         const requestOptions = {
             method: "DELETE",
             redirect: "follow"
         };
 
-        fetch(`${import.meta.env.VITE_BACKEND_URL}api/favoritos/libros/${lectorId}/${idToDelete}`, requestOptions)
+        // Ruta compleja: /api/favoritos/libros/ID_LECTOR/ID_LIBRO
+        fetch(`${API_BASE}/favoritos/libros/${lectorId}/${idToDelete}`, requestOptions)
             .then((response) => {
-                if (response.ok) getLibrosFavoritos();
+                if (response.ok) {
+                    console.log("Favorito eliminado");
+                    getLibrosFavoritos();
+                } else {
+                    throw new Error("No se pudo eliminar el favorito");
+                }
             })
-            .then((result) => {
-                console.log(result)
-                getLibrosFavoritos()
-            })
-
+            .catch(error => console.error("Error al eliminar favorito:", error));
     }
-
+    
     return (
         <>
             <div className="container mt-5">

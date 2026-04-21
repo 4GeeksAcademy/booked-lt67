@@ -1,29 +1,35 @@
-import React, { useEffect, useState, } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useParams, useNavigate, Navigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const VerEditorial = () => {
     const { theId } = useParams();
     const [editorial, setEditorial] = useState(null);
-    const { store, dispatch } = useGlobalReducer()
+    const { store } = useGlobalReducer();
+
+    // --- 1. Definimos la base limpia ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
 
     if (!store.auth_admin) {
         return <Navigate to="/login_admin" />;
     }
 
-
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/editorial/" + theId)
+        // --- 2. Fetch con URL blindada ---
+        fetch(`${API_BASE}/editorial/${theId}`)
             .then(response => {
+                if (!response.ok) throw new Error("No se pudo cargar la editorial");
                 return response.json();
             })
             .then(data => {
+                // Mantenemos tu lógica de seguridad por si viene un array
                 const editorialData = Array.isArray(data) ? data[0] : data;
                 setEditorial(editorialData);
             })
-    }, [theId]);
+            .catch(err => console.error("Error en VerEditorial:", err));
+    }, [theId, API_BASE]);
 
     if (editorial === null) {
         return (
@@ -47,7 +53,7 @@ const VerEditorial = () => {
                         <div className="col-md-4 mb-3">
                             <div className="ratio ratio-1x1 bg-light rounded shadow-sm border overflow-hidden">
                                 {editorial.image_url ? (
-                                    <img src={editorial.image_url} alt={editorial.nombre} className="w-100 h-100 object-fit-contain p-2"/>
+                                    <img src={editorial.image_url} alt={editorial.nombre} className="w-100 h-100 object-fit-contain p-2" />
                                 ) : (
                                     <div className="d-flex flex-column align-items-center justify-content-center text-muted h-100">
                                         <i className="fas fa-building fa-3x mb-2 opacity-25"></i>
