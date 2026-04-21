@@ -1,27 +1,25 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom"
 import BuscadorGoogleBooks from "../components/23_BuscadorGoogleBooks";
 
 const NuevoLibroEditorial = () => {
-
     const { theId } = useParams();
-    const navigate = useNavigate()
+    const navigate = useNavigate();
+
+    // --- 1. Blindaje de la base de la API ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
 
     const [nombre, setNombre] = useState("");
     const [genero, setGenero] = useState("");
     const [autorId, setAutorId] = useState("");
     const [autores, setAutores] = useState([]);
-    const [editorialId, setEditorialId] = useState("");
     const [nombreEditorial, setNombreEditorial] = useState("");
-    const [autorGoogle, setAutorGoogle] = useState("")
-
-    const [descripcion, setDescripcion] = useState("");
+    const [autorGoogle, setAutorGoogle] = useState("");
+    const [descripcion, setDescription] = useState("");
     const [imageUrl, setImageUrl] = useState("");
     const [googleId, setGoogleId] = useState("");
 
-
     useEffect(() => {
-
         const scriptId = "cloudinary-upload-widget-script";
 
         if (!document.getElementById(scriptId)) {
@@ -34,24 +32,24 @@ const NuevoLibroEditorial = () => {
             document.body.appendChild(script);
         }
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/autor")
+        // --- 2. GET Autores blindado ---
+        fetch(`${API_BASE}/autor`)
             .then(res => res.json())
             .then(data => setAutores(data))
             .catch(err => console.error("Error cargando autores:", err));
 
-
-        fetch(`${import.meta.env.VITE_BACKEND_URL}api/editorial/${theId}`)
+        // --- 3. GET Editorial blindado ---
+        fetch(`${API_BASE}/editorial/${theId}`)
             .then(res => res.json())
             .then(data => setNombreEditorial(data.nombre))
             .catch(err => console.error("Error cargando editorial:", err));
 
-    }, [theId]);
+    }, [theId, API_BASE]);
 
     const rellenarFormulario = (datosLibro) => {
-
         setNombre(datosLibro.nombre || "");
         setGenero(datosLibro.genero || "");
-        setDescripcion(datosLibro.descripcion || "");
+        setDescription(datosLibro.descripcion || ""); // OJO: Verifica si usas 'description' o 'descripcion' en el estado
         setImageUrl(datosLibro.image_url || "");
         setGoogleId(datosLibro.google_id || "");
 
@@ -59,57 +57,47 @@ const NuevoLibroEditorial = () => {
             setAutorGoogle(datosLibro.autores[0]);
         }
 
-
-        alert("¡Datos importados! Por favor, verifica y selecciona el Autor.");
+        alert("¡Datos importados de Google! Por favor, selecciona el Autor oficial de la lista si existe.");
     };
-
-
 
     const handleUpload = async (e) => {
         e.preventDefault();
-
         if (!window.cloudinary) {
-            alert("El cargador de imágenes aún se está preparando. Intenta de nuevo en 2 segundos.");
+            alert("El cargador de imágenes aún se está preparando.");
             return;
         }
 
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + "api/upload_image");
-        const data = await response.json();
+        // --- 4. GET Firma Cloudinary blindado ---
+        try {
+            const response = await fetch(`${API_BASE}/upload_image`);
+            const data = await response.json();
 
-        const widget = window.cloudinary.createUploadWidget({
-            cloudName: data.cloudName,
-            apiKey: data.apiKey,
-            uploadSignatureTimestamp: data.timestamp,
-            uploadSignature: data.signature,
-            folder: "libros_portadas",
-            cropping: true
-        }, (error, result) => {
-            if (!error && result && result.event === "success") {
-                console.log("Imagen subida con éxito:", result.info.secure_url);
-                setImageUrl(result.info.secure_url);
-            }
-        });
-
-        widget.open();
+            const widget = window.cloudinary.createUploadWidget({
+                cloudName: data.cloudName,
+                apiKey: data.apiKey,
+                uploadSignatureTimestamp: data.timestamp,
+                uploadSignature: data.signature,
+                folder: "libros_portadas",
+                cropping: true
+            }, (error, result) => {
+                if (!error && result && result.event === "success") {
+                    setImageUrl(result.info.secure_url);
+                }
+            });
+            widget.open();
+        } catch (error) {
+            console.error("Error al conectar con Cloudinary:", error);
+        }
     };
 
     function sendData(e) {
-        e.preventDefault()
+        e.preventDefault();
 
         if (!autorId && !autorGoogle) {
             alert("Por favor, selecciona un autor o usa el buscador de Google");
             return;
         }
 
-        console.log("send data")
-        console.log(nombre, genero, autorId, editorialId)
-
-        /* if (!autorId) {
-            alert("Por favor, selecciona un autor");
-            return;
-        }*/
-
-            
         const requestOptions = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -124,8 +112,10 @@ const NuevoLibroEditorial = () => {
                 "descripcion": descripcion
             })
         };
+        
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/libro", requestOptions)
+        // --- 5. POST Libro blindado ---
+        fetch(`${API_BASE}/libro`, requestOptions)
             .then(response => {
                 if (response.ok) return response.json();
                 throw new Error("Error al crear el libro");
@@ -134,6 +124,7 @@ const NuevoLibroEditorial = () => {
                 alert("¡Libro agregado exitosamente!");
                 navigate("/pagina_editorial");
             })
+            .catch(err => alert(err.message));
     }
 
     return (
