@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import useGlobalReducer from "../hooks/useGlobalReducer"; // Importamos el reducer por si acaso
 
 const PostEditorial = () => {
+    const { store } = useGlobalReducer();
     const navigate = useNavigate();
-    const [editorialId, setEditorialId] = useState("");
-    const [editoriales, setEditoriales] = useState([]);
     const [texto, setTexto] = useState("");
+    const [editoriales, setEditoriales] = useState([]);
+    const [editorialId, setEditorialId] = useState("");
 
+    // Efecto para cargar la lista de editoriales (usando la misma lógica de URL)
     useEffect(() => {
-        // GET Blindado para cargar las editoriales
         const base = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
         fetch(`${base}/api/editorial`)
             .then(response => response.json())
@@ -16,25 +18,27 @@ const PostEditorial = () => {
             .catch(error => console.error("Error cargando editoriales:", error));
     }, []);
 
-    function sendData(e) {
+    const sendData = (e) => {
         e.preventDefault();
 
         if (!editorialId) {
-            alert("Por favor selecciona una editorial");
+            alert("Error: Por favor selecciona una editorial");
             return;
         }
 
-        // --- LA SOLUCIÓN QUE FUNCIONÓ EN AUTOR ---
+        // 1. Limpiamos la URL base (quita la barra si existe) - EXACTAMENTE IGUAL QUE AUTOR
         const base = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-        const urlFinal = `${base}/api/posteditorial`;
 
-        console.log("🚀 Disparando POST Editorial a:", urlFinal);
+        // 2. Construimos la URL final con la ruta de EDITORIAL
+        const urlFinal = `${base}/api/posteditorial`; 
+
+        console.log("🔥 URL de disparo (Editorial):", urlFinal);
 
         const requestOptions = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                "editorial_id": parseInt(editorialId),
+                "editorial_id": parseInt(editorialId), // Usamos editorial_id
                 "texto": texto,
             })
         };
@@ -45,54 +49,51 @@ const PostEditorial = () => {
                 return response.json();
             })
             .then(data => {
-                console.log("Post creado con éxito:", data);
-                navigate("/pagina_editorial"); 
+                console.log("Publicado con éxito:", data);
+                navigate("/pagina_editorial"); // Volvemos a la página de editorial
             })
             .catch(error => {
-                console.error("Fallo en el POST Editorial:", error);
+                console.error("Incendio en el fetch de Editorial:", error);
             });
-    }
+    };
 
     return (
-        <div className="container mt-5">
-            <div className="card shadow p-4 rounded-4 border-0 bg-white">
-                <h2 className="fw-bold text-dark mb-4">Crear Post de Editorial</h2>
-                <form onSubmit={sendData} className="col-md-8 mx-auto">
+        <div className="card shadow-sm border-0 mb-4 bg-light">
+            <div className="card-body">
+                <h5 className="card-title fw-bold text-info-booked mb-3">Nuevo Post de Editorial</h5>
+                <form onSubmit={sendData}>
+                    {/* Select de Editoriales */}
                     <div className="mb-3">
-                        <label className="form-label fw-bold">Selecciona tu Editorial</label>
                         <select 
-                            className="form-select border-0 bg-light shadow-sm" 
-                            value={editorialId} 
+                            className="form-select border-0 shadow-sm"
+                            value={editorialId}
                             onChange={(e) => setEditorialId(e.target.value)}
                             required
                         >
-                            <option value="">-- Elige una opción --</option>
+                            <option value="">Selecciona tu Editorial...</option>
                             {editoriales.map(ed => (
-                                <option key={ed.id} value={ed.id}>
-                                    {ed.nombre}
-                                </option>
+                                <option key={ed.id} value={ed.id}>{ed.nombre}</option>
                             ))}
                         </select>
                     </div>
 
                     <div className="mb-3">
-                        <label className="form-label fw-bold">Contenido del Anuncio</label>
                         <textarea 
-                            className="form-control border-0 bg-light shadow-sm" 
-                            rows="5"
-                            placeholder="Novedades de la editorial..."
+                            className="form-control border-0 shadow-sm" 
+                            rows="4" 
+                            placeholder="Anuncios, lanzamientos o noticias..." 
                             value={texto} 
                             onChange={(e) => setTexto(e.target.value)} 
                             required 
                         />
                     </div>
-
-                    <div className="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                        <Link to="/pagina_editorial" className="btn btn-outline-secondary px-4 rounded-pill">
-                            Cancelar
-                        </Link>
-                        <button type="submit" className="btn btn-info-booked text-white px-4 rounded-pill shadow-sm">
-                            Publicar Ahora
+                    
+                    <div className="d-flex justify-content-end gap-2">
+                        <button type="button" className="btn btn-outline-secondary px-4" onClick={() => navigate("/pagina_editorial")}>
+                            Volver al panel
+                        </button>
+                        <button type="submit" className="btn btn-info-booked text-white px-4 shadow-sm">
+                            Publicar Anuncio
                         </button>
                     </div>
                 </form>
