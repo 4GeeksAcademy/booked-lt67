@@ -839,23 +839,23 @@ def login_lector():
 
 @api.route("/login_editorial", methods=["POST"])
 def login_editorial():
+    data = request.get_json()
+    email = data.get("email", None)
+    password = data.get("password", None)
 
-    body = request.get_json()
-    email = body.get("email", None)
-    password = body.get("password", None)
-
-    if email is None or password is None:
-        return jsonify({"msg": "Email y contraseña requeridos"}), 400
-
+    if not email or not password:
+        return jsonify({"msg": "Correo y contraseña son requeridos"}), 400
     editorial = Editorial.query.filter_by(email=email).first()
+    fake_hash = "pbkdf2:sha256:260000$randomhashstuff" 
+    
+    if editorial:
+        password_correct = check_password_hash(editorial.password, password)
+    else:
+        check_password_hash(fake_hash, password)
+        password_correct = False
 
-    if editorial is None:
-        return jsonify({"msg": "La editorial no existe"}), 401
-
-    es_valida = check_password_hash(editorial.password, password)
-
-    if not es_valida:
-        return jsonify({"msg": "Credenciales incorrectas"}), 401
+    if not password_correct:
+        return jsonify({"msg": "El correo o la contraseña son incorrectos"}), 401
 
     access_token = create_access_token(identity=str(editorial.id))
     
