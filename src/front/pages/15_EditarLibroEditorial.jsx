@@ -5,16 +5,16 @@ const EditarLibroEditorial = () => {
     const { theId } = useParams();
     const navigate = useNavigate();
 
+    // --- 1. Blindaje de la base de la API ---
+    const API_BASE = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/api";
+
     const [nombre, setNombre] = useState("");
     const [genero, setGenero] = useState("");
     const [autorId, setAutorId] = useState("");
     const [editorialId, setEditorialId] = useState("");
-    const [imageUrl, setImageUrl] = useState(""); // Nuevo estado
+    const [imageUrl, setImageUrl] = useState(""); 
     const [originalData, setOriginalData] = useState(null);
-
     const [autores, setAutores] = useState([]);
-    const [editoriales, setEditoriales] = useState([]);
-
 
     useEffect(() => {
         // Cargar Script de Cloudinary
@@ -27,15 +27,19 @@ const EditarLibroEditorial = () => {
             document.body.appendChild(script);
         }
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/libro/" + theId)
-            .then(response => response.json())
+        // --- 2. GET Libro por ID blindado ---
+        fetch(`${API_BASE}/libro/${theId}`)
+            .then(response => {
+                if (!response.ok) throw new Error("No se pudo cargar el libro");
+                return response.json();
+            })
             .then(data => {
                 const libroData = {
                     nombre: data.nombre || "",
                     genero: data.genero || "",
                     autor_id: data.autor?.id || "",
                     editorial_id: data.editorial?.id || "",
-                    image_url: data.image_url || "" // Cargar imagen existente
+                    image_url: data.image_url || "" 
                 };
 
                 setNombre(libroData.nombre);
@@ -43,31 +47,42 @@ const EditarLibroEditorial = () => {
                 setAutorId(libroData.autor_id);
                 setEditorialId(libroData.editorial_id);
                 setImageUrl(libroData.image_url);
-                
                 setOriginalData(libroData);
-            });
+            })
+            .catch(err => console.error(err));
 
-        fetch(`${import.meta.env.VITE_BACKEND_URL}api/autor`).then(res => res.json()).then(data => setAutores(data));
-    }, [theId]);
+        // --- 3. GET Autores blindado ---
+        fetch(`${API_BASE}/autor`)
+            .then(res => res.json())
+            .then(data => setAutores(data))
+            .catch(err => console.error(err));
+
+    }, [theId, API_BASE]);
 
     const handleUpload = async (e) => {
         e.preventDefault();
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + "api/upload_image");
-        const data = await response.json();
+        
+        // --- 4. GET Firma Cloudinary blindado ---
+        try {
+            const response = await fetch(`${API_BASE}/upload_image`);
+            const data = await response.json();
 
-        const widget = window.cloudinary.createUploadWidget({
-            cloudName: data.cloudName,
-            apiKey: data.apiKey,
-            uploadSignatureTimestamp: data.timestamp,
-            uploadSignature: data.signature,
-            folder: "libros_portadas",
-            cropping: true
-        }, (error, result) => {
-            if (!error && result && result.event === "success") {
-                setImageUrl(result.info.secure_url); 
-            }
-        });
-        widget.open();
+            const widget = window.cloudinary.createUploadWidget({
+                cloudName: data.cloudName,
+                apiKey: data.apiKey,
+                uploadSignatureTimestamp: data.timestamp,
+                uploadSignature: data.signature,
+                folder: "libros_portadas",
+                cropping: true
+            }, (error, result) => {
+                if (!error && result && result.event === "success") {
+                    setImageUrl(result.info.secure_url); 
+                }
+            });
+            widget.open();
+        } catch (error) {
+            console.error("Error con Cloudinary:", error);
+        }
     };
 
     const updateData = (e) => {
@@ -88,15 +103,18 @@ const EditarLibroEditorial = () => {
                 "genero": genero,
                 "autor_id": parseInt(autorId),
                 "editorial_id": parseInt(editorialId),
-                "image_url": imageUrl // Enviamos la imagen
+                "image_url": imageUrl 
             })
         };
 
-        fetch(import.meta.env.VITE_BACKEND_URL + "api/libro/" + theId, requestOptions)
+        // --- 5. PUT Actualizar Libro blindado ---
+        fetch(`${API_BASE}/libro/${theId}`, requestOptions)
             .then(response => {
                 if (response.ok) {
                     if (hasChanged) alert("¡Libro actualizado con éxito!");
                     navigate("/pagina_editorial");
+                } else {
+                    throw new Error("Error al actualizar");
                 }
             })
             .catch(error => alert(error.message));
