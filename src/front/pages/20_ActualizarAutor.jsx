@@ -11,6 +11,8 @@ const ActualizarAutor = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [pais, setPais] = useState("");
+    const [biografia, setBiografia] = useState("");
+    const [generos, setGeneros] = useState("");
     const [fotoUrl, setFotoUrl] = useState(null)
 
     const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
@@ -33,6 +35,8 @@ const ActualizarAutor = () => {
                 setApellido(autor.apellido || "");
                 setPais(autor.pais || "");
                 setFotoUrl(autor.foto || null);
+                setBiografia(autor.biografia || "");
+                setGeneros(autor.generos || "");
             })
     }
 
@@ -133,6 +137,8 @@ const ActualizarAutor = () => {
                 "nombre": nombre,
                 "apellido": apellido,
                 "pais": pais,
+                "biografia": biografia,
+                "generos": generos,
 
             })
         };
@@ -216,6 +222,27 @@ const ActualizarAutor = () => {
                 <div className="mb-3">
                     <label className="form-label">País</label>
                     <input type="text" className="form-control" value={pais} onChange={(e) => setPais(e.target.value)} />
+                </div>
+                <div className="mb-3">
+                    <label className="form-label">Biografía</label>
+                    <textarea
+                        className="form-control"
+                        rows={3}
+                        placeholder="Cuéntale a los lectores quién eres..."
+                        value={biografia}
+                        onChange={e => setBiografia(e.target.value)}
+                        maxLength={500}
+                    />
+                </div>
+                <div className="mb-3">
+                    <label className="form-label">Géneros que escribes</label>
+                    <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Ej: Fantasía, Ciencia Ficción (separados por coma)"
+                        value={generos}
+                        onChange={e => setGeneros(e.target.value)}
+                    />
                 </div>
 
                 <button type="submit" className="btn btn-success me-2">Actualizar Autor</button>

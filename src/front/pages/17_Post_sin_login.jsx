@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import { Link } from "react-router-dom";
+import ComentariosPost from "../components/ComentariosPost";
 
 const PostSinLogin = () => {
     const { store } = useGlobalReducer();
@@ -103,6 +104,9 @@ const PostSinLogin = () => {
                                         <p className="card-text text-dark" style={{ whiteSpace: 'pre-wrap', fontSize: '1.1rem', lineHeight: '1.6' }}>
                                             {post.texto}
                                         </p>
+
+                                        {/* Comentarios */}
+                                        <ComentariosPost tipo="autor" postId={post.id} />
 
                                     </div>
                                 </div>

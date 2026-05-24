@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
+import ComentariosPost from "../components/ComentariosPost";
 
 const VerLectorPublico = () => {
     const { theId } = useParams();
@@ -10,19 +11,22 @@ const VerLectorPublico = () => {
         lector: null,
         reviews: [],
         leyendo: [],
+        posts: [],
         siguiendo: false,
         loading: true
     });
+    const [postExpandido, setPostExpandido] = useState(null);
 
     const apiBase = `${import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "")}/api`;
 
     const loadData = useCallback(async () => {
         try {
             // 1. Usamos los endpoints que sí funcionan en PaginaLector
-            const [resLector, resReviews, resLeyendo] = await Promise.all([
+            const [resLector, resReviews, resLeyendo, resPosts] = await Promise.all([
                 fetch(`${apiBase}/lector/${theId}`).then(r => r.ok ? r.json() : null),
-                fetch(`${apiBase}/reviews`).then(r => r.ok ? r.json() : []), // Traemos todas como hace tu compa
-                fetch(`${apiBase}/lector/${theId}/leyendo`).then(r => r.ok ? r.json() : [])
+                fetch(`${apiBase}/reviews`).then(r => r.ok ? r.json() : []),
+                fetch(`${apiBase}/lector/${theId}/leyendo`).then(r => r.ok ? r.json() : []),
+                fetch(`${apiBase}/postlector/lector/${theId}`).then(r => r.ok ? r.json() : [])
             ]);
 
             if (!resLector) {
@@ -49,6 +53,7 @@ const VerLectorPublico = () => {
                 lector: resLector,
                 reviews: reviewsDelPerfil,
                 leyendo: resLeyendo || [],
+                posts: resPosts || [],
                 siguiendo: loSigo,
                 loading: false
             });
@@ -149,6 +154,44 @@ const VerLectorPublico = () => {
                             </div>
                         </div>
 
+                        {/* Estadísticas */}
+                        <div className="row g-3 mb-4">
+                            {[
+                                { label: "Siguiendo", valor: lector?.total_siguiendo ?? 0, icon: "fa-user-friends" },
+                                { label: "Seguidores", valor: lector?.total_seguidores ?? 0, icon: "fa-users" },
+                                { label: "Publicaciones", valor: db.posts.length, icon: "fa-pen" },
+                                { label: "Reseñas", valor: db.reviews.length, icon: "fa-star" }
+                            ].map(s => (
+                                <div key={s.label} className="col-6 col-md-3">
+                                    <div className="text-center bg-light rounded-3 p-3 border">
+                                        <i className={`fas ${s.icon} text-info-booked mb-1`}></i>
+                                        <p className="fw-bold fs-5 mb-0">{s.valor}</p>
+                                        <small className="text-muted">{s.label}</small>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Biografía */}
+                        {lector?.biografia && (
+                            <div className="mb-4 p-3 bg-light rounded-3 border">
+                                <h6 className="fw-bold text-uppercase small text-info-booked mb-2" style={{ letterSpacing: '1px' }}>— Sobre este lector</h6>
+                                <p className="text-dark mb-0" style={{ lineHeight: '1.6' }}>{lector.biografia}</p>
+                            </div>
+                        )}
+
+                        {/* Géneros favoritos */}
+                        {lector?.generos_favoritos && (
+                            <div className="mb-4">
+                                <h6 className="fw-bold text-uppercase small text-info-booked mb-2" style={{ letterSpacing: '1px' }}>— Géneros favoritos</h6>
+                                <div className="d-flex flex-wrap gap-2">
+                                    {lector.generos_favoritos.split(",").map((g, i) => (
+                                        <span key={i} className="badge badge-booked rounded-pill px-3 py-2">{g.trim()}</span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="row g-4">
                             <div className="col-lg-4">
                                 <h6 className="fw-bold text-uppercase small text-info-booked mb-3" style={{ letterSpacing: '1px' }}>— Lecturas</h6>
@@ -188,6 +231,32 @@ const VerLectorPublico = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Posts del lector */}
+                        {db.posts.length > 0 && (
+                            <div className="mt-4">
+                                <h6 className="fw-bold text-uppercase small text-info-booked mb-3" style={{ letterSpacing: '1px' }}>— Publicaciones</h6>
+                                <div className="d-flex flex-column gap-3">
+                                    {db.posts.map(post => (
+                                        <div key={post.id} className="card border-0 bg-light rounded-4 p-3 shadow-sm">
+                                            <p className="text-dark mb-2" style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{post.texto}</p>
+                                            <div className="d-flex justify-content-between align-items-center">
+                                                <small className="text-muted"><i className="far fa-clock me-1"></i>{post.fecha}</small>
+                                                <button
+                                                    className="btn btn-sm text-muted p-0 small"
+                                                    onClick={() => setPostExpandido(postExpandido === post.id ? null : post.id)}
+                                                >
+                                                    <i className="fas fa-comment me-1"></i>{post.total_comentarios} comentario{post.total_comentarios !== 1 ? "s" : ""}
+                                                </button>
+                                            </div>
+                                            {postExpandido === post.id && (
+                                                <ComentariosPost tipo="lector" postId={post.id} />
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="mt-5 pt-3 border-top d-flex justify-content-between align-items-center">
                             <button className="btn btn-sm btn-light rounded-pill px-4 border text-muted" onClick={() => navigate(-1)}>

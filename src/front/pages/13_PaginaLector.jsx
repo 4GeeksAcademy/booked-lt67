@@ -4,6 +4,7 @@ import useGlobalReducer from "../hooks/useGlobalReducer";
 import BuscadorGoogleBooks from "../components/23_BuscadorGoogleBooks";
 import BuscarLibroIA from "../components/25_BuscarLibroIA";
 import DmLector from "../components/37_DmLector";
+import Notificaciones from "../components/Notificaciones";
 import { useLocation } from "react-router-dom"
 
 // Assets e Imágenes
@@ -34,8 +35,12 @@ const PaginaLector = () => {
         autoresFav: [],
         todosAutores: [],
         reviews: [],
+        misPosts: [],
+        sugerencias: [],
+        notifNoLeidas: 0,
         loading: true
     });
+    const [mostrarNotifs, setMostrarNotifs] = useState(false);
 
     const api = `${import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "")}/api`;
 
@@ -53,7 +58,7 @@ const PaginaLector = () => {
     const load = useCallback(async () => {
         if (!store.lector_id) return;
         try {
-            const [u, f, l, t, all, af, ta, revs] = await Promise.all([
+            const [u, f, l, t, all, af, ta, revs, posts, sugs, notifs] = await Promise.all([
                 request(`lector/${store.lector_id}`),
                 request(`lector/${store.lector_id}/favoritos`),
                 request(`lector/${store.lector_id}/leyendo`),
@@ -61,17 +66,24 @@ const PaginaLector = () => {
                 request(`lector`),
                 request(`lector_autores_favoritos`),
                 request(`autor`),
-                request(`reviews`)
+                request(`reviews`),
+                request(`postlector/lector/${store.lector_id}`),
+                request(`sugerencias_lectores/${store.lector_id}`),
+                request(`notificaciones/${store.lector_id}`)
             ]);
 
             const otros = all?.filter(o => o.id !== store.lector_id && !u?.siguiendo?.some(s => s.seguido_id === o.id)) || [];
             const misAutoresFav = af?.filter(item => Number(item.lector_id) === Number(store.lector_id)) || [];
+            const noLeidas = notifs?.filter(n => !n.leida).length || 0;
 
             setDb({
                 usuario: u, favoritos: f || [], leyendo: l || [],
                 todos: t || [], otros, autoresFav: misAutoresFav,
                 todosAutores: ta || [],
                 reviews: revs || [],
+                misPosts: posts || [],
+                sugerencias: sugs || [],
+                notifNoLeidas: noLeidas,
                 loading: false
             });
         } catch (error) {
@@ -244,7 +256,29 @@ const PaginaLector = () => {
                         />
                     </div>
                     <h6 className="fw-bold mb-0 text-dark">{db.usuario?.nombre} {db.usuario?.apellido}</h6>
-                    <Link to={`/actualizar_lector/${store.lector_id}`} className="text-info-booked small text-decoration-none">Configuración</Link>
+                    <div className="d-flex align-items-center gap-2 mt-1">
+                        <Link to={`/actualizar_lector/${store.lector_id}`} className="text-info-booked small text-decoration-none">Configuración</Link>
+                        <div className="position-relative">
+                            <button
+                                className="btn btn-sm btn-light border rounded-circle p-1"
+                                style={{ width: "30px", height: "30px" }}
+                                onClick={() => setMostrarNotifs(v => !v)}
+                                title="Notificaciones"
+                            >
+                                <i className="fas fa-bell text-info-booked" style={{ fontSize: "0.75rem" }}></i>
+                                {db.notifNoLeidas > 0 && (
+                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: "0.6rem" }}>
+                                        {db.notifNoLeidas}
+                                    </span>
+                                )}
+                            </button>
+                            {mostrarNotifs && (
+                                <div className="position-absolute start-0 mt-2" style={{ zIndex: 1060 }}>
+                                    <Notificaciones onClose={() => { setMostrarNotifs(false); load(); }} />
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 <div className="list-group list-group-flush p-3 mt-2">
@@ -255,6 +289,7 @@ const PaginaLector = () => {
                         { id: "biblioteca", icon: "search", label: "Biblioteca" },
                         { id: "mis_reviews", icon: "star", label: "Mis Reseñas" },
                         { id: "autores", icon: "feather-alt", label: "Explorar Autores" },
+                        { id: "mis_posts", icon: "pen", label: "Mis Posts" },
                         { id: "seguidores", icon: "users", label: "Mi Red" },
                         { id: "mensajes_comunidad", icon: "comments", label: "Mensajes" }
                     ].map(item => (
@@ -412,9 +447,102 @@ const PaginaLector = () => {
                         </div>
                     )}
 
-                    {/* SECCIÓN COMUNIDAD ORIGINAL */}
+                    {/* SECCIÓN MIS POSTS */}
+                    {seccionActiva === "mis_posts" && (
+                        <div>
+                            <div className="d-flex justify-content-between align-items-center mb-5">
+                                <div>
+                                    <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Comunidad</span>
+                                    <h2 className="fw-bold mt-2">Mis Publicaciones</h2>
+                                </div>
+                                <Link to="/feed_lectores" className="btn btn-booked-blue rounded-pill px-4">
+                                    <i className="fas fa-globe me-2"></i>Ver feed completo
+                                </Link>
+                            </div>
+
+                            {/* Crear post */}
+                            <div className="card shadow-sm border-0 rounded-4 mb-4 bg-white p-4">
+                                <form onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    const txt = e.target.texto.value.trim();
+                                    if (!txt) return;
+                                    await request("postlector", "POST", { lector_id: store.lector_id, texto: txt });
+                                    e.target.reset();
+                                    load();
+                                }}>
+                                    <textarea name="texto" className="form-control border-0 bg-light rounded-3 mb-3" rows={3}
+                                        placeholder="¿Qué quieres compartir con la comunidad?" maxLength={1000} />
+                                    <div className="text-end">
+                                        <button type="submit" className="btn btn-booked-blue rounded-pill px-4">
+                                            <i className="fas fa-pen me-2"></i>Publicar
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            {db.misPosts.length === 0 ? (
+                                <div className="text-center text-muted py-5">
+                                    <i className="fas fa-pen-nib fa-3x mb-3 opacity-25"></i>
+                                    <p>Aún no has publicado nada. ¡Comparte algo con la comunidad!</p>
+                                </div>
+                            ) : (
+                                db.misPosts.map(post => (
+                                    <div key={post.id} className="card shadow-sm border-0 rounded-4 mb-3 bg-white p-4">
+                                        <p className="text-dark mb-2" style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{post.texto}</p>
+                                        <div className="d-flex justify-content-between align-items-center">
+                                            <small className="text-muted"><i className="far fa-clock me-1"></i>{post.fecha}</small>
+                                            <button className="btn btn-sm text-danger rounded-pill" onClick={async () => {
+                                                if (window.confirm("¿Eliminar esta publicación?")) {
+                                                    await request(`postlector/${post.id}`, "DELETE");
+                                                    load();
+                                                }
+                                            }}>
+                                                <i className="fas fa-trash-alt me-1"></i>Eliminar
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+
+                    {/* SECCIÓN COMUNIDAD */}
                     {seccionActiva === "seguidores" && (
                         <div className="row g-4 mt-2">
+
+                            {/* Sugerencias por géneros similares */}
+                            {db.sugerencias.length > 0 && (
+                                <div className="col-12">
+                                    <div className="mb-3">
+                                        <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Basado en tus gustos</span>
+                                        <h4 className="fw-bold mt-1">Lectores que quizás conozcas</h4>
+                                    </div>
+                                    <div className="row g-3">
+                                        {db.sugerencias.map(s => (
+                                            <div key={s.id} className="col-6 col-md-4 col-lg-2">
+                                                <div className="card border-0 shadow-sm rounded-4 text-center p-3 h-100 bg-white">
+                                                    <img
+                                                        src={s.foto_url || `https://ui-avatars.com/api/?name=${s.nombre}&background=24b0d9&color=fff&size=80`}
+                                                        className="rounded-circle mx-auto mb-2 border border-2 border-light shadow-sm"
+                                                        style={{ width: "60px", height: "60px", objectFit: "cover" }}
+                                                        alt={s.username}
+                                                    />
+                                                    <p className="fw-bold small text-dark mb-0 text-truncate">{s.nombre}</p>
+                                                    <p className="small text-muted mb-2 text-truncate">@{s.username}</p>
+                                                    <Link to={`/perfil_lector/${s.id}`} className="btn btn-sm btn-outline-secondary rounded-pill w-100 mb-1">Ver perfil</Link>
+                                                    <button
+                                                        className="btn btn-sm btn-booked-blue rounded-pill w-100"
+                                                        onClick={async () => { await request(`follow_con_notif`, "POST", { seguidor_id: store.lector_id, seguido_id: s.id }); load(); }}
+                                                    >
+                                                        <i className="fas fa-user-plus me-1"></i>Seguir
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="col-lg-6">
                                 <h4 className="fw-bold mb-4">Descubrir Lectores</h4>
                                 <div className="bg-white p-4 rounded-4 shadow-sm border" style={{ borderLeft: '5px solid #24b0d9' }}>
@@ -424,7 +552,7 @@ const PaginaLector = () => {
                                             <option value="">Elegir lector...</option>
                                             {db.otros.map(o => <option key={o.id} value={o.id}>{o.username || o.nombre}</option>)}
                                         </select>
-                                        <button className="btn btn-booked-blue rounded-pill px-4" onClick={async () => { await request(`follow`, "POST", { seguidor_id: store.lector_id, seguido_id: parseInt(idASeguir) }); setIdASeguir(""); load(); }}>Seguir</button>
+                                        <button className="btn btn-booked-blue rounded-pill px-4" onClick={async () => { await request(`follow_con_notif`, "POST", { seguidor_id: store.lector_id, seguido_id: parseInt(idASeguir) }); setIdASeguir(""); load(); }}>Seguir</button>
                                         {idASeguir && (
                                             <Link to={`/perfil_lector/${idASeguir}`} className="btn btn-outline-info-booked rounded-pill">
                                                 <i className="fas fa-eye"></i>
@@ -433,25 +561,63 @@ const PaginaLector = () => {
                                     </div>
                                 </div>
                             </div>
+
                             <div className="col-lg-6">
-                                <h4 className="fw-bold mb-4">Siguiendo</h4>
-                                <div className="bg-white p-4 rounded-4 shadow-sm border">
-                                    {db.usuario?.siguiendo?.map((r, i) => (
-                                        <div key={i} className="d-flex justify-content-between align-items-center py-3 border-bottom last-border-none">
-                                            <div className="d-flex align-items-center gap-3">
-                                                <div className="bg-light rounded-circle p-2 text-info-booked" style={{ width: '40px', textAlign: 'center' }}><i className="fas fa-user"></i></div>
-                                                <Link to={`/perfil_lector/${r.seguido_id}`} className="text-decoration-none">
-                                                    <span className="fw-bold text-dark hover-info-booked">{r.nombre_seguido}</span>
-                                                </Link>
+                                <h4 className="fw-bold mb-4">Siguiendo ({db.usuario?.siguiendo?.length || 0})</h4>
+                                <div className="bg-white p-4 rounded-4 shadow-sm border" style={{ maxHeight: "400px", overflowY: "auto" }}>
+                                    {db.usuario?.siguiendo?.length === 0 ? (
+                                        <p className="text-muted text-center py-4 small">Aún no sigues a nadie.</p>
+                                    ) : (
+                                        db.usuario?.siguiendo?.map((r, i) => (
+                                            <div key={i} className="d-flex justify-content-between align-items-center py-3 border-bottom">
+                                                <div className="d-flex align-items-center gap-3">
+                                                    <img
+                                                        src={`https://ui-avatars.com/api/?name=${r.nombre_seguido}&background=24b0d9&color=fff&size=40`}
+                                                        className="rounded-circle"
+                                                        style={{ width: "40px", height: "40px" }}
+                                                        alt={r.nombre_seguido}
+                                                    />
+                                                    <Link to={`/perfil_lector/${r.seguido_id}`} className="text-decoration-none">
+                                                        <span className="fw-bold text-dark">{r.nombre_seguido}</span>
+                                                    </Link>
+                                                </div>
+                                                <div className="d-flex gap-2 align-items-center">
+                                                    <button className="btn btn-sm btn-outline-info-booked rounded-pill" onClick={() => { setAmigoSeleccionado({ id: r.seguido_id, nombre: r.nombre_seguido }); setSeccionActiva("mensajes_comunidad"); }}>
+                                                        <i className="fas fa-comment"></i>
+                                                    </button>
+                                                    <button className="btn btn-sm text-danger fw-bold" onClick={() => exec(`unfollow/${r.relacion_id}`, "DELETE")}>Dejar</button>
+                                                </div>
                                             </div>
-                                            <div className="d-flex gap-2 align-items-center">
-                                                <button className="btn btn-sm btn-outline-info-booked rounded-pill" onClick={() => { setAmigoSeleccionado({ id: r.seguido_id, nombre: r.nombre_seguido }); setSeccionActiva("mensajes_comunidad"); }}><i className="fas fa-comment"></i></button>
-                                                <button className="btn btn-sm text-danger fw-bold" onClick={() => exec(`unfollow/${r.relacion_id}`, "DELETE")}>Eliminar</button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        ))
+                                    )}
                                 </div>
                             </div>
+
+                            {/* Seguidores */}
+                            <div className="col-12">
+                                <h4 className="fw-bold mb-4">Mis Seguidores ({db.usuario?.seguidores?.length || 0})</h4>
+                                <div className="row g-3">
+                                    {db.usuario?.seguidores?.length === 0 ? (
+                                        <div className="col-12 text-muted text-center py-4 small">Aún nadie te sigue.</div>
+                                    ) : (
+                                        db.usuario?.seguidores?.map((s, i) => (
+                                            <div key={i} className="col-6 col-md-4 col-lg-3">
+                                                <div className="card border-0 shadow-sm rounded-4 text-center p-3 bg-white">
+                                                    <img
+                                                        src={`https://ui-avatars.com/api/?name=${s.nombre_seguidor}&background=e3f6fd&color=24b0d9&size=60`}
+                                                        className="rounded-circle mx-auto mb-2"
+                                                        style={{ width: "50px", height: "50px" }}
+                                                        alt={s.nombre_seguidor}
+                                                    />
+                                                    <p className="fw-bold small mb-1 text-truncate">{s.nombre_seguidor}</p>
+                                                    <Link to={`/perfil_lector/${s.seguidor_id}`} className="btn btn-sm btn-outline-secondary rounded-pill w-100">Ver perfil</Link>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
                         </div>
                     )}
 

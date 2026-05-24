@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor, Reviews, Admin, PostEditorial, LecturaActual, PostAutor, Mensaje, DmLector
+from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor, Reviews, Admin, PostEditorial, LecturaActual, PostAutor, Mensaje, DmLector, PostLector, ComentarioPost, Notificacion, Lector_Editoriales_Favoritas
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -155,6 +155,8 @@ def update_lector(lector_id):
 
     lector.latitud = body.get("latitud", lector.latitud)
     lector.longitud = body.get("longitud", lector.longitud)
+    lector.biografia = body.get("biografia", lector.biografia)
+    lector.generos_favoritos = body.get("generos_favoritos", lector.generos_favoritos)
 
     db.session.commit()
 
@@ -227,7 +229,9 @@ def update_autor(autor_id):
     autor.password = body.get("password", autor.password)
     autor.nombre = body.get("nombre", autor.nombre)
     autor.apellido = body.get("apellido", autor.apellido)
-    autor.pais = body.get("pais donde reside", autor.pais)
+    autor.pais = body.get("pais", autor.pais)
+    autor.biografia = body.get("biografia", autor.biografia)
+    autor.generos = body.get("generos", autor.generos)
 
     db.session.commit()
 
@@ -300,9 +304,10 @@ def update_editorial(editorial_id):
     editorial.email = body.get("email", editorial.email)
     editorial.password = body.get("password", editorial.password)
     editorial.nombre = body.get("nombre", editorial.nombre)
-    editorial.pais = body.get("pais donde reside", editorial.pais)
-
+    editorial.pais = body.get("pais", editorial.pais)
     editorial.image_url = body.get("image_url", editorial.image_url)
+    editorial.descripcion = body.get("descripcion", editorial.descripcion)
+    editorial.sitio_web = body.get("sitio_web", editorial.sitio_web)
 
     db.session.commit()
 
@@ -1882,3 +1887,274 @@ def obtener_contactos():
 
     contactos = Lector.query.filter(Lector.id.in_(list(ids_contactos))).all()
     return jsonify([c.serialize() for c in contactos]), 200
+
+
+# =======================================================
+# --- POSTS DE LECTORES ---
+# =======================================================
+
+@api.route('/postlector', methods=['GET'])
+def get_all_posts_lector():
+    posts = PostLector.query.order_by(PostLector.fecha.desc()).all()
+    return jsonify([p.serialize() for p in posts]), 200
+
+
+@api.route('/postlector/lector/<int:lector_id>', methods=['GET'])
+def get_posts_lector(lector_id):
+    posts = PostLector.query.filter_by(lector_id=lector_id).order_by(PostLector.fecha.desc()).all()
+    return jsonify([p.serialize() for p in posts]), 200
+
+
+@api.route('/postlector', methods=['POST'])
+def create_post_lector():
+    body = request.get_json()
+    if not body or "lector_id" not in body or "texto" not in body:
+        return jsonify({"msg": "Faltan datos: lector_id y texto son obligatorios"}), 400
+
+    nuevo = PostLector(lector_id=body["lector_id"], texto=body["texto"])
+    db.session.add(nuevo)
+    db.session.commit()
+
+    # Notificar a los seguidores del lector
+    lector = Lector.query.get(body["lector_id"])
+    if lector:
+        for seg in lector.seguidores:
+            notif = Notificacion(
+                lector_id=seg.lector_id,
+                tipo="nuevo_post_lector",
+                mensaje=f"{lector.username} publicó algo nuevo.",
+                url_destino=f"/perfil_lector/{lector.id}"
+            )
+            db.session.add(notif)
+        db.session.commit()
+
+    return jsonify(nuevo.serialize()), 201
+
+
+@api.route('/postlector/<int:post_id>', methods=['PUT'])
+def update_post_lector(post_id):
+    post = PostLector.query.get_or_404(post_id)
+    body = request.get_json()
+    if "texto" in body:
+        post.texto = body["texto"]
+    db.session.commit()
+    return jsonify(post.serialize()), 200
+
+
+@api.route('/postlector/<int:post_id>', methods=['DELETE'])
+def delete_post_lector(post_id):
+    post = PostLector.query.get_or_404(post_id)
+    db.session.delete(post)
+    db.session.commit()
+    return jsonify({"msg": "Post eliminado"}), 200
+
+
+# =======================================================
+# --- COMENTARIOS EN POSTS ---
+# =======================================================
+
+@api.route('/comentarios/editorial/<int:post_id>', methods=['GET'])
+def get_comentarios_editorial(post_id):
+    comentarios = ComentarioPost.query.filter_by(post_editorial_id=post_id).order_by(ComentarioPost.fecha.asc()).all()
+    return jsonify([c.serialize() for c in comentarios]), 200
+
+
+@api.route('/comentarios/autor/<int:post_id>', methods=['GET'])
+def get_comentarios_autor(post_id):
+    comentarios = ComentarioPost.query.filter_by(post_autor_id=post_id).order_by(ComentarioPost.fecha.asc()).all()
+    return jsonify([c.serialize() for c in comentarios]), 200
+
+
+@api.route('/comentarios/lector/<int:post_id>', methods=['GET'])
+def get_comentarios_lector(post_id):
+    comentarios = ComentarioPost.query.filter_by(post_lector_id=post_id).order_by(ComentarioPost.fecha.asc()).all()
+    return jsonify([c.serialize() for c in comentarios]), 200
+
+
+@api.route('/comentarios', methods=['POST'])
+def create_comentario():
+    body = request.get_json()
+    if not body or "lector_id" not in body or "texto" not in body:
+        return jsonify({"msg": "Faltan datos: lector_id y texto son obligatorios"}), 400
+
+    nuevo = ComentarioPost(
+        lector_id=body["lector_id"],
+        texto=body["texto"],
+        post_editorial_id=body.get("post_editorial_id"),
+        post_autor_id=body.get("post_autor_id"),
+        post_lector_id=body.get("post_lector_id")
+    )
+    db.session.add(nuevo)
+    db.session.commit()
+
+    # Crear notificación para el dueño del post
+    lector_comentador = Lector.query.get(body["lector_id"])
+    nombre_comentador = lector_comentador.username if lector_comentador else "Alguien"
+
+    if body.get("post_editorial_id"):
+        post = PostEditorial.query.get(body["post_editorial_id"])
+        # Notificar a la editorial no aplica (no es lector), solo creamos la notificación
+    elif body.get("post_autor_id"):
+        post = PostAutor.query.get(body["post_autor_id"])
+    elif body.get("post_lector_id"):
+        post = PostLector.query.get(body["post_lector_id"])
+        if post:
+            notif = Notificacion(
+                lector_id=post.lector_id,
+                tipo="comentario",
+                mensaje=f"{nombre_comentador} comentó en tu publicación.",
+                url_destino=f"/perfil_lector/{post.lector_id}"
+            )
+            db.session.add(notif)
+            db.session.commit()
+
+    return jsonify(nuevo.serialize()), 201
+
+
+@api.route('/comentarios/<int:comentario_id>', methods=['DELETE'])
+def delete_comentario(comentario_id):
+    comentario = ComentarioPost.query.get_or_404(comentario_id)
+    db.session.delete(comentario)
+    db.session.commit()
+    return jsonify({"msg": "Comentario eliminado"}), 200
+
+
+# =======================================================
+# --- NOTIFICACIONES ---
+# =======================================================
+
+@api.route('/notificaciones/<int:lector_id>', methods=['GET'])
+def get_notificaciones(lector_id):
+    notifs = Notificacion.query.filter_by(lector_id=lector_id).order_by(Notificacion.fecha.desc()).limit(50).all()
+    return jsonify([n.serialize() for n in notifs]), 200
+
+
+@api.route('/notificaciones/<int:notif_id>/leer', methods=['PUT'])
+def marcar_notificacion_leida(notif_id):
+    notif = Notificacion.query.get_or_404(notif_id)
+    notif.leida = True
+    db.session.commit()
+    return jsonify(notif.serialize()), 200
+
+
+@api.route('/notificaciones/<int:lector_id>/leer_todas', methods=['PUT'])
+def marcar_todas_leidas(lector_id):
+    Notificacion.query.filter_by(lector_id=lector_id, leida=False).update({"leida": True})
+    db.session.commit()
+    return jsonify({"msg": "Todas marcadas como leídas"}), 200
+
+
+# =======================================================
+# --- SUGERENCIAS DE LECTORES (por géneros similares) ---
+# =======================================================
+
+@api.route('/sugerencias_lectores/<int:lector_id>', methods=['GET'])
+def get_sugerencias_lectores(lector_id):
+    lector = Lector.query.get_or_404(lector_id)
+
+    # IDs de lectores que ya sigo
+    ya_siguiendo = {s.seguido_id for s in lector.siguiendo}
+    ya_siguiendo.add(lector_id)
+
+    # Géneros favoritos del lector actual (de sus libros marcados como favoritos)
+    mis_generos = set()
+    for fav in lector.libros_fav:
+        if fav.libro and fav.libro.genero:
+            mis_generos.add(fav.libro.genero.lower())
+
+    # Si tiene generos_favoritos explícitos, añadirlos también
+    if lector.generos_favoritos:
+        for g in lector.generos_favoritos.split(","):
+            mis_generos.add(g.strip().lower())
+
+    if not mis_generos:
+        # Sin géneros, devolver lectores aleatorios no seguidos
+        sugerencias = Lector.query.filter(~Lector.id.in_(list(ya_siguiendo))).limit(6).all()
+        return jsonify([s.serialize() for s in sugerencias]), 200
+
+    # Buscar lectores con géneros similares
+    candidatos = Lector.query.filter(~Lector.id.in_(list(ya_siguiendo))).all()
+
+    puntuados = []
+    for candidato in candidatos:
+        sus_generos = set()
+        for fav in candidato.libros_fav:
+            if fav.libro and fav.libro.genero:
+                sus_generos.add(fav.libro.genero.lower())
+        if candidato.generos_favoritos:
+            for g in candidato.generos_favoritos.split(","):
+                sus_generos.add(g.strip().lower())
+
+        score = len(mis_generos & sus_generos)
+        if score > 0:
+            puntuados.append((score, candidato))
+
+    puntuados.sort(key=lambda x: x[0], reverse=True)
+    sugeridos = [c for _, c in puntuados[:6]]
+
+    # Completar con lectores random si hay menos de 6
+    if len(sugeridos) < 6:
+        ids_sugeridos = {c.id for c in sugeridos} | ya_siguiendo
+        extras = Lector.query.filter(~Lector.id.in_(list(ids_sugeridos))).limit(6 - len(sugeridos)).all()
+        sugeridos += extras
+
+    return jsonify([s.serialize() for s in sugeridos]), 200
+
+
+# =======================================================
+# --- EDITORIALES FAVORITAS ---
+# =======================================================
+
+@api.route('/lector_editoriales_favoritas/<int:lector_id>', methods=['GET'])
+def get_editoriales_favoritas(lector_id):
+    favs = Lector_Editoriales_Favoritas.query.filter_by(lector_id=lector_id).all()
+    return jsonify([f.serialize() for f in favs]), 200
+
+
+@api.route('/lector_editoriales_favoritas', methods=['POST'])
+def add_editorial_favorita():
+    body = request.get_json()
+    existe = Lector_Editoriales_Favoritas.query.filter_by(
+        lector_id=body["lector_id"], editorial_id=body["editorial_id"]).first()
+    if existe:
+        return jsonify({"msg": "Ya está en favoritas"}), 400
+    nuevo = Lector_Editoriales_Favoritas(lector_id=body["lector_id"], editorial_id=body["editorial_id"])
+    db.session.add(nuevo)
+    db.session.commit()
+    return jsonify(nuevo.serialize()), 201
+
+
+@api.route('/lector_editoriales_favoritas/<int:fav_id>', methods=['DELETE'])
+def delete_editorial_favorita(fav_id):
+    fav = Lector_Editoriales_Favoritas.query.get_or_404(fav_id)
+    db.session.delete(fav)
+    db.session.commit()
+    return jsonify({"msg": "Eliminado"}), 200
+
+
+# Crear notificación cuando alguien te sigue (añadir en el endpoint de follow existente)
+@api.route('/follow_con_notif', methods=['POST'])
+def follow_con_notif():
+    body = request.get_json()
+    seguidor_id = body.get("seguidor_id")
+    seguido_id = body.get("seguido_id")
+
+    existe = Seguidor.query.filter_by(lector_id=seguidor_id, seguido_id=seguido_id).first()
+    if existe:
+        return jsonify({"msg": "Ya lo sigues"}), 400
+
+    nueva_relacion = Seguidor(lector_id=seguidor_id, seguido_id=seguido_id)
+    db.session.add(nueva_relacion)
+
+    seguidor = Lector.query.get(seguidor_id)
+    nombre = seguidor.username if seguidor else "Alguien"
+    notif = Notificacion(
+        lector_id=seguido_id,
+        tipo="follow",
+        mensaje=f"{nombre} comenzó a seguirte.",
+        url_destino=f"/perfil_lector/{seguidor_id}"
+    )
+    db.session.add(notif)
+    db.session.commit()
+
+    return jsonify(nueva_relacion.serialize()), 201

@@ -16,8 +16,10 @@ const ActualizarLector = () => {
     const [nombre, setNombre] = useState("");
     const [apellido, setApellido] = useState("");
     const [paisdondereside, setPaisDondeReside] = useState("");
+    const [biografia, setBiografia] = useState("");
+    const [generosFavoritos, setGenerosFavoritos] = useState("");
     const [fotoUrl, setFotoUrl] = useState(null);
-    
+
     // ESTADOS PARA EL MAPA
     const [ubicacion, setUbicacion] = useState(null);
     const [cargando, setCargando] = useState(true);
@@ -35,7 +37,9 @@ const ActualizarLector = () => {
                 setApellido(lector.apellido || "");
                 setPaisDondeReside(lector.pais_donde_reside || lector.paisdondereside || "");
                 setFotoUrl(lector.foto_url || null);
-                
+                setBiografia(lector.biografia || "");
+                setGenerosFavoritos(lector.generos_favoritos || "");
+
                 // Cargamos las coordenadas actuales del usuario para el mapa
                 if (lector.latitud && lector.longitud) {
                     setUbicacion({ lat: lector.latitud, lng: lector.longitud });
@@ -120,7 +124,8 @@ const ActualizarLector = () => {
                 "nombre": nombre,
                 "apellido": apellido,
                 "pais donde reside": paisdondereside,
-                // ENVIAMOS LAS COORDENADAS DEL MAPA
+                "biografia": biografia,
+                "generos_favoritos": generosFavoritos,
                 "latitud": ubicacion.lat,
                 "longitud": ubicacion.lng
             })
@@ -201,9 +206,34 @@ const ActualizarLector = () => {
                     </div>
                 </div>
 
-                <div className="mb-4">
+                <div className="mb-3">
                     <label className="form-label text-muted small fw-bold text-uppercase">País donde reside</label>
                     <input type="text" className="form-control" value={paisdondereside} onChange={(e) => setPaisDondeReside(e.target.value)} required/>
+                </div>
+
+                <div className="mb-3">
+                    <label className="form-label text-muted small fw-bold text-uppercase">Biografía</label>
+                    <textarea
+                        className="form-control"
+                        rows={3}
+                        placeholder="Cuéntale a la comunidad quién eres como lector..."
+                        value={biografia}
+                        onChange={e => setBiografia(e.target.value)}
+                        maxLength={500}
+                    />
+                    <small className="text-muted">{biografia.length}/500</small>
+                </div>
+
+                <div className="mb-4">
+                    <label className="form-label text-muted small fw-bold text-uppercase">Géneros favoritos</label>
+                    <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Ej: Fantasía, Terror, Romance (separados por coma)"
+                        value={generosFavoritos}
+                        onChange={e => setGenerosFavoritos(e.target.value)}
+                    />
+                    <small className="text-muted">Separa los géneros con comas</small>
                 </div>
 
                 {/* INTEGRACIÓN DEL MAPA */}

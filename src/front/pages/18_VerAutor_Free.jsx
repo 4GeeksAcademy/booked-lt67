@@ -5,16 +5,27 @@ import "../shelfStyles.css";
 const VerAutorFree = () => {
     const { theId } = useParams();
     const [autor, setAutor] = useState(null);
+    const [posts, setPosts] = useState([]); // Estado para los posts
     const navigate = useNavigate();
 
     useEffect(() => {
         const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+
+        // Carga de datos del autor
         fetch(`${baseUrl}/api/autor/${theId}`)
             .then(response => response.json())
             .then(data => {
                 setAutor(data.autor || data);
             })
             .catch(err => console.error("Error cargando autor:", err));
+
+        // Carga de posts del autor
+        fetch(`${baseUrl}/api/postautor/autor/${theId}`)
+            .then(response => response.json())
+            .then(data => {
+                setPosts(Array.isArray(data) ? data : (data.posts || []));
+            })
+            .catch(err => console.error("Error cargando posts:", err));
     }, [theId]);
 
     if (autor === null) {
@@ -73,13 +84,17 @@ const VerAutorFree = () => {
                                 </p>
 
                                 <div className="row g-3 bg-light p-4 rounded-4 border shadow-sm">
-                                    {/* <div className="col-sm-6 text-break">
-                                        <p className="mb-1 text-muted small fw-bold text-uppercase">Contacto</p>
-                                        <p className="fw-bold text-dark mb-0">{autor.email || "No disponible"}</p>
-                                    </div> */}
-                                    <div className="col-sm-6">
+                                    <div className="col-sm-4 text-center border-end">
+                                        <p className="mb-1 text-muted small fw-bold text-uppercase">Libros</p>
+                                        <p className="fw-bold text-dark mb-0 fs-5">{autor.libros?.length || 0}</p>
+                                    </div>
+                                    <div className="col-sm-4 text-center border-end">
                                         <p className="mb-1 text-muted small fw-bold text-uppercase">País</p>
-                                        <p className="fw-bold text-dark mb-0">{autor.pais || "Desconocido"}</p>
+                                        <p className="fw-bold text-dark mb-0">{autor.pais || "—"}</p>
+                                    </div>
+                                    <div className="col-sm-4 text-center">
+                                        <p className="mb-1 text-muted small fw-bold text-uppercase">Posts</p>
+                                        <p className="fw-bold text-dark mb-0 fs-5">{posts.length}</p>
                                     </div>
                                 </div>
                             </div>
@@ -96,7 +111,6 @@ const VerAutorFree = () => {
                                 {autor.libros && autor.libros.length > 0 ? (
                                     autor.libros.map((libro) => (
                                         <div key={libro.id} className="col-6 col-md-4 col-lg-3 mb-5 shelf-item px-3">
-                                            {/* NICHO DE MADERA */}
                                             <div className="shelf-cubby">
                                                 <div className="book-3d" onClick={() => navigate(`/ver_libro/${libro.id}`)}>
                                                     <img src={libro.image_url || "https://via.placeholder.com/200x300?text=Booked"} alt={libro.nombre} />
@@ -104,29 +118,19 @@ const VerAutorFree = () => {
                                                 <div className="shelf-floor-wood"></div>
                                             </div>
 
-                                            {/* INFO Y BOTONES (SIMETRÍA CORREGIDA) */}
                                             <div className="text-center mt-3">
                                                 <h6 className="fw-bold text-dark mb-1 text-truncate" style={{ fontSize: '0.9rem' }}>
                                                     {libro.nombre}
                                                 </h6>
-                                                
                                                 <div className="d-flex justify-content-center align-items-center gap-2 mt-2">
-                                                    {/* GÉNERO: ALTURA IGUALADA AL BOTÓN */}
-                                                    <span 
-                                                        className="badge bg-info-booked bg-opacity-10 text-white rounded-pill d-inline-flex align-items-center justify-content-center border border-info-booked border-opacity-25" 
-                                                        style={{ 
-                                                            padding: '0.25rem 0.75rem', 
-                                                            fontSize: '0.75rem', 
-                                                            minHeight: '31px', 
-                                                            lineHeight: '1' 
-                                                        }}
+                                                    <span
+                                                        className="badge bg-info-booked bg-opacity-10 text-info-booked rounded-pill d-inline-flex align-items-center justify-content-center border border-info-booked border-opacity-25"
+                                                        style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', minHeight: '31px', lineHeight: '1' }}
                                                     >
                                                         {libro.genero || "General"}
                                                     </span>
-
-                                                    {/* BOTÓN VER */}
-                                                    <Link 
-                                                        to={`/ver_libro/${libro.id}`} 
+                                                    <Link
+                                                        to={`/ver_libro/${libro.id}`}
                                                         className="btn btn-sm btn-booked-blue rounded-pill px-3 py-1 shadow-sm d-inline-flex align-items-center"
                                                         style={{ fontSize: '0.75rem', minHeight: '31px' }}
                                                     >
@@ -143,6 +147,42 @@ const VerAutorFree = () => {
                                 )}
                             </div>
                         </div>
+
+                        <hr className="my-5 opacity-25" />
+
+                        {/* --- SECCIÓN DE POSTS/NOVEDADES --- */}
+                        <div className="mt-5">
+                            <div className="mb-4">
+                                <span className="text-info-booked fw-bold small text-uppercase" style={{ letterSpacing: '2px' }}>— Novedades</span>
+                                <h3 className="fw-bold text-dark mt-2">Muro del Autor</h3>
+                            </div>
+
+                            <div className="row">
+                                {posts.length > 0 ? (
+                                    posts.map(post => (
+                                        <div key={post.id} className="col-md-6 mb-4">
+                                            <div className="card p-4 shadow-sm border-0 bg-white rounded-4 h-100 card-noticia-autor border-start border-info-booked border-4">
+                                                <div className="d-flex justify-content-between border-bottom pb-2 mb-3">
+                                                    <small className="text-info-booked fw-bold">
+                                                        <i className="far fa-calendar-alt me-1"></i> {post.fecha || 'Reciente'}
+                                                    </small>
+                                                    <i className="fas fa-quote-right text-light fs-4"></i>
+                                                </div>
+                                                <p className="mb-0 text-muted" style={{ whiteSpace: 'pre-wrap', fontSize: '0.95rem', lineHeight: '1.6' }}>
+                                                    {post.texto}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="col-12 text-center p-5 bg-light rounded-4 border border-dashed">
+                                        <i className="fas fa-comment-dots fa-3x mb-3 text-info-booked opacity-25"></i>
+                                        <p className="text-muted fw-bold">El autor no ha realizado publicaciones todavía.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -152,6 +192,12 @@ const VerAutorFree = () => {
                 .bookshelf-grid { display: flex; flex-wrap: wrap; justify-content: center; }
                 .text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
                 .border-dashed { border: 2px dashed rgba(0,0,0,0.1) !important; }
+                .card-noticia-autor { transition: transform 0.3s ease; }
+                .card-noticia-autor:hover { transform: translateY(-5px); }
+                .bg-info-booked { background-color: #24b0d9 !important; }
+                .btn-booked-blue { background-color: #24b0d9; color: white; border: none; }
+                .btn-booked-blue:hover { background-color: #1d8ea0; color: white; }
+                .text-info-booked { color: #24b0d9 !important; }
                 `}
             </style>
         </div>
