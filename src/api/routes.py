@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor, Reviews, Admin, PostEditorial, LecturaActual, PostAutor, Mensaje, DmLector
+from api.models import db, User, Lector, Editorial, Autor, Libro, LibrosFavoritos, Lector_Autores_Favoritos, Seguidor, Reviews, Admin, PostEditorial, LecturaActual, PostAutor, Mensaje, DmLector, Comentario, PostLector
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -546,12 +546,13 @@ def get_lector_autor_favorito(fav_id):
 
 @api.route('/lectores_por_autor/<int:id_del_autor>', methods=['GET'])
 def get_lectores_por_autor(id_del_autor):
-    items = Lector_Autores_Favoritos.query.filter_by(
-        autor_id=id_del_autor).all()
+    items = Lector_Autores_Favoritos.query.filter_by(autor_id=id_del_autor).all()
+    
+    # En vez de 404, si no hay nadie, devolvemos un array vacío [] con estado 200
     if not items:
-        return jsonify({"message": "Nadie tiene a este autor como favorito aún"}), 404
+        return jsonify([]), 200
+        
     results = [item.lector.serialize() for item in items]
-
     return jsonify(results), 200
 
 
@@ -755,14 +756,18 @@ def login_autor():
     email = body.get("email")
     password = body.get("password")
 
+    if not email or not password:
+        return jsonify({"msg": "Email y contraseña son requeridos"}), 400
+
     autor = Autor.query.filter_by(email=email).first()
 
-
-    #if autor is None:
-    #    return jsonify({"msg": "Bad username or password"}), 401
+    # Descomentamos y protegemos: si no existe, salimos de una vez de forma segura
+    if autor is None:
+        return jsonify({"msg": "Usuario no encontrado o datos incorrectos"}), 401
     
     if check_password_hash(autor.password, password):
-        access_token = create_access_token(identity=str(autor.id))
+        identity_data = json.dumps({"id": autor.id, "tipo": "autor"})
+        access_token = create_access_token(identity=identity_data)
         return jsonify({
             "access_token": access_token,
             "autor_id": autor.id,
@@ -828,7 +833,7 @@ def signup_autor():
         msg = "Usuario creado con éxito"
         autor_final = nuevo_autor
 
-    access_token = create_access_token(identity=str(autor_final.id))
+    access_token = create_access_token(identity={"id": autor_final.id, "tipo": "autor"})
 
     return jsonify({
         "msg": msg,
@@ -848,7 +853,8 @@ def login_lector():
     #if lector is None or not check_password_hash(lector.password, password):
     #    return jsonify({"msg": "Email o contraseña incorrectos"}), 401
 
-    access_token = create_access_token(identity=str(lector.id))
+    identity_data = json.dumps({"id": lector.id, "tipo": "lector"})
+    access_token = create_access_token(identity=identity_data)
 
     return jsonify({
         "access_token": access_token,
@@ -878,7 +884,8 @@ def login_editorial():
     if not password_correct:
         return jsonify({"msg": "El correo o la contraseña son incorrectos"}), 401
 
-    access_token = create_access_token(identity=str(editorial.id))
+    identity_data = json.dumps({"id": editorial.id, "tipo": "editorial"})
+    access_token = create_access_token(identity=identity_data)
     
     return jsonify({
         "access_token": access_token,
@@ -916,7 +923,7 @@ def signup_lector():
         return jsonify({"msg": "Error al crear el usuario", "error": str(e)}), 400
 
     # Cambiamos identity a string (versiones recientes de Flask-JWT-Extended lo requieren)
-    access_token = create_access_token(identity=str(nuevo_lector.id))
+    access_token = create_access_token(identity={"id": nuevo_lector.id, "tipo": "lector"})
 
     return jsonify({
         "msg": "Lector creado",
@@ -970,7 +977,7 @@ def signup_editorial():
     try:
         db.session.commit()
         # Incluimos el access_token si quieres que haga login automático al registrarse
-        access_token = create_access_token(identity=str(editorial.id))
+        access_token = create_access_token(identity={"id": editorial.id, "tipo": "editorial"})
         return jsonify({
             "msg": msg, 
             "editorial_id": editorial.id, 
@@ -1084,19 +1091,38 @@ def get_muro_editorial(ed_id):
 
 
 @api.route('/posteditorial', methods=['POST'])
+@jwt_required() # <-- Obligatorio para leer el token de la editorial
 def create_post_editorial():
+    try:
+        body = request.get_json()
+        if not body or "texto" not in body:
+            return jsonify({"msg": "El texto de la publicación es obligatorio"}), 400
 
-    body = request.get_json()
+        # 1. Recuperamos el string JSON del token de la editorial
+        identity_raw = get_jwt_identity() 
+        
+        # 2. Lo transformamos a diccionario de Python de verdad
+        identity = json.loads(identity_raw) 
+        
+        # 3. Extraemos de forma segura el id de la editorial
+        editorial_id = identity.get("id")
 
-    nuevo = PostEditorial(
-        editorial_id=body["editorial_id"],
-        texto=body["texto"]
-    )
+        # Creamos el registro usando el id extraído del JWT
+        nuevo_post = PostEditorial(
+            editorial_id=editorial_id,
+            texto=body["texto"]
+            # Si manejas imágenes o títulos de posts, agrégalos aquí de la misma forma
+        )
 
-    db.session.add(nuevo)
-    db.session.commit()
+        db.session.add(nuevo_post)
+        db.session.commit()
 
-    return jsonify(nuevo.serialize()), 201
+        return jsonify({"msg": "Post de editorial creado con éxito", "post": nuevo_post.serialize()}), 201
+
+    except Exception as e:
+        # Esto imprimirá el error real en la terminal de Flask si algo más falla
+        print("🔴 ERROR INTERNO EN CREATE_POST_EDITORIAL:", str(e))
+        return jsonify({"msg": "Error interno de la editorial", "error": str(e)}), 500
 
 
 @api.route('/posteditorial/<int:post_editorial_id>', methods=['PUT'])
@@ -1139,20 +1165,31 @@ def get_muro_autor(aut_id):
 
 
 @api.route('/postautor', methods=['POST'])
+@jwt_required() # <-- Le añadimos protección por Token
 def create_post_autor():
-    body = request.get_json()
-    if not body or "autor_id" not in body or "texto" not in body:
-        return jsonify({"msg": "Faltan datos: autor_id y texto son obligatorios"}), 400
+    try:
+        body = request.get_json()
+        if not body or "texto" not in body:
+            return jsonify({"msg": "El texto del post es obligatorio"}), 400
 
-    nuevo_post = PostAutor(
-        autor_id=body["autor_id"],
-        texto=body["texto"]
-    )
+        # Recuperamos de forma segura el ID del autor desde el token inyectado
+        identity_raw = get_jwt_identity()
+        identity = json.loads(identity_raw)
+        autor_id = identity.get("id")
 
-    db.session.add(nuevo_post)
-    db.session.commit()
+        nuevo_post = PostAutor(
+            autor_id=autor_id, # Extraído del JWT
+            texto=body["texto"]
+        )
 
-    return jsonify(nuevo_post.serialize()), 201
+        db.session.add(nuevo_post)
+        db.session.commit()
+
+        return jsonify(nuevo_post.serialize()), 201
+        
+    except Exception as e:
+        print("🔴 ERROR EN CREATE_POST_AUTOR:", str(e))
+        return jsonify({"msg": "Error interno del servidor", "error": str(e)}), 500
 
 
 @api.route('/postautor/<int:post_id>', methods=['DELETE'])
@@ -1882,3 +1919,295 @@ def obtener_contactos():
 
     contactos = Lector.query.filter(Lector.id.in_(list(ids_contactos))).all()
     return jsonify([c.serialize() for c in contactos]), 200
+
+@api.route('/comentario', methods=['POST'])
+@jwt_required()
+def post_comentario():
+    body = request.get_json()
+    
+    # Extraemos el diccionario que guardamos en el login
+    identidad = get_jwt_identity() 
+    user_id = identidad["id"]
+    tipo_usuario = identidad["tipo"]
+    
+    texto = body.get("texto")
+    nuevo_comentario = Comentario(texto=texto)
+
+    # 1. Asignamos quién escribe basándonos en el TIPO del token
+    if tipo_usuario == 'lector':
+        nuevo_comentario.lector_id = user_id
+    elif tipo_usuario == 'editorial':
+        nuevo_comentario.editorial_id = user_id
+    elif tipo_usuario == 'autor':
+        nuevo_comentario.autor_id = user_id
+
+    # 2. Asignamos a qué post va (esto viene del frontend)
+    if "post_editorial_id" in body:
+        nuevo_comentario.post_editorial_id = body["post_editorial_id"]
+    elif "post_autor_id" in body:
+        nuevo_comentario.post_autor_id = body["post_autor_id"]
+    elif "post_lector_id" in body:
+        nuevo_comentario.post_lector_id = body["post_lector_id"]
+
+    db.session.add(nuevo_comentario)
+    db.session.commit()
+    
+    return jsonify({"msg": "¡Comentario publicado!", "comentario": nuevo_comentario.serialize()}), 201
+
+@api.route('/post-lector', methods=['POST'])
+@jwt_required()
+def crear_post_lector():
+    try:
+        body = request.get_json()
+        
+        # 1. Recuperamos el string JSON que configuramos en el login
+        identity_raw = get_jwt_identity() 
+        
+        # 2. Lo transformamos de texto a un diccionario de Python de verdad
+        identity = json.loads(identity_raw) 
+        
+        # 3. Ahora sí podemos usar .get() de forma segura
+        lector_id = identity.get("id") 
+        
+        if not body or not body.get("texto"):
+            return jsonify({"msg": "El texto del post es obligatorio"}), 400
+        
+        nuevo_post = PostLector(
+            lector_id=lector_id,
+            texto=body.get("texto"),
+            imagen_url=body.get("imagen_url")
+        )
+        
+        db.session.add(nuevo_post)
+        db.session.commit()
+        
+        return jsonify({"msg": "Post creado!", "post": nuevo_post.serialize()}), 201
+
+    except Exception as e:
+        # Si algo falla, esto evitará el misterioso error 500 sin explicación
+        # e imprimirá el error real en tu terminal de Flask
+        print("🔴 ERROR INTERNO EN CREAR_POST_LECTOR:", str(e))
+        return jsonify({"msg": "Error interno del servidor", "error": str(e)}), 500
+    
+@api.route('/postlector/lector/<int:lector_id>', methods=['GET'])
+def obtener_posts_lector(lector_id):
+    try:
+        # Buscamos todos los posts de ese lector ordenados del más nuevo al más viejo
+        posts = PostLector.query.filter_by(lector_id=lector_id).order_by(PostLector.id.desc()).all()
+        
+        # Serializamos la lista
+        posts_serializados = [p.serialize() for p in posts]
+        return jsonify(posts_serializados), 200
+        
+    except Exception as e:
+        print("🔴 ERROR EN OBTENER_POSTS_LECTOR:", str(e))
+        return jsonify({"msg": "Error al obtener los posts", "error": str(e)}), 500
+    
+@api.route('/postlector/<int:post_id>', methods=['PUT'])
+@jwt_required()
+def actualizar_post_lector(post_id):
+    try:
+        body = request.get_json()
+        nuevo_texto = body.get("texto")
+        
+        if not nuevo_texto:
+            return jsonify({"msg": "El texto modificado es requerido"}), 400
+            
+        # Validamos quién es el dueño del token por seguridad
+        identity_raw = get_jwt_identity()
+        identity = json.loads(identity_raw)
+        lector_id_token = identity.get("id")
+        
+        # Buscamos el post en la base de datos
+        post = PostLector.query.get(post_id)
+        if not post:
+            return jsonify({"msg": "Post no encontrado"}), 404
+            
+        # Control de seguridad: que el lector del token sea el dueño real del post
+        if post.lector_id != lector_id_token:
+            return jsonify({"msg": "No tienes permisos para editar este post"}), 403
+            
+        # Actualizamos el campo
+        post.texto = nuevo_texto
+        db.session.commit()
+        
+        return jsonify({"msg": "Post actualizado con éxito", "post": post.serialize()}), 200
+        
+    except Exception as e:
+        print("🔴 ERROR EN ACTUALIZAR_POST_LECTOR:", str(e))
+        return jsonify({"msg": "Error al editar el post", "error": str(e)}), 500
+    
+@api.route('/postlector/<int:post_id>', methods=['DELETE'])
+@jwt_required()
+def eliminar_post_lector(post_id):
+    try:
+        # Validamos quién es el dueño del token por seguridad
+        identity_raw = get_jwt_identity()
+        identity = json.loads(identity_raw)
+        lector_id_token = identity.get("id")
+        
+        post = PostLector.query.get(post_id)
+        if not post:
+            return jsonify({"msg": "Post no encontrado"}), 404
+            
+        # Control de seguridad estricto
+        if post.lector_id != lector_id_token:
+            return jsonify({"msg": "No tienes permisos para eliminar este post"}), 403
+            
+        db.session.delete(post)
+        db.session.commit()
+        
+        return jsonify({"msg": "Post eliminado permanentemente"}), 200
+        
+    except Exception as e:
+        print("🔴 ERROR EN ELIMINAR_POST_LECTOR:", str(e))
+        return jsonify({"msg": "Error al eliminar el post", "error": str(e)}), 500
+    
+@api.route('/comentarios', methods=['POST'])
+@jwt_required()
+def crear_comentario():
+    try:
+        body = request.get_json()
+        texto = body.get("texto")
+        post_id = body.get("post_id")
+        tipo_post = body.get("tipo_post") # Puede ser: 'lector', 'autor' o 'editorial'
+        
+        # 🌟 NUEVO: Extraemos el parent_id (si viene, será el ID del comentario padre; si no, será None)
+        parent_id = body.get("parent_id") 
+
+        if not texto or not post_id or not tipo_post:
+            return jsonify({"msg": "Faltan datos obligatorios: texto, post_id y tipo_post"}), 400
+
+        # 1. Identificamos quién está comentando gracias al Token
+        identity_raw = get_jwt_identity()
+        identity = json.loads(identity_raw)
+        user_id = identity.get("id")
+        tipo_usuario = identity.get("tipo") # 'lector', 'autor' o 'editorial'
+
+        # 2. Inicializamos el nuevo comentario de forma limpia
+        # 🌟 NUEVO: Le pasamos directamente el parent_id aquí
+        nuevo_comentario = Comentario(
+            texto=texto,
+            parent_id=parent_id
+        )
+
+        # 3. Asignamos quién es el creador según el token (Tu lógica perfecta)
+        if tipo_usuario == "lector":
+            nuevo_comentario.lector_id = user_id
+        elif tipo_usuario == "autor":
+            nuevo_comentario.autor_id = user_id
+        elif tipo_usuario == "editorial":
+            nuevo_comentario.editorial_id = user_id
+
+        # 4. Asignamos en qué muro/post se está comentando (Tu lógica perfecta)
+        if tipo_post == "lector":
+            nuevo_comentario.post_lector_id = post_id
+        elif tipo_post == "autor":
+            nuevo_comentario.post_autor_id = post_id
+        elif tipo_post == "editorial":
+            nuevo_comentario.post_editorial_id = post_id
+        else:
+            return jsonify({"msg": "tipo_post no válido"}), 400
+
+        db.session.add(nuevo_comentario)
+        db.session.commit()
+
+        return jsonify({"msg": "Comentario publicado!", "comentario": nuevo_comentario.serialize()}), 201
+
+    except Exception as e:
+        print("🔴 ERROR EN CREAR_COMENTARIO:", str(e))
+        return jsonify({"msg": "Error interno al comentar", "error": str(e)}), 500
+    
+@api.route('/comentarios/<string:tipo_post>/<int:post_id>', methods=['GET'])
+def obtener_comentarios_post(tipo_post, post_id):
+    try:
+        # Buscamos los comentarios según el tipo de muro
+        if tipo_post == "lector":
+            comentarios = Comentario.query.filter_by(post_lector_id=post_id).order_by(Comentario.id.asc()).all()
+        elif tipo_post == "autor":
+            comentarios = Comentario.query.filter_by(post_autor_id=post_id).order_by(Comentario.id.asc()).all()
+        elif tipo_post == "editorial":
+            comentarios = Comentario.query.filter_by(post_editorial_id=post_id).order_by(Comentario.id.asc()).all()
+        else:
+            return jsonify({"msg": "tipo_post no válido"}), 400
+
+        return jsonify([c.serialize() for c in comentarios]), 200
+
+    except Exception as e:
+        print("🔴 ERROR EN OBTENER_COMENTARIOS_POST:", str(e))
+        return jsonify({"msg": "Error al obtener comentarios", "error": str(e)}), 500
+    
+@api.route('/comentarios/<int:comentario_id>', methods=['PUT'])
+@jwt_required()
+def actualizar_comentario(comentario_id):
+    try:
+        body = request.get_json()
+        nuevo_texto = body.get("texto")
+
+        if not nuevo_texto:
+            return jsonify({"msg": "El texto es obligatorio"}), 400
+
+        # Identificamos al usuario por el token
+        identity_raw = get_jwt_identity()
+        identity = json.loads(identity_raw)
+        user_id = identity.get("id")
+        tipo_usuario = identity.get("tipo")
+
+        comentario = Comentario.query.get(comentario_id)
+        if not comentario:
+            return jsonify({"msg": "Comentario no encontrado"}), 404
+
+        # CONTROL DE SEGURIDAD: Validar que el que edita sea el dueño real
+        es_dueno = False
+        if tipo_usuario == "lector" and comentario.lector_id == user_id:
+            es_dueno = True
+        elif tipo_usuario == "autor" and comentario.autor_id == user_id:
+            es_dueno = True
+        elif tipo_usuario == "editorial" and comentario.editorial_id == user_id:
+            es_dueno = True
+
+        if not es_dueno:
+            return jsonify({"msg": "No tienes permisos para editar este comentario"}), 403
+
+        comentario.texto = nuevo_texto
+        db.session.commit()
+
+        return jsonify({"msg": "Comentario actualizado", "comentario": comentario.serialize()}), 200
+
+    except Exception as e:
+        print("🔴 ERROR EN ACTUALIZAR_COMENTARIO:", str(e))
+        return jsonify({"msg": "Error al editar comentario", "error": str(e)}), 500
+    
+@api.route('/comentarios/<int:comentario_id>', methods=['DELETE'])
+@jwt_required()
+def eliminar_comentario(comentario_id):
+    try:
+        identity_raw = get_jwt_identity()
+        identity = json.loads(identity_raw)
+        user_id = identity.get("id")
+        tipo_usuario = identity.get("tipo")
+
+        comentario = Comentario.query.get(comentario_id)
+        if not comentario:
+            return jsonify({"msg": "Comentario no encontrado"}), 404
+
+        # CONTROL DE SEGURIDAD: Validar que el que borra sea el dueño real
+        es_dueno = False
+        if tipo_usuario == "lector" and comentario.lector_id == user_id:
+            es_dueno = True
+        elif tipo_usuario == "autor" and comentario.autor_id == user_id:
+            es_dueno = True
+        elif tipo_usuario == "editorial" and comentario.editorial_id == user_id:
+            es_dueno = True
+
+        if not es_dueno:
+            return jsonify({"msg": "No tienes permisos para eliminar este comentario"}), 403
+
+        db.session.delete(comentario)
+        db.session.commit()
+
+        return jsonify({"msg": "Comentario eliminado permanentemente"}), 200
+
+    except Exception as e:
+        print("🔴 ERROR EN ELIMINAR_COMENTARIO:", str(e))
+        return jsonify({"msg": "Error al eliminar comentario", "error": str(e)}), 500

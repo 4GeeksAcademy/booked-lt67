@@ -57,6 +57,8 @@ class Lector(db.Model):
 
     reviews: Mapped[List["Reviews"]] = relationship(back_populates="lector")
 
+    posts_lector: Mapped[List["PostLector"]] = relationship(back_populates="lector")
+
     def __repr__(self):
         return f'<Lector: {self.username}>'
 
@@ -369,6 +371,9 @@ class PostEditorial(db.Model):
 
     fecha: Mapped[datetime] = mapped_column(
         default=lambda: datetime.now(timezone.utc))
+    
+    comentarios: Mapped[List["Comentario"]] = relationship(
+        back_populates="post_editorial", cascade="all, delete-orphan")
 
     def serialize(self):
         return {
@@ -390,6 +395,9 @@ class PostAutor(db.Model):
     texto: Mapped[str] = mapped_column(db.Text, nullable=False)
     fecha: Mapped[datetime] = mapped_column(
         default=lambda: datetime.now(timezone.utc))
+    
+    comentarios: Mapped[List["Comentario"]] = relationship(
+        back_populates="post_autor", cascade="all, delete-orphan")
 
     def serialize(self):
         return {
@@ -458,4 +466,108 @@ class DmLector(db.Model):
             "foto_emisor": self.emisor.foto_url if self.emisor else None,
             "nombre_receptor": f"{self.receptor.nombre} {self.receptor.apellido}",
             "foto_receptor": self.receptor.foto_url
+        }
+
+
+class PostLector(db.Model):
+    __tablename__ = 'post_lector'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    
+    lector_id: Mapped[int] = mapped_column(ForeignKey("lector.id"))
+    lector: Mapped["Lector"] = relationship(back_populates="posts_lector") # Cambié backref por back_populates para ser explícitos
+
+    texto: Mapped[str] = mapped_column(db.Text, nullable=False)
+    imagen_url: Mapped[str] = mapped_column(String(500), nullable=True) 
+    
+    fecha: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(timezone.utc))
+
+    # Relación con comentarios con el cascade que planeamos
+    comentarios: Mapped[List["Comentario"]] = relationship(
+        back_populates="post_lector", 
+        cascade="all, delete-orphan",
+        passive_deletes=True # Ayuda a que la base de datos gestione mejor el borrado
+    )
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "lector_id": self.lector_id,
+            "username_lector": self.lector.username if self.lector else "Usuario",
+            "foto_lector": self.lector.foto_url if self.lector else None,
+            "texto": self.texto,
+            "imagen_url": self.imagen_url,
+            "fecha": self.fecha.strftime("%d-%m-%Y %H:%M"),
+            # IMPORTANTE: Añade esto para que el Front sepa cuántos comentarios hay
+            "total_comentarios": len(self.comentarios) if self.comentarios else 0,
+            # Si quieres que al cargar el post ya vengan los comentarios:
+            "comentarios": [c.serialize() for c in self.comentarios] if self.comentarios else []
+        }
+
+class Comentario(db.Model):
+    __tablename__ = 'comentario'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    texto: Mapped[str] = mapped_column(db.Text, nullable=False)
+    fecha: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
+
+    # Auto-referencia para Hilos de Conversación
+
+    parent_id: Mapped[int] = mapped_column(ForeignKey("comentario.id"), nullable=True)
+    
+    # Relación para obtener las respuestas directas de este comentario
+    
+    respuestas = relationship("Comentario", back_populates="padre", cascade="all, delete-orphan")
+    padre = relationship("Comentario", back_populates="respuestas", remote_side=[id])
+
+
+    # --- ¿QUIÉN ESCRIBE? (Uno de estos será el autor) ---
+    lector_id: Mapped[int] = mapped_column(ForeignKey("lector.id"), nullable=True)
+    editorial_id: Mapped[int] = mapped_column(ForeignKey("editorial.id"), nullable=True)
+    autor_id: Mapped[int] = mapped_column(ForeignKey("autor.id"), nullable=True)
+
+    # Relaciones para acceder a los datos del autor del comentario
+    lector = relationship("Lector")
+    editorial = relationship("Editorial")
+    autor = relationship("Autor")
+
+    # --- ¿DÓNDE ESCRIBE? ---
+    post_editorial_id: Mapped[int] = mapped_column(ForeignKey("post_editorial.id"), nullable=True)
+    post_autor_id: Mapped[int] = mapped_column(ForeignKey("post_autor.id"), nullable=True)
+    post_lector_id: Mapped[int] = mapped_column(ForeignKey("post_lector.id"), nullable=True)
+
+    post_editorial: Mapped["PostEditorial"] = relationship(back_populates="comentarios")
+    post_autor: Mapped["PostAutor"] = relationship(back_populates="comentarios")
+    post_lector: Mapped["PostLector"] = relationship(back_populates="comentarios")
+
+    def serialize(self):
+        # Inicializamos variables por defecto
+        nombre_del_creador = "Usuario Desconocido"
+        foto_del_creador = None
+        tipo_de_cuenta = None
+        
+        # Lógica de detección: ¿Quién disparó este comentario?
+        if self.lector:
+            nombre_del_creador = self.lector.username
+            foto_del_creador = self.lector.foto_url
+            tipo_de_cuenta = "lector"
+        elif self.editorial:
+            nombre_del_creador = self.editorial.nombre
+            foto_del_creador = self.editorial.image_url
+            tipo_de_cuenta = "editorial"
+        elif self.autor:
+            # Aquí 'self.autor' se refiere a la relación con la tabla Autor
+            nombre_del_creador = f"{self.autor.nombre} {self.autor.apellido}"
+            foto_del_creador = self.autor.foto_url
+            tipo_de_cuenta = "autor"
+
+        return {
+            "id": self.id,
+            "texto": self.texto,
+            "fecha": self.fecha.strftime("%d-%m-%Y %H:%M"),
+            "creador_nombre": nombre_del_creador,
+            "creador_foto": foto_del_creador,
+            "creador_tipo": tipo_de_cuenta, # Esto te servirá en el front para poner colores
+            "post_id": self.post_editorial_id or self.post_autor_id or self.post_lector_id,
+            "parent_id": self.parent_id,
+            "respuestas": [resp.serialize() for resp in self.respuestas] if self.respuestas else []
         }
