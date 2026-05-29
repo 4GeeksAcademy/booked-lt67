@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, Navigate, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
-import SelectorUbicacion from "../pages/24_Georreferenciacion"; 
+import SelectorUbicacion from "../pages/24_Georreferenciacion";
 
 const CompletarRegistroLector = () => {
     const navigate = useNavigate();
@@ -29,9 +29,9 @@ const CompletarRegistroLector = () => {
 
     // Función para procesar el registro final
     const sendData = (e) => {
-        if (e) e.preventDefault(); 
+        if (e) e.preventDefault();
         setCargando(true);
-        
+
         const requestOptions = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -56,21 +56,21 @@ const CompletarRegistroLector = () => {
             })
             .then(data => {
                 alert("¡Perfil completado! Bienvenido a Booked.");
-                
+
                 // Guardamos credenciales para persistencia
                 localStorage.setItem("token_lector", data.access_token);
                 localStorage.setItem("lector_id", data.lector_id);
-                localStorage.setItem("horaLoginLector", new Date().getTime());
+                localStorage.setItem("horaLoginlector", new Date().getTime());
 
                 dispatch({
                     type: "set_auth_lector",
-                    payload: { 
-                        auth: true, 
-                        id: data.lector_id, 
-                        nombre: data.nombre || username 
+                    payload: {
+                        auth: true,
+                        id: data.lector_id,
+                        nombre: data.nombre || username
                     }
                 });
-                
+
                 navigate("/pagina_lector");
             })
             .catch(err => {
@@ -80,16 +80,16 @@ const CompletarRegistroLector = () => {
             });
     }
 
-    if (!email) return null; 
+    if (!email) return null;
 
     return (
         <div className="container-fluid min-vh-100 d-flex align-items-center py-5" style={{ background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)' }}>
             <div className="container">
                 <div className="card shadow-lg border-0 rounded-5 overflow-hidden mx-auto" style={{ maxWidth: "900px" }}>
                     <div className="row g-0">
-                        
+
                         {/* Panel Lateral Informativo */}
-                        <div 
+                        <div
                             className="col-lg-4 d-flex flex-column align-items-center justify-content-center p-5 text-center text-white position-relative"
                             style={{ backgroundColor: "#1e99bd" }}
                         >
@@ -113,7 +113,7 @@ const CompletarRegistroLector = () => {
                                 </div>
                                 <span className="badge bg-success rounded-pill px-3 py-2">Paso 2 de 2</span>
                             </div>
-                            
+
                             <form onSubmit={sendData}>
                                 <div className="row g-3">
                                     {/* Nombre */}
@@ -149,8 +149,8 @@ const CompletarRegistroLector = () => {
                                 </div>
 
                                 <div className="d-grid gap-3 mt-4">
-                                    <button 
-                                        type="submit" 
+                                    <button
+                                        type="submit"
                                         className="btn btn-booked-blue btn-lg rounded-pill fw-bold shadow-sm py-3"
                                         disabled={cargando}
                                     >
@@ -159,9 +159,9 @@ const CompletarRegistroLector = () => {
                                         ) : "LISTO, ¡EMPECEMOS!"}
                                     </button>
 
-                                    <button 
-                                        type="button" 
-                                        onClick={() => sendData()} 
+                                    <button
+                                        type="button"
+                                        onClick={() => sendData()}
                                         className="btn btn-link text-muted btn-sm"
                                         disabled={cargando}
                                     >
