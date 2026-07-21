@@ -58,8 +58,8 @@ class Lector(db.Model):
         "Seguidor", foreign_keys="Seguidor.seguido_id", back_populates="lector_seguido", cascade="all, delete-orphan")
 
     reviews: Mapped[List["Reviews"]] = relationship(back_populates="lector")
-    posts: Mapped[List["PostLector"]] = relationship(back_populates="lector", cascade="all, delete-orphan")
-    comentarios: Mapped[List["ComentarioPost"]] = relationship(back_populates="lector", cascade="all, delete-orphan")
+    posts_lector: Mapped[List["PostLector"]] = relationship(back_populates="lector", cascade="all, delete-orphan")
+    comentarios: Mapped[List["Comentario"]] = relationship(back_populates="lector", cascade="all, delete-orphan")
     notificaciones: Mapped[List["Notificacion"]] = relationship(back_populates="lector", cascade="all, delete-orphan")
     favorites_editorial: Mapped[List["Lector_Editoriales_Favoritas"]] = relationship(back_populates="lector", cascade="all, delete-orphan")
 
@@ -389,10 +389,9 @@ class PostEditorial(db.Model):
 
     fecha: Mapped[datetime] = mapped_column(
         default=lambda: datetime.now(timezone.utc))
-
-    comentarios: Mapped[List["ComentarioPost"]] = relationship(
-        back_populates="post_editorial", cascade="all, delete-orphan"
-    )
+    
+    comentarios: Mapped[List["Comentario"]] = relationship(
+        back_populates="post_editorial", cascade="all, delete-orphan")
 
     def serialize(self):
         return {
@@ -415,10 +414,9 @@ class PostAutor(db.Model):
     texto: Mapped[str] = mapped_column(db.Text, nullable=False)
     fecha: Mapped[datetime] = mapped_column(
         default=lambda: datetime.now(timezone.utc))
-
-    comentarios: Mapped[List["ComentarioPost"]] = relationship(
-        back_populates="post_autor", cascade="all, delete-orphan"
-    )
+    
+    comentarios: Mapped[List["Comentario"]] = relationship(
+        back_populates="post_autor", cascade="all, delete-orphan")
 
     def serialize(self):
         return {
@@ -492,17 +490,23 @@ class DmLector(db.Model):
 
 
 class PostLector(db.Model):
+    __tablename__ = 'post_lector'
     id: Mapped[int] = mapped_column(primary_key=True)
-
+    
     lector_id: Mapped[int] = mapped_column(ForeignKey("lector.id"))
-    lector: Mapped["Lector"] = relationship(back_populates="posts")
+    lector: Mapped["Lector"] = relationship(back_populates="posts_lector")
 
     texto: Mapped[str] = mapped_column(db.Text, nullable=False)
+    imagen_url: Mapped[str] = mapped_column(String(500), nullable=True) 
+    
     fecha: Mapped[datetime] = mapped_column(
         default=lambda: datetime.now(timezone.utc))
 
-    comentarios: Mapped[List["ComentarioPost"]] = relationship(
-        back_populates="post_lector", cascade="all, delete-orphan"
+    # Relación con comentarios con el cascade que planeamos
+    comentarios: Mapped[List["Comentario"]] = relationship(
+        back_populates="post_lector", 
+        cascade="all, delete-orphan",
+        passive_deletes=True # Ayuda a que la base de datos gestione mejor el borrado
     )
 
     def serialize(self):
@@ -513,52 +517,85 @@ class PostLector(db.Model):
         return {
             "id": self.id,
             "lector_id": self.lector_id,
+            "username_lector": self.lector.username if self.lector else "Usuario",
             "nombre_lector": f"{self.lector.nombre} {self.lector.apellido}" if self.lector else None,
-            "username_lector": self.lector.username if self.lector else None,
             "foto_lector": foto_final,
             "texto": self.texto,
-            "fecha": self.fecha.strftime("%d-%m-%Y %H:%M") if self.fecha else None,
-            "total_comentarios": len(self.comentarios)
+            "imagen_url": self.imagen_url,
+            "fecha": self.fecha.strftime("%d-%m-%Y %H:%M"),
+            # IMPORTANTE: Añade esto para que el Front sepa cuántos comentarios hay
+            "total_comentarios": len(self.comentarios) if self.comentarios else 0,
+            # Si quieres que al cargar el post ya vengan los comentarios:
+            "comentarios": [c.serialize() for c in self.comentarios] if self.comentarios else []
         }
 
-
-class ComentarioPost(db.Model):
+class Comentario(db.Model):
+    __tablename__ = 'comentario'
     id: Mapped[int] = mapped_column(primary_key=True)
+    texto: Mapped[str] = mapped_column(db.Text, nullable=False)
+    fecha: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
 
-    lector_id: Mapped[int] = mapped_column(ForeignKey("lector.id"))
-    lector: Mapped["Lector"] = relationship(back_populates="comentarios")
+    # Auto-referencia para Hilos de Conversación
+    parent_id: Mapped[int] = mapped_column(ForeignKey("comentario.id"), nullable=True)
+    
+    # Relación para obtener las respuestas directas de este comentario
+    respuestas = relationship("Comentario", back_populates="padre", cascade="all, delete-orphan")
+    padre = relationship("Comentario", back_populates="respuestas", remote_side=[id])
 
-    texto: Mapped[str] = mapped_column(String(500), nullable=False)
-    fecha: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc))
+    # --- ¿QUIÉN ESCRIBE? (Uno de estos será el autor) ---
+    lector_id: Mapped[int] = mapped_column(ForeignKey("lector.id"), nullable=True)
+    editorial_id: Mapped[int] = mapped_column(ForeignKey("editorial.id"), nullable=True)
+    autor_id: Mapped[int] = mapped_column(ForeignKey("autor.id"), nullable=True)
 
-    post_editorial_id: Mapped[int] = mapped_column(
-        ForeignKey("post_editorial.id"), nullable=True)
-    post_autor_id: Mapped[int] = mapped_column(
-        ForeignKey("post_autor.id"), nullable=True)
-    post_lector_id: Mapped[int] = mapped_column(
-        ForeignKey("post_lector.id"), nullable=True)
+    # Relaciones para acceder a los datos del autor del comentario
+    lector = relationship("Lector")
+    editorial = relationship("Editorial")
+    autor = relationship("Autor")
+
+    # --- ¿DÓNDE ESCRIBE? ---
+    post_editorial_id: Mapped[int] = mapped_column(ForeignKey("post_editorial.id"), nullable=True)
+    post_autor_id: Mapped[int] = mapped_column(ForeignKey("post_autor.id"), nullable=True)
+    post_lector_id: Mapped[int] = mapped_column(ForeignKey("post_lector.id"), nullable=True)
 
     post_editorial: Mapped["PostEditorial"] = relationship(back_populates="comentarios")
     post_autor: Mapped["PostAutor"] = relationship(back_populates="comentarios")
     post_lector: Mapped["PostLector"] = relationship(back_populates="comentarios")
 
     def serialize(self):
-        foto_final = self.lector.foto_url if self.lector else None
-        if foto_final and not foto_final.startswith("http"):
+        # Inicializamos variables por defecto
+        nombre_del_creador = "Usuario Desconocido"
+        foto_del_creador = None
+        tipo_de_cuenta = None
+        
+        # Lógica de detección: ¿Quién disparó este comentario?
+        if self.lector:
+            nombre_del_creador = self.lector.username
+            foto_del_creador = self.lector.foto_url
+            tipo_de_cuenta = "lector"
+        elif self.editorial:
+            nombre_del_creador = self.editorial.nombre
+            foto_del_creador = self.editorial.image_url
+            tipo_de_cuenta = "editorial"
+        elif self.autor:
+            # Aquí 'self.autor' se refiere a la relación con la tabla Autor
+            nombre_del_creador = f"{self.autor.nombre} {self.autor.apellido}"
+            foto_del_creador = self.autor.foto_url
+            tipo_de_cuenta = "autor"
+
+        if foto_del_creador and not foto_del_creador.startswith("http"):
             base_url = os.getenv("VITE_BACKEND_URL", "").rstrip("/")
-            foto_final = f"{base_url}/{foto_final.lstrip('/')}"
+            foto_del_creador = f"{base_url}/{foto_del_creador.lstrip('/')}"
+
         return {
             "id": self.id,
-            "lector_id": self.lector_id,
-            "nombre_lector": f"{self.lector.nombre} {self.lector.apellido}" if self.lector else None,
-            "username_lector": self.lector.username if self.lector else None,
-            "foto_lector": foto_final,
             "texto": self.texto,
-            "fecha": self.fecha.strftime("%d-%m-%Y %H:%M") if self.fecha else None,
-            "post_editorial_id": self.post_editorial_id,
-            "post_autor_id": self.post_autor_id,
-            "post_lector_id": self.post_lector_id
+            "fecha": self.fecha.strftime("%d-%m-%Y %H:%M"),
+            "creador_nombre": nombre_del_creador,
+            "creador_foto": foto_del_creador,
+            "creador_tipo": tipo_de_cuenta,
+            "post_id": self.post_editorial_id or self.post_autor_id or self.post_lector_id,
+            "parent_id": self.parent_id,
+            "respuestas": [resp.serialize() for resp in self.respuestas] if self.respuestas else []
         }
 
 

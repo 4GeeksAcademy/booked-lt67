@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
-import logoBookedUrl from "../assets/img/logo_booked.png"; 
+import logoBookedUrl from "../assets/img/logo_booked.png";
 
 const LogInAutor = () => {
     const [email, setEmail] = useState('');
@@ -38,12 +38,11 @@ const LogInAutor = () => {
             })
             .then(data => {
                 // Guardar en LocalStorage
-                localStorage.setItem("autor_id", data.autor_id);
                 localStorage.setItem("token_autor", data.access_token);
-                localStorage.setItem("nombre_autor", data.nombre);
-                localStorage.setItem("horaLoginAutor", new Date().getTime());
+                localStorage.setItem("autor_id", data.autor_id);
+                localStorage.setItem("nombre_autor", data.nombre); // Aseguramos que se guarde el nombre
+                localStorage.setItem("horaLoginautor", new Date().getTime()); // Cambiado a minúscula: horaLoginautor
 
-                // Actualizar estado global
                 dispatch({
                     type: "set_auth_autor",
                     payload: {
@@ -52,7 +51,7 @@ const LogInAutor = () => {
                         nombre: data.nombre
                     }
                 });
-                
+
                 navigate("/pagina_autor");
             })
             .catch(error => {
@@ -67,20 +66,20 @@ const LogInAutor = () => {
             <div className="container">
                 <div className="card shadow-lg border-0 rounded-5 overflow-hidden mx-auto" style={{ maxWidth: "950px" }}>
                     <div className="row g-0">
-                        
+
                         {/* PANEL IZQUIERDO: Bienvenida Autor */}
-                        <div 
+                        <div
                             className="col-lg-5 d-flex flex-column align-items-center justify-content-center p-5 text-center text-white position-relative overflow-hidden"
                             style={{ backgroundColor: "#24b0d9" }}
                         >
                             <i className="fas fa-feather-alt position-absolute opacity-10" style={{ fontSize: '7rem', top: '-15px', left: '-10px' }}></i>
 
                             <div className="position-relative z-index-1">
-                                <img 
-                                    src={logoBookedUrl} 
-                                    alt="Booked Logo" 
-                                    style={{ height: "70px", width: "auto", filter: "brightness(0) invert(1)" }} 
-                                    className="mb-4 drop-shadow" 
+                                <img
+                                    src={logoBookedUrl}
+                                    alt="Booked Logo"
+                                    style={{ height: "70px", width: "auto", filter: "brightness(0) invert(1)" }}
+                                    className="mb-4 drop-shadow"
                                 />
                                 <h3 className="fw-bold mb-3">Tu taller literario.</h3>
                                 <p className="small opacity-75 mb-4">
@@ -105,22 +104,22 @@ const LogInAutor = () => {
                                     <i className="fas fa-user-edit fa-lg"></i>
                                 </div>
                             </div>
-                            
+
                             <form onSubmit={sendData}>
                                 <div className="row g-4">
-                                    
+
                                     {/* Input Email */}
                                     <div className="col-12">
                                         <label className="form-label small fw-bold text-muted text-uppercase mb-1">Correo Profesional</label>
                                         <div className="input-group shadow-sm rounded-pill overflow-hidden">
                                             <span className="input-group-text bg-light border-0 text-info-booked ps-4"><i className="fas fa-envelope"></i></span>
-                                            <input 
-                                                value={email} 
-                                                onChange={(e) => setEmail(e.target.value)} 
-                                                type="email" 
-                                                className="form-control bg-light border-0 py-3 ps-2" 
-                                                placeholder="autor@ejemplo.com" 
-                                                required 
+                                            <input
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                type="email"
+                                                className="form-control bg-light border-0 py-3 ps-2"
+                                                placeholder="autor@ejemplo.com"
+                                                required
                                             />
                                         </div>
                                     </div>
@@ -130,21 +129,21 @@ const LogInAutor = () => {
                                         <label className="form-label small fw-bold text-muted text-uppercase mb-1">Contraseña</label>
                                         <div className="input-group shadow-sm rounded-pill overflow-hidden">
                                             <span className="input-group-text bg-light border-0 text-info-booked ps-4"><i className="fas fa-lock"></i></span>
-                                            <input 
-                                                value={password} 
-                                                onChange={(e) => setPassword(e.target.value)} 
-                                                type="password" 
-                                                className="form-control bg-light border-0 py-3 ps-2" 
-                                                placeholder="••••••••" 
-                                                required 
+                                            <input
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                type="password"
+                                                className="form-control bg-light border-0 py-3 ps-2"
+                                                placeholder="••••••••"
+                                                required
                                             />
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="d-grid mt-5">
-                                    <button 
-                                        type="submit" 
+                                    <button
+                                        type="submit"
                                         className="btn btn-booked-blue btn-lg rounded-pill fw-bold shadow-sm d-flex justify-content-center align-items-center py-3"
                                         disabled={cargando}
                                     >

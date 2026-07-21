@@ -40,7 +40,7 @@ const CompletarRegistroEditorial = () => {
     // NUEVA LÓGICA: Subida directa con Preset (Igual que en Lector)
     const handleUpload = (e) => {
         e.preventDefault();
-        
+
         if (!window.cloudinary) {
             alert("El servicio de imágenes aún se está cargando. Por favor, espera un segundo.");
             return;
@@ -61,14 +61,14 @@ const CompletarRegistroEditorial = () => {
                 setImageUrl(result.info.secure_url);
             }
         });
-        
+
         widget.open();
     };
 
     function sendData(e) {
         e.preventDefault();
         setCargando(true);
-        
+
         const requestOptions = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -92,7 +92,7 @@ const CompletarRegistroEditorial = () => {
             .then(data => {
                 localStorage.setItem("token_editorial", data.access_token);
                 localStorage.setItem("editorial_id", data.editorial_id || data.id);
-                localStorage.setItem("horaLoginEditorial", new Date().getTime());
+                localStorage.setItem("horaLogineditorial", new Date().getTime());
 
                 dispatch({
                     type: "set_auth_editorial",
@@ -113,18 +113,18 @@ const CompletarRegistroEditorial = () => {
             });
     }
 
-    if (!email) return null; 
+    if (!email) return null;
 
     return (
         <div className="container-fluid min-vh-100 d-flex align-items-center py-5" style={{ background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)' }}>
             <div className="container">
                 <div className="card shadow-lg border-0 rounded-5 overflow-hidden mx-auto" style={{ maxWidth: "950px" }}>
                     <div className="row g-0">
-                        
+
                         {/* PANEL IZQUIERDO */}
-                        <div 
+                        <div
                             className="col-lg-4 d-flex flex-column align-items-center justify-content-center p-5 text-center text-white position-relative overflow-hidden"
-                            style={{ backgroundColor: "#1e99bd" }} 
+                            style={{ backgroundColor: "#1e99bd" }}
                         >
                             <i className="fas fa-image position-absolute opacity-10" style={{ fontSize: '7rem', top: '-15px', left: '-10px' }}></i>
 
@@ -153,10 +153,10 @@ const CompletarRegistroEditorial = () => {
                                     <span className="badge bg-success border rounded-pill px-3 py-2">Paso 2 de 2</span>
                                 </div>
                             </div>
-                            
+
                             <form onSubmit={sendData}>
                                 <div className="row g-3">
-                                    
+
                                     {/* SECCIÓN IMAGEN */}
                                     <div className="col-md-12 mb-4 d-flex flex-column align-items-center">
                                         <label className="form-label small fw-bold text-muted text-uppercase mb-3">Logotipo de la Editorial</label>
@@ -178,21 +178,21 @@ const CompletarRegistroEditorial = () => {
                                         <label className="form-label small fw-bold text-muted text-uppercase mb-2">País Sede de la Editorial</label>
                                         <div className="input-group shadow-sm rounded-pill overflow-hidden">
                                             <span className="input-group-text bg-light border-0 text-muted ps-4"><i className="fas fa-globe"></i></span>
-                                            <input 
-                                                value={pais} 
-                                                onChange={(e) => setPais(e.target.value)} 
-                                                type="text" 
-                                                className="form-control bg-light border-0 py-3 ps-2" 
-                                                placeholder="Ej. España, México, Argentina..." 
-                                                required 
+                                            <input
+                                                value={pais}
+                                                onChange={(e) => setPais(e.target.value)}
+                                                type="text"
+                                                className="form-control bg-light border-0 py-3 ps-2"
+                                                placeholder="Ej. España, México, Argentina..."
+                                                required
                                             />
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="d-grid mt-4">
-                                    <button 
-                                        type="submit" 
+                                    <button
+                                        type="submit"
                                         className="btn btn-booked-blue btn-lg rounded-pill fw-bold shadow-sm py-3"
                                         disabled={cargando}
                                     >

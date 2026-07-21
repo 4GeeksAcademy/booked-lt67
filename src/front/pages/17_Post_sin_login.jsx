@@ -30,6 +30,10 @@ const PostSinLogin = () => {
         fetchPosts();
     }, [fetchPosts]);
 
+    const tipoUsuarioLogueado = store.editorial_id ? "editorial"
+        : store.autor_id ? "autor"
+        : "lector";
+
     if (loading) {
         return (
             <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)' }}>
@@ -104,6 +108,11 @@ const PostSinLogin = () => {
                                         <p className="card-text text-dark" style={{ whiteSpace: 'pre-wrap', fontSize: '1.1rem', lineHeight: '1.6' }}>
                                             {post.texto}
                                         </p>
+                                        <CajaComentarios
+                                            postId={post.id}
+                                            tipoPost="autor"
+                                            tipoUsuarioActual={tipoUsuarioLogueado}
+                                        />
 
                                         {/* Comentarios */}
                                         <ComentariosPost tipo="autor" postId={post.id} />

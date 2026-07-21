@@ -6,6 +6,7 @@ import BuscarLibroIA from "../components/25_BuscarLibroIA";
 import DmLector from "../components/37_DmLector";
 import Notificaciones from "../components/Notificaciones";
 import { useLocation } from "react-router-dom"
+import CajaComentarios from "../components/45_CajaComentarios";
 
 // Assets e Imágenes
 import logoBookedUrl from "../assets/img/logo_booked1.png";
@@ -25,6 +26,9 @@ const PaginaLector = () => {
     // --- NUEVAS LÍNEAS: ESTADOS PARA FILTROS ---
     const [filtroCategoria, setFiltroCategoria] = useState("");
     const [ordenarPor, setOrdenarPor] = useState("novedades");
+
+    const [editando, setEditando] = useState(null);
+    const [nuevoTexto, setNuevoTexto] = useState("");
 
     const [db, setDb] = useState({
         usuario: null,
@@ -46,9 +50,14 @@ const PaginaLector = () => {
 
     const request = async (url, m = "GET", b = null) => {
         try {
+            const token = localStorage.getItem("token_lector");
+            const headers = { "Content-Type": "application/json" };
+            if (token) {
+                headers["Authorization"] = `Bearer ${token}`;
+            }
             const res = await fetch(`${api}/${url}`, {
                 method: m,
-                headers: { "Content-Type": "application/json" },
+                headers: headers,
                 body: b ? JSON.stringify(b) : null
             });
             return res.ok ? await res.json() : null;
@@ -106,6 +115,20 @@ const PaginaLector = () => {
     const exec = async (u, m, b) => { if (await request(u, m, b)) load(); };
     const irAlLibro = (id) => navigate(`/ver_libro/${id}`);
 
+    const handleEliminarPost = async (id) => {
+        if (window.confirm("¿Eliminar publicación?")) {
+            if (await request(`postlector/${id}`, "DELETE")) load();
+        }
+    };
+
+    const handleGuardarEdicionPost = async (id) => {
+        const res = await request(`postlector/${id}`, "PUT", { texto: nuevoTexto });
+        if (res) {
+            setEditando(null);
+            load();
+        }
+    };
+
     // --- NUEVAS LÍNEAS: LÓGICA DE PROCESAMIENTO (Categorías y Orden) ---
     const categoriasExistentes = [...new Set(db.todos.map(l => l.genero).filter(g => g))];
 
@@ -140,11 +163,11 @@ const PaginaLector = () => {
     const TarjetaLibro = ({ l }) => {
         const esFavorito = db.favoritos.some(f => (f.libro?.id || f.libro_id) === l.id);
         const loEstaLeyendo = db.leyendo.some(ley => (ley.libro?.id || ley.libro_id) === l.id);
-        
+
         // --- NUEVAS LÍNEAS: CÁLCULO DE PROMEDIO ---
         const reviewsDelLibro = db.reviews.filter(r => (r.libro?.id || r.libro_id) === l.id);
-        const promedio = reviewsDelLibro.length > 0 
-            ? (reviewsDelLibro.reduce((acc, r) => acc + r.puntuacion, 0) / reviewsDelLibro.length).toFixed(1) 
+        const promedio = reviewsDelLibro.length > 0
+            ? (reviewsDelLibro.reduce((acc, r) => acc + r.puntuacion, 0) / reviewsDelLibro.length).toFixed(1)
             : null;
 
         return (
@@ -158,7 +181,7 @@ const PaginaLector = () => {
 
                 <div className="text-center mt-3">
                     <h6 className="fw-bold text-dark mb-1 text-truncate">{l.nombre}</h6>
-                    
+
                     {/* --- NUEVAS LÍNEAS: BADGE DE PUNTAJE --- */}
                     <div className="mb-2" style={{ height: '24px' }}>
                         {promedio ? (
@@ -194,6 +217,8 @@ const PaginaLector = () => {
             </div>
         );
     };
+
+    console.log("Contenido actual de db.misPosts:", db.misPosts);
 
     return (
         <div className="d-flex position-relative" style={{ minHeight: "100vh" }}>
@@ -318,17 +343,82 @@ const PaginaLector = () => {
                                     Hola, <span className="text-info-booked" style={{ fontStyle: 'italic' }}>{db.usuario?.username}.</span>
                                 </h1>
                                 <p className="lead text-muted mb-4">Gestiona tu ecosistema literario, descubre nuevos autores y mantén tu colección al día.</p>
+
+                                {/* Buscador de Google Books */}
                                 <div className="p-2 bg-white shadow-lg rounded-4 d-flex align-items-center border mb-4" style={{ maxWidth: '600px' }}>
                                     <div className="flex-grow-1 px-2">
                                         <BuscadorGoogleBooks onLibroAgregado={irAlLibro} />
                                     </div>
                                 </div>
+
+                                {/* NUEVA TARJETA: Inyección de Funcionalidad Crear Post Lector (Clonando estilo de Autor) */}
+                                <div className="p-3 bg-white shadow-sm rounded-4 border mb-4 d-flex align-items-center justify-content-between" style={{ maxWidth: '600px', borderLeft: '5px solid #24b0d9' }}>
+                                    <div className="d-flex align-items-center gap-3">
+                                        <div className="bg-light p-3 rounded-circle text-info-booked">
+                                            <i className="fas fa-pen-fancy"></i>
+                                        </div>
+                                        <div>
+                                            <h6 className="fw-bold mb-0">¿Quieres compartir lo que piensas?</h6>
+                                            <p className="small text-muted mb-0">Publica un pensamiento en tu comunidad de lectores.</p>
+                                        </div>
+                                    </div>
+                                    <Link to="/crear_post_lector" className="btn btn-booked-blue rounded-pill px-4 shadow-sm text-nowrap fw-bold">Publicar</Link>
+                                </div>
                             </div>
+
                             <div className="col-lg-5 d-none d-lg-block text-center mb-4">
                                 <img src={booksImg} alt="Libros" className="img-fluid" style={{ maxHeight: "350px", filter: "drop-shadow(0 20px 30px rgba(0,0,0,0.1))" }} />
                             </div>
                             <div className="col-12 mt-4">
                                 <BuscarLibroIA />
+                            </div>
+                            <div className="col-12 mt-5">
+                                <div className="d-flex justify-content-between align-items-center mb-4">
+                                    <h4 className="fw-bold text-dark mb-0">Tus Publicaciones Recientes</h4>
+                                </div>
+                                <div className="row">
+                                    {db.misPosts && db.misPosts.length > 0 ? db.misPosts.map(post => (
+                                        <div key={post.id} className="col-md-6 mb-4">
+                                            <div className="card p-4 shadow-sm border-0 bg-white rounded-4 h-100 card-noticia-autor">
+                                                <div className="d-flex justify-content-between border-bottom pb-2 mb-3">
+                                                    <small className="text-info-booked fw-bold">
+                                                        <i className="far fa-calendar-alt me-1"></i> {post.fecha}
+                                                    </small>
+                                                    <div>
+                                                        <button className="btn btn-sm text-info-booked me-2" onClick={() => { setEditando(post.id); setNuevoTexto(post.texto); }} title="Editar">
+                                                            <i className="fas fa-edit"></i>
+                                                        </button>
+                                                        <button className="btn btn-sm text-danger" onClick={() => handleEliminarPost(post.id)} title="Eliminar">
+                                                            <i className="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {editando === post.id ? (
+                                                    <div>
+                                                        <textarea className="form-control bg-light border-0 mb-2 rounded-4 p-3 shadow-sm" rows="4" value={nuevoTexto} onChange={(e) => setNuevoTexto(e.target.value)} />
+                                                        <div className="text-end mt-2">
+                                                            <button className="btn btn-sm btn-light rounded-pill px-3 me-2 border shadow-sm" onClick={() => setEditando(null)}>Cancelar</button>
+                                                            <button className="btn btn-sm btn-booked-blue rounded-pill px-4 shadow-sm" onClick={() => handleGuardarEdicionPost(post.id)}>Guardar</button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <p className="mb-0 text-muted" style={{ whiteSpace: 'pre-wrap' }}>{post.texto}</p>
+                                                )}
+                                                <CajaComentarios
+                                                    postId={post.id}
+                                                    tipoPost="lector"
+                                                    tipoUsuarioActual="lector"
+                                                />
+                                            </div>
+                                        </div>
+                                    )) : (
+                                        <div className="col-12 text-center p-5 bg-white rounded-4 shadow-sm">
+                                            <i className="fas fa-comment-dots fa-3x mb-3 text-info-booked opacity-50"></i>
+                                            <p className="text-muted fw-bold fs-5">Aún no has compartido ninguna publicación.</p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}
@@ -343,14 +433,14 @@ const PaginaLector = () => {
                                         {seccionActiva === "leyendo" ? "Libros en Proceso" : seccionActiva === "favoritos" ? "Tus Preferidos" : "Explorar Biblioteca"}
                                     </h2>
                                 </div>
-                                
+
                                 <div className="d-flex flex-wrap gap-3">
                                     {/* Selector de Categorías */}
                                     <div className="flex-grow-1" style={{ minWidth: '200px' }}>
                                         <label className="form-label ms-2 small text-muted">Filtrar por:</label>
-                                        <select 
-                                            className="form-select rounded-pill shadow-sm border-0 px-3 py-2" 
-                                            value={filtroCategoria} 
+                                        <select
+                                            className="form-select rounded-pill shadow-sm border-0 px-3 py-2"
+                                            value={filtroCategoria}
                                             onChange={(e) => setFiltroCategoria(e.target.value)}
                                         >
                                             <option value="">Todas las Categorías</option>
@@ -361,9 +451,9 @@ const PaginaLector = () => {
                                     {/* Selector de Ordenamiento */}
                                     <div className="flex-grow-1" style={{ minWidth: '200px' }}>
                                         <label className="form-label ms-2 small text-muted">Ordenar resultados:</label>
-                                        <select 
-                                            className="form-select rounded-pill shadow-sm border-0 px-3 py-2" 
-                                            value={ordenarPor} 
+                                        <select
+                                            className="form-select rounded-pill shadow-sm border-0 px-3 py-2"
+                                            value={ordenarPor}
                                             onChange={(e) => setOrdenarPor(e.target.value)}
                                         >
                                             <option value="novedades">Novedades (Más recientes)</option>
@@ -634,7 +724,7 @@ const PaginaLector = () => {
 
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom"; // Importante para capturar el ID
 
+
 const VerPostEditorial = () => {
     const { theId } = useParams();
     const [posts, setPosts] = useState([]);
 
     const fetchPostsByEditorial = async () => {
         try {
-            
+
             const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/posteditorial/editorial/${theId}`);
             if (response.ok) {
                 const data = await response.json();

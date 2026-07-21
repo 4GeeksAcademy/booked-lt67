@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
-import ComentariosPost from "../components/ComentariosPost";
+import CajaComentarios from "../components/45_CajaComentarios";
 
 const VerLectorPublico = () => {
     const { theId } = useParams();
@@ -15,7 +15,7 @@ const VerLectorPublico = () => {
         siguiendo: false,
         loading: true
     });
-    const [postExpandido, setPostExpandido] = useState(null);
+
 
     const apiBase = `${import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "")}/api`;
 
@@ -63,6 +63,7 @@ const VerLectorPublico = () => {
             setDb(prev => ({ ...prev, loading: false }));
         }
     }, [theId, store.lector_id, store.auth_lector, apiBase]);
+
     useEffect(() => { loadData(); }, [loadData]);
 
     const handleFollow = async () => {
@@ -229,34 +230,67 @@ const VerLectorPublico = () => {
                                         </div>
                                     )) : <p className="text-muted text-center py-5">Este lector prefiere disfrutar los libros en silencio.</p>}
                                 </div>
-                            </div>
-                        </div>
+                                <div className="row mt-5">
+                                    <div className="col-12">
+                                        <h6 className="fw-bold text-uppercase small text-info-booked mb-4" style={{ letterSpacing: '1px' }}>
+                                            — Pensamientos y Publicaciones
+                                        </h6>
 
-                        {/* Posts del lector */}
-                        {db.posts.length > 0 && (
-                            <div className="mt-4">
-                                <h6 className="fw-bold text-uppercase small text-info-booked mb-3" style={{ letterSpacing: '1px' }}>— Publicaciones</h6>
-                                <div className="d-flex flex-column gap-3">
-                                    {db.posts.map(post => (
-                                        <div key={post.id} className="card border-0 bg-light rounded-4 p-3 shadow-sm">
-                                            <p className="text-dark mb-2" style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{post.texto}</p>
-                                            <div className="d-flex justify-content-between align-items-center">
-                                                <small className="text-muted"><i className="far fa-clock me-1"></i>{post.fecha}</small>
-                                                <button
-                                                    className="btn btn-sm text-muted p-0 small"
-                                                    onClick={() => setPostExpandido(postExpandido === post.id ? null : post.id)}
-                                                >
-                                                    <i className="fas fa-comment me-1"></i>{post.total_comentarios} comentario{post.total_comentarios !== 1 ? "s" : ""}
-                                                </button>
+                                        {db.posts.length === 0 ? (
+                                            <div className="text-center bg-light p-5 rounded-4 border" style={{ borderStyle: 'dashed !important' }}>
+                                                <i className="fas fa-feather-alt fa-2x mb-3 text-muted opacity-50"></i>
+                                                <p className="text-muted small mb-0">Este lector aún no ha compartido publicaciones en su muro.</p>
                                             </div>
-                                            {postExpandido === post.id && (
-                                                <ComentariosPost tipo="lector" postId={post.id} />
-                                            )}
-                                        </div>
-                                    ))}
+                                        ) : (
+                                            <div className="d-flex flex-column gap-4">
+                                                {db.posts.map((post) => {
+                                                    // Evaluamos dinámicamente quién está navegando la app desde el store
+                                                    const tipoUsuarioLogueado = store.editorial_id ? "editorial"
+                                                        : store.autor_id ? "autor"
+                                                            : "lector";
+
+                                                    return (
+                                                        <div key={post.id} className="card shadow-sm border-0 rounded-4 bg-white overflow-hidden">
+                                                            <div className="card-body p-4">
+
+                                                                {/* Encabezado interno de la publicación */}
+                                                                <div className="d-flex align-items-center mb-3 pb-2 border-bottom">
+                                                                    <img
+                                                                        src={fotoUrl}
+                                                                        alt={nombreCompleto}
+                                                                        className="rounded-circle shadow-sm me-3"
+                                                                        style={{ width: "42px", height: "42px", objectFit: "cover" }}
+                                                                    />
+                                                                    <div>
+                                                                        <h6 className="fw-bold mb-0 text-dark small">{nombreCompleto}</h6>
+                                                                        <small className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                                                            <i className="far fa-clock me-1 text-info-booked"></i> {post.fecha || "Reciente"}
+                                                                        </small>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Cuerpo de la publicación */}
+                                                                <p className="card-text text-dark" style={{ whiteSpace: 'pre-wrap', fontSize: '1rem', lineHeight: '1.5' }}>
+                                                                    {post.texto}
+                                                                </p>
+
+                                                                {/* 🎮 CAJA DE COMENTARIOS ADAPTADA A ESTA VISTA */}
+                                                                <CajaComentarios
+                                                                    postId={post.id}
+                                                                    tipoPost="lector" // Fijo "lector" porque estamos en el muro público de un Lector
+                                                                    tipoUsuarioActual={tipoUsuarioLogueado} // Dinámico según quién esté logueado
+                                                                />
+
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        )}
+                        </div>
 
                         <div className="mt-5 pt-3 border-top d-flex justify-content-between align-items-center">
                             <button className="btn btn-sm btn-light rounded-pill px-4 border text-muted" onClick={() => navigate(-1)}>

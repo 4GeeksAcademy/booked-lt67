@@ -27,7 +27,7 @@ const CompletarRegistroAutor = () => {
     function sendData(e) {
         e.preventDefault();
         setCargando(true);
-        
+
         const requestOptions = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -51,12 +51,12 @@ const CompletarRegistroAutor = () => {
                 localStorage.setItem("autor_id", data.autor_id);
                 localStorage.setItem("token_autor", data.access_token);
                 localStorage.setItem("nombre_autor", data.nombre);
-                localStorage.setItem("horaLoginAutor", new Date().getTime());
+                localStorage.setItem("horaLoginautor", new Date().getTime());
 
-                dispatch({ 
-                    type: "set_auth_autor", 
-                    payload: { auth: true, id: data.autor_id, nombre: data.nombre } 
-                }); 
+                dispatch({
+                    type: "set_auth_autor",
+                    payload: { auth: true, id: data.autor_id, nombre: data.nombre }
+                });
 
                 alert(autorIdSeleccionado ? "¡Perfil reclamado con éxito!" : "¡Cuenta de autor creada con éxito!");
                 navigate("/pagina_autor");
@@ -69,16 +69,16 @@ const CompletarRegistroAutor = () => {
     }
 
     // Retorno de seguridad mientras redirige si no hay datos
-    if (!email) return null; 
+    if (!email) return null;
 
     return (
         <div className="container-fluid min-vh-100 d-flex align-items-center py-5" style={{ background: 'linear-gradient(135deg, #e3f6fd 0%, #f4f5f5 100%)' }}>
             <div className="container">
                 <div className="card shadow-lg border-0 rounded-5 overflow-hidden mx-auto" style={{ maxWidth: "950px" }}>
                     <div className="row g-0">
-                        
+
                         {/* PANEL IZQUIERDO: Paso 2 */}
-                        <div 
+                        <div
                             className="col-lg-4 d-flex flex-column align-items-center justify-content-center p-5 text-center text-white position-relative overflow-hidden"
                             style={{ backgroundColor: "#1e99bd" }} // Un azul un poquito más oscuro para denotar avance
                         >
@@ -109,30 +109,30 @@ const CompletarRegistroAutor = () => {
                                     <span className="badge bg-success border rounded-pill px-3 py-2">Paso 2 de 2</span>
                                 </div>
                             </div>
-                            
+
                             <form onSubmit={sendData}>
                                 <div className="row g-3">
-                                    
+
                                     {/* País */}
                                     <div className="col-md-12 mb-4">
                                         <label className="form-label small fw-bold text-muted text-uppercase mb-2">País de Residencia u Origen</label>
                                         <div className="input-group shadow-sm rounded-pill overflow-hidden">
                                             <span className="input-group-text bg-light border-0 text-muted ps-4"><i className="fas fa-globe"></i></span>
-                                            <input 
-                                                value={pais} 
-                                                onChange={(e) => setPais(e.target.value)} 
-                                                type="text" 
-                                                className="form-control bg-light border-0 py-3 ps-2" 
-                                                placeholder="Ej. España, México, Argentina..." 
-                                                required 
+                                            <input
+                                                value={pais}
+                                                onChange={(e) => setPais(e.target.value)}
+                                                type="text"
+                                                className="form-control bg-light border-0 py-3 ps-2"
+                                                placeholder="Ej. España, México, Argentina..."
+                                                required
                                             />
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="d-grid mt-4">
-                                    <button 
-                                        type="submit" 
+                                    <button
+                                        type="submit"
                                         className="btn btn-booked-blue btn-lg rounded-pill fw-bold shadow-sm py-3"
                                         disabled={cargando}
                                     >
