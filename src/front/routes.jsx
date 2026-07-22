@@ -80,6 +80,8 @@ import LimitacionesIA from "./pages/41_LimitacionesIA";
 import Terminos from "./pages/41_Terminos";
 import Privacidad from "./pages/41_Privacidad";
 import ComoFunciona from "./pages/41_ComoFunciona";
+import FeedLectores from "./pages/40_FeedLectores";
+import CrearPostLector from "./pages/45_CrearPostLector";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -191,12 +193,15 @@ export const router = createBrowserRouter(
       <Route path="/biblioteca" element={<Biblioteca />} />
 
       <Route path="/perfil_lector/:theId" element={<VerLectorPublico />} />
+      <Route path="/feed_lectores" element={<FeedLectores />} />
 
       <Route path="/ayuda/limitaciones" element={<LimitacionesIA />} />
       <Route path="/ayuda/preguntas-frecuentes" element={<ComoFunciona />} />
 
       <Route path="/legal/terminos" element={<Terminos />} />
       <Route path="/legal/privacidad" element={<Privacidad />} />
+
+      <Route path="/crear_post_lector" element={<CrearPostLector />} />
 
       
       </Route>

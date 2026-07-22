@@ -15,7 +15,9 @@ const ActualizarEditorial = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [fotoUrl, setFotoUrl] = useState(null);
-    const [pais, setPais] = useState(""); 
+    const [pais, setPais] = useState("");
+    const [descripcion, setDescripcion] = useState("");
+    const [sitioWeb, setSitioWeb] = useState("");
     const [cargando, setCargando] = useState(true);
 
     const baseUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
@@ -29,7 +31,9 @@ const ActualizarEditorial = () => {
                 setPassword(editorial.password || "");
                 setNombre(editorial.nombre || "");
                 setFotoUrl(editorial.image_url || null); 
-                setPais(editorial.pais || ""); 
+                setPais(editorial.pais || "");
+                setDescripcion(editorial.descripcion || "");
+                setSitioWeb(editorial.sitio_web || "");
                 setCargando(false);
             })
             .catch(err => {
@@ -129,7 +133,9 @@ const ActualizarEditorial = () => {
                 "email": email,
                 "password": password,
                 "nombre": nombre,
-                "pais donde reside": pais // Coincide con tu Backend
+                "pais": pais,
+                "descripcion": descripcion,
+                "sitio_web": sitioWeb
             })
         };
 
@@ -204,6 +210,30 @@ const ActualizarEditorial = () => {
                             required 
                         />
                     </div>
+                </div>
+
+                <div className="mb-3">
+                    <label className="form-label text-muted small fw-bold text-uppercase">Descripción</label>
+                    <textarea
+                        className="form-control border-0 bg-light"
+                        rows={3}
+                        placeholder="Describe tu editorial, su historia y especialidades..."
+                        value={descripcion}
+                        onChange={e => setDescripcion(e.target.value)}
+                        maxLength={500}
+                    />
+                    <small className="text-muted">{descripcion.length}/500</small>
+                </div>
+
+                <div className="mb-4">
+                    <label className="form-label text-muted small fw-bold text-uppercase">Sitio Web</label>
+                    <input
+                        type="url"
+                        className="form-control border-0 bg-light py-2"
+                        placeholder="https://www.tueditorial.com"
+                        value={sitioWeb}
+                        onChange={e => setSitioWeb(e.target.value)}
+                    />
                 </div>
 
                 <div className="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">

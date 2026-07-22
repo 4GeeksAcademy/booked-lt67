@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
+import CajaComentarios from "../components/45_CajaComentarios";
 
 const VerLectorPublico = () => {
     const { theId } = useParams();
@@ -10,19 +11,22 @@ const VerLectorPublico = () => {
         lector: null,
         reviews: [],
         leyendo: [],
+        posts: [],
         siguiendo: false,
         loading: true
     });
+
 
     const apiBase = `${import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "")}/api`;
 
     const loadData = useCallback(async () => {
         try {
             // 1. Usamos los endpoints que sí funcionan en PaginaLector
-            const [resLector, resReviews, resLeyendo] = await Promise.all([
+            const [resLector, resReviews, resLeyendo, resPosts] = await Promise.all([
                 fetch(`${apiBase}/lector/${theId}`).then(r => r.ok ? r.json() : null),
-                fetch(`${apiBase}/reviews`).then(r => r.ok ? r.json() : []), // Traemos todas como hace tu compa
-                fetch(`${apiBase}/lector/${theId}/leyendo`).then(r => r.ok ? r.json() : [])
+                fetch(`${apiBase}/reviews`).then(r => r.ok ? r.json() : []),
+                fetch(`${apiBase}/lector/${theId}/leyendo`).then(r => r.ok ? r.json() : []),
+                fetch(`${apiBase}/postlector/lector/${theId}`).then(r => r.ok ? r.json() : [])
             ]);
 
             if (!resLector) {
@@ -49,6 +53,7 @@ const VerLectorPublico = () => {
                 lector: resLector,
                 reviews: reviewsDelPerfil,
                 leyendo: resLeyendo || [],
+                posts: resPosts || [],
                 siguiendo: loSigo,
                 loading: false
             });
@@ -58,6 +63,7 @@ const VerLectorPublico = () => {
             setDb(prev => ({ ...prev, loading: false }));
         }
     }, [theId, store.lector_id, store.auth_lector, apiBase]);
+
     useEffect(() => { loadData(); }, [loadData]);
 
     const handleFollow = async () => {
@@ -149,6 +155,44 @@ const VerLectorPublico = () => {
                             </div>
                         </div>
 
+                        {/* Estadísticas */}
+                        <div className="row g-3 mb-4">
+                            {[
+                                { label: "Siguiendo", valor: lector?.total_siguiendo ?? 0, icon: "fa-user-friends" },
+                                { label: "Seguidores", valor: lector?.total_seguidores ?? 0, icon: "fa-users" },
+                                { label: "Publicaciones", valor: db.posts.length, icon: "fa-pen" },
+                                { label: "Reseñas", valor: db.reviews.length, icon: "fa-star" }
+                            ].map(s => (
+                                <div key={s.label} className="col-6 col-md-3">
+                                    <div className="text-center bg-light rounded-3 p-3 border">
+                                        <i className={`fas ${s.icon} text-info-booked mb-1`}></i>
+                                        <p className="fw-bold fs-5 mb-0">{s.valor}</p>
+                                        <small className="text-muted">{s.label}</small>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Biografía */}
+                        {lector?.biografia && (
+                            <div className="mb-4 p-3 bg-light rounded-3 border">
+                                <h6 className="fw-bold text-uppercase small text-info-booked mb-2" style={{ letterSpacing: '1px' }}>— Sobre este lector</h6>
+                                <p className="text-dark mb-0" style={{ lineHeight: '1.6' }}>{lector.biografia}</p>
+                            </div>
+                        )}
+
+                        {/* Géneros favoritos */}
+                        {lector?.generos_favoritos && (
+                            <div className="mb-4">
+                                <h6 className="fw-bold text-uppercase small text-info-booked mb-2" style={{ letterSpacing: '1px' }}>— Géneros favoritos</h6>
+                                <div className="d-flex flex-wrap gap-2">
+                                    {lector.generos_favoritos.split(",").map((g, i) => (
+                                        <span key={i} className="badge badge-booked rounded-pill px-3 py-2">{g.trim()}</span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="row g-4">
                             <div className="col-lg-4">
                                 <h6 className="fw-bold text-uppercase small text-info-booked mb-3" style={{ letterSpacing: '1px' }}>— Lecturas</h6>
@@ -185,6 +229,65 @@ const VerLectorPublico = () => {
                                             </div>
                                         </div>
                                     )) : <p className="text-muted text-center py-5">Este lector prefiere disfrutar los libros en silencio.</p>}
+                                </div>
+                                <div className="row mt-5">
+                                    <div className="col-12">
+                                        <h6 className="fw-bold text-uppercase small text-info-booked mb-4" style={{ letterSpacing: '1px' }}>
+                                            — Pensamientos y Publicaciones
+                                        </h6>
+
+                                        {db.posts.length === 0 ? (
+                                            <div className="text-center bg-light p-5 rounded-4 border" style={{ borderStyle: 'dashed !important' }}>
+                                                <i className="fas fa-feather-alt fa-2x mb-3 text-muted opacity-50"></i>
+                                                <p className="text-muted small mb-0">Este lector aún no ha compartido publicaciones en su muro.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="d-flex flex-column gap-4">
+                                                {db.posts.map((post) => {
+                                                    // Evaluamos dinámicamente quién está navegando la app desde el store
+                                                    const tipoUsuarioLogueado = store.editorial_id ? "editorial"
+                                                        : store.autor_id ? "autor"
+                                                            : "lector";
+
+                                                    return (
+                                                        <div key={post.id} className="card shadow-sm border-0 rounded-4 bg-white overflow-hidden">
+                                                            <div className="card-body p-4">
+
+                                                                {/* Encabezado interno de la publicación */}
+                                                                <div className="d-flex align-items-center mb-3 pb-2 border-bottom">
+                                                                    <img
+                                                                        src={fotoUrl}
+                                                                        alt={nombreCompleto}
+                                                                        className="rounded-circle shadow-sm me-3"
+                                                                        style={{ width: "42px", height: "42px", objectFit: "cover" }}
+                                                                    />
+                                                                    <div>
+                                                                        <h6 className="fw-bold mb-0 text-dark small">{nombreCompleto}</h6>
+                                                                        <small className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                                                            <i className="far fa-clock me-1 text-info-booked"></i> {post.fecha || "Reciente"}
+                                                                        </small>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Cuerpo de la publicación */}
+                                                                <p className="card-text text-dark" style={{ whiteSpace: 'pre-wrap', fontSize: '1rem', lineHeight: '1.5' }}>
+                                                                    {post.texto}
+                                                                </p>
+
+                                                                {/* 🎮 CAJA DE COMENTARIOS ADAPTADA A ESTA VISTA */}
+                                                                <CajaComentarios
+                                                                    postId={post.id}
+                                                                    tipoPost="lector" // Fijo "lector" porque estamos en el muro público de un Lector
+                                                                    tipoUsuarioActual={tipoUsuarioLogueado} // Dinámico según quién esté logueado
+                                                                />
+
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>

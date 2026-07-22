@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import { Link } from "react-router-dom";
+import ComentariosPost from "../components/ComentariosPost";
 
 const PostSinLogin = () => {
     const { store } = useGlobalReducer();
@@ -28,6 +29,10 @@ const PostSinLogin = () => {
     useEffect(() => {
         fetchPosts();
     }, [fetchPosts]);
+
+    const tipoUsuarioLogueado = store.editorial_id ? "editorial"
+        : store.autor_id ? "autor"
+        : "lector";
 
     if (loading) {
         return (
@@ -103,6 +108,14 @@ const PostSinLogin = () => {
                                         <p className="card-text text-dark" style={{ whiteSpace: 'pre-wrap', fontSize: '1.1rem', lineHeight: '1.6' }}>
                                             {post.texto}
                                         </p>
+                                        <CajaComentarios
+                                            postId={post.id}
+                                            tipoPost="autor"
+                                            tipoUsuarioActual={tipoUsuarioLogueado}
+                                        />
+
+                                        {/* Comentarios */}
+                                        <ComentariosPost tipo="autor" postId={post.id} />
 
                                     </div>
                                 </div>
